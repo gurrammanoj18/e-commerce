@@ -1,0 +1,131 @@
+.navbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 80px;
+  position: fixed;
+  top: 0;
+  background: transparent;
+  color: #1d1d1d;
+  z-index: 1000;
+  margin-top: 60px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+
+.navbar:hover {
+  background-color: #5f1818;
+  color: black;
+}
+
+.navbar.scrolled {
+  background-color: white !important;
+  color: black !important;
+  margin-top: 0;
+}
+
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  /* gap: 20px; */
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+}
+.main-div{
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 25px;
+}
+
+.nav-links li {
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+   padding: 10px ;        /* gives fixed height/space */
+  border-radius: 22px;        /* prepares for hover effect */
+  line-height: 1;             /* keeps vertical alignment clean */
+}
+
+.nav-links li:hover {
+  color: rgb(15, 15, 15);
+  background-color: black;
+  transform: translateY(-2px); /* slight lift effect */
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.contact-link {
+  color: #0a0a0a;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.contact-link:hover {
+  color: black;
+}
+
+.icons {
+  display: flex;
+  gap: 15px;
+}
+
+.icon {
+  cursor: pointer;
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.icon:hover {
+  transform: scale(1.2);
+}
+/* ⬇️ New styles to stack FAQ above navbar */
+.main-div {
+  display: flex;
+  flex-direction: column; /* place faq on top and navbar below */
+  width: 100%;
+}
+
+.faq-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  background-color: #111;
+  color: #ddd;
+  padding: 10px 0;
+}
+
+.faq-question {
+  min-width: 260px;
+  text-align: center;
+  font-size: 14px;
+  transition: opacity 0.3s ease;
+}
+
+.arrow-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #ddd;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.arrow-btn:hover {
+  color: white;
+}
