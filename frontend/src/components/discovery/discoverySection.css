@@ -1,0 +1,144 @@
+/* ========================
+    HERO SECTION
+======================== */
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 60px;
+  background: #222;
+  color: #fff;
+    border-radius: 0 0 12px 12px;
+  height: 400px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.hero-content {
+  flex: 1;
+  max-width: 500px;
+}
+
+.hero-subtitle {
+  color: #ff7d3b;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.hero-title {
+  font-size: 48px;
+  font-weight: 700;
+  margin: 20px 0;
+  line-height: 1.2;
+}
+
+.hero-description {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #cfcfcf;
+}
+
+.hero-images {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.image-grid {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  transform: rotate(-45deg);
+}
+
+.image-column {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.image-box {
+  position: relative;
+  width: 230px;
+  height: 230px;
+  border-radius: 16px;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+/* Dark overlay on all images */
+.image-box::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6));
+  background-size: cover;
+  background-position: center;
+  border-radius: 16px;
+}
+
+/* ========================
+    IMAGE BACKGROUNDS
+======================== */
+.img1 { background-image: url("../../assets/imagesP1/p1.webp"); }
+.img2 { background-image: url("../../assets/imagesP1/p11.jpg"); }
+.img3 { background-image: url("../../assets/imagesP2/p21.webp"); }
+.img4 { background-image: url("../../assets/imagesP2/p22.webp"); }
+.img5 { background-image: url("../../assets/imagesP1/p1.webp"); }
+.img6 { background-image: url("../../assets/imagesP2/p22.webp"); }
+.img7 { background-image: url("../../assets/imagesP3/p2.webp"); }
+.img8 { background-image: url("../../assets/imagesP1/p13.webp"); }
+.img9 { background-image: url("../../assets/imagesP1/p12.webp"); }
+.img10 { background-image: url("../../assets/imagesP1/p12.webp"); }
+.img11 { background-image: url("../../assets/imagesP1/p12.webp"); }
+.img12 { background-image: url("../../assets/imagesP1/p12.webp"); }
+.img13 { background-image: url("../../assets/imagesP1/p12.webp"); }
+
+
+/* ========================
+    BENEFITS BAR
+======================== */
+.benefits-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  padding: 2rem 3rem;
+  background-color: #fff;
+  border-top: 1px solid #eaeaea;
+  border-bottom: 1px solid #eaeaea;
+  border-radius: 0 0 12px 12px;
+}
+
+.benefit {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex: 1 1 22%;
+  min-width: 200px;
+  padding: 1rem;
+}
+
+.benefit img {
+  width: 24px;
+  height: 24px;
+  margin-top: 4px;
+}
+
+.benefit h4 {
+  font-size: 16px;
+  margin: 0;
+  font-weight: 600;
+  color: #111;
+}
+
+.benefit p {
+  font-size: 14px;
+  margin: 0.2rem 0 0 0;
+  color: #555;
+}
