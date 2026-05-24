@@ -6,6 +6,7 @@ VoltMart is a responsive hardware and electronics e-commerce platform built with
 - Spring Boot backend in `backend/`
 - PostgreSQL for persistence
 - Render deployment support via `render.yaml`
+- Docker-ready backend and frontend services for Render web service deployment
 
 ## Monorepo structure
 
@@ -79,7 +80,7 @@ Set `REACT_APP_API_BASE_URL` from `frontend/.env.example`.
 ## Deployment on Render
 
 1. Push this repository to GitHub.
-2. In Render, create services from `render.yaml`.
+2. In Render, create Docker web services from `render.yaml` or point each service at `backend/Dockerfile` and `frontend/Dockerfile`.
 3. Provision PostgreSQL and copy the connection values into backend environment variables.
 4. Set `APP_JWT_SECRET` to a long secure value.
 5. Update the frontend/backend public URLs if you rename the Render services.
