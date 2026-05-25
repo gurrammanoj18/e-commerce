@@ -1,4 +1,5 @@
 import React from "react";
+import "../../styles/product/QuantitySelector.css";
 
 interface QuantitySelectorProps {
   value: number;

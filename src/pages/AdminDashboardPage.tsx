@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import "../styles/admin.css";
+import { AxiosError } from "axios";
+import "../styles/pages/AdminDashboardPage.css";
 import { useAuth } from "../contexts/AuthContext";
 import {
   createAdminProduct,
@@ -33,6 +34,7 @@ interface ProductFormState {
   name: string;
   brand: string;
   categoryId: string;
+  subcategoryId: string;
   price: string;
   originalPrice: string;
   shortDescription: string;
@@ -44,6 +46,8 @@ interface ProductFormState {
   bestSeller: boolean;
   newArrival: boolean;
   bulkEligible: boolean;
+  warrantyAvailable: boolean;
+  replacementAvailable: boolean;
   badge: string;
   heroTag: string;
   images: string;
@@ -74,6 +78,7 @@ const createEmptyFormState = (): ProductFormState => ({
   name: "",
   brand: "",
   categoryId: "",
+  subcategoryId: "",
   price: "",
   originalPrice: "",
   shortDescription: "",
@@ -85,6 +90,8 @@ const createEmptyFormState = (): ProductFormState => ({
   bestSeller: false,
   newArrival: true,
   bulkEligible: true,
+  warrantyAvailable: true,
+  replacementAvailable: true,
   badge: "New",
   heroTag: "Operational launch",
   images: "",
@@ -100,11 +107,68 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-const parseList = (value: string) =>
+const parseTagList = (value: string) =>
   value
     .split(/[,\n]/)
     .map((item) => item.trim())
     .filter(Boolean);
+
+const parseImageList = (value: string) =>
+  value
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const readFileAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error(`Unable to read ${file.name}`));
+    reader.readAsDataURL(file);
+  });
+
+const loadImage = (src: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Unable to process selected image."));
+    image.src = src;
+  });
+
+const optimizeImageFile = async (file: File) => {
+  const sourceDataUrl = await readFileAsDataUrl(file);
+  const image = await loadImage(sourceDataUrl);
+  const maxDimension = 1200;
+  const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    return sourceDataUrl;
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", 0.78);
+};
+
+const extractErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof AxiosError) {
+    const message = error.response?.data?.message;
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+};
 
 const parseSpecifications = (value: string) =>
   value
@@ -124,7 +188,7 @@ const buildProductPayload = (form: ProductFormState): AdminProductPayload => ({
   slug: slugify(form.slug || form.name),
   name: form.name.trim(),
   brand: form.brand.trim(),
-  categoryId: Number(form.categoryId),
+  categoryId: Number(form.subcategoryId || form.categoryId),
   price: Number(form.price),
   originalPrice: Number(form.originalPrice),
   shortDescription: form.shortDescription.trim(),
@@ -136,10 +200,12 @@ const buildProductPayload = (form: ProductFormState): AdminProductPayload => ({
   bestSeller: form.bestSeller,
   newArrival: form.newArrival,
   bulkEligible: form.bulkEligible,
+  warrantyAvailable: form.warrantyAvailable,
+  replacementAvailable: form.replacementAvailable,
   badge: form.badge.trim(),
   heroTag: form.heroTag.trim(),
-  images: parseList(form.images),
-  tags: parseList(form.tags),
+  images: parseImageList(form.images),
+  tags: parseTagList(form.tags),
   stockQuantity: Number(form.stockQuantity),
   lowStockThreshold: Number(form.lowStockThreshold),
 });
@@ -149,7 +215,11 @@ const createFormStateFromProduct = (
   categories: CategorySummary[],
   inventory: InventoryItem[],
 ): ProductFormState => {
-  const matchedCategory = categories.find((category) => category.name === product.category);
+  const matchedCategory = categories.find((category) => category.slug === product.categorySlug);
+  const matchedSubcategory =
+    matchedCategory?.subcategories?.find(
+      (subcategory) => subcategory.id === product.subcategoryId,
+    ) ?? null;
   const inventoryItem = inventory.find((item) => item.productId === product.id);
 
   return {
@@ -157,6 +227,7 @@ const createFormStateFromProduct = (
     name: product.name,
     brand: product.brand,
     categoryId: matchedCategory?.id ? String(matchedCategory.id) : "",
+    subcategoryId: matchedSubcategory?.id ? String(matchedSubcategory.id) : "",
     price: String(product.price),
     originalPrice: String(product.originalPrice),
     shortDescription: product.shortDescription,
@@ -168,6 +239,8 @@ const createFormStateFromProduct = (
     bestSeller: product.bestSeller,
     newArrival: product.newArrival,
     bulkEligible: product.bulkEligible,
+    warrantyAvailable: product.warrantyAvailable,
+    replacementAvailable: product.replacementAvailable,
     badge: product.badge,
     heroTag: product.heroTag,
     images: product.images.join("\n"),
@@ -220,6 +293,8 @@ const AdminDashboardPage: React.FC = () => {
   const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [secondsUntilRefresh, setSecondsUntilRefresh] = useState(
     Math.floor(REFRESH_INTERVAL_MS / 1000),
@@ -317,8 +392,8 @@ const AdminDashboardPage: React.FC = () => {
         inventory: inventoryData,
         orders: orderData,
       };
-    } catch {
-      toast.error("Could not load admin workspace.");
+    } catch (error) {
+      handleAdminRequestError(error, "Could not load admin workspace.");
     } finally {
       if (!options?.silent) {
         setLoading(false);
@@ -348,12 +423,33 @@ const AdminDashboardPage: React.FC = () => {
     setProductForm(createEmptyFormState());
   };
 
+  const selectedCategory = categories.find(
+    (category) => String(category.id) === productForm.categoryId,
+  );
+  const availableSubcategories = selectedCategory?.subcategories || [];
+  const productImages = parseImageList(productForm.images);
+
+  const handleAdminRequestError = (error: unknown, fallback: string) => {
+    if (error instanceof AxiosError && error.response?.status === 403) {
+      toast.error("Your admin session has expired or no longer has access. Please log in again.");
+      logout();
+      navigate("/admin/login", {
+        replace: true,
+        state: { from: location, adminOnly: true },
+      });
+      return;
+    }
+
+    toast.error(extractErrorMessage(error, fallback));
+  };
+
   const handleProductFormChange = (
     field: keyof ProductFormState,
     value: string | boolean,
   ) => {
     setProductForm((current) => ({
       ...current,
+      ...(field === "categoryId" ? { subcategoryId: "" } : {}),
       [field]: value,
     }));
   };
@@ -362,6 +458,40 @@ const AdminDashboardPage: React.FC = () => {
     setEditingProductId(product.id);
     setProductForm(createFormStateFromProduct(product, categories, inventory));
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleProductImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) {
+      return;
+    }
+
+    const existingImages = parseImageList(productForm.images);
+    if (existingImages.length + files.length > 3) {
+      toast.error("You can upload up to 3 product images.");
+      event.target.value = "";
+      return;
+    }
+
+    setUploadingImages(true);
+    try {
+      const uploadedImages = await Promise.all(files.map(optimizeImageFile));
+      handleProductFormChange("images", [...existingImages, ...uploadedImages].join("\n"));
+    } catch (error) {
+      toast.error(extractErrorMessage(error, "Unable to prepare one or more selected images."));
+    } finally {
+      setUploadingImages(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleRemoveProductImage = (imageToRemove: string) => {
+    handleProductFormChange(
+      "images",
+      productImages.filter((image) => image !== imageToRemove).join("\n"),
+    );
   };
 
   const handleDeleteProduct = async (productId: number) => {
@@ -385,8 +515,8 @@ const AdminDashboardPage: React.FC = () => {
       if (editingProductId === productId) {
         resetProductForm();
       }
-    } catch {
-      toast.error("Unable to delete that product.");
+    } catch (error) {
+      handleAdminRequestError(error, "Unable to delete that product.");
     } finally {
       setDeletingProductId(null);
     }
@@ -397,6 +527,11 @@ const AdminDashboardPage: React.FC = () => {
 
     if (!productForm.categoryId) {
       toast.error("Choose a category before saving.");
+      return;
+    }
+
+    if (availableSubcategories.length && !productForm.subcategoryId) {
+      toast.error("Choose a subcategory before saving.");
       return;
     }
 
@@ -423,8 +558,8 @@ const AdminDashboardPage: React.FC = () => {
 
       resetProductForm();
       await loadAdminData({ silent: true });
-    } catch {
-      toast.error("We couldn't save that product.");
+    } catch (error) {
+      handleAdminRequestError(error, "We couldn't save that product.");
     } finally {
       setSavingProduct(false);
     }
@@ -436,8 +571,8 @@ const AdminDashboardPage: React.FC = () => {
       await updateAdminOrderStatus(orderId, status);
       toast.success("Order status updated.");
       await loadAdminData({ silent: true });
-    } catch {
-      toast.error("Unable to update the order status.");
+    } catch (error) {
+      handleAdminRequestError(error, "Unable to update the order status.");
     } finally {
       setStatusUpdatingId(null);
     }
@@ -461,8 +596,8 @@ const AdminDashboardPage: React.FC = () => {
       await deleteAdminOrder(orderId);
       toast.success("Order removed from history.");
       await loadAdminData({ silent: true });
-    } catch {
-      toast.error("Unable to delete the order history.");
+    } catch (error) {
+      handleAdminRequestError(error, "Unable to delete the order history.");
     } finally {
       setDeletingOrderId(null);
     }
@@ -711,6 +846,28 @@ const AdminDashboardPage: React.FC = () => {
               </select>
             </label>
             <label>
+              Subcategory
+              <select
+                value={productForm.subcategoryId}
+                onChange={(event) =>
+                  handleProductFormChange("subcategoryId", event.target.value)
+                }
+                disabled={!availableSubcategories.length}
+                required={Boolean(availableSubcategories.length)}
+              >
+                <option value="">
+                  {availableSubcategories.length
+                    ? "Select subcategory"
+                    : "No subcategories for this category"}
+                </option>
+                {availableSubcategories.map((subcategory) => (
+                  <option key={subcategory.id} value={subcategory.id}>
+                    {subcategory.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
               Price
               <input
                 type="number"
@@ -821,14 +978,40 @@ const AdminDashboardPage: React.FC = () => {
               />
             </label>
             <label className="form-grid__wide">
-              Images
+              Product images
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleProductImageUpload}
+                disabled={uploadingImages || productImages.length >= 3}
+              />
+              <span className="admin-field-hint">
+                Upload up to 3 images from your device. You can also paste image URLs below.
+              </span>
               <textarea
                 rows={4}
                 value={productForm.images}
                 onChange={(event) => handleProductFormChange("images", event.target.value)}
-                placeholder="One image path or URL per line"
+                placeholder="One image path, URL, or uploaded image per line"
                 required
               />
+              {productImages.length ? (
+                <div className="admin-image-preview-grid">
+                  {productImages.map((image, index) => (
+                    <div key={`${index}-${image.slice(0, 20)}`} className="admin-image-preview-card">
+                      <img src={image} alt={`Product preview ${index + 1}`} />
+                      <button
+                        className="link-button"
+                        type="button"
+                        onClick={() => handleRemoveProductImage(image)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </label>
             <label className="form-grid__wide">
               Specifications
@@ -859,6 +1042,8 @@ const AdminDashboardPage: React.FC = () => {
               ["bestSeller", "Best seller"],
               ["newArrival", "New arrival"],
               ["bulkEligible", "Bulk eligible"],
+              ["warrantyAvailable", "Warranty available"],
+              ["replacementAvailable", "Replacement available"],
             ].map(([field, label]) => (
               <label key={field} className="admin-toggle">
                 <input
@@ -952,6 +1137,7 @@ const AdminDashboardPage: React.FC = () => {
               <tr>
                 <th>Product</th>
                 <th>Category</th>
+                <th>Subcategory</th>
                 <th>Price</th>
                 <th>Stock</th>
                 <th>Status</th>
@@ -966,6 +1152,7 @@ const AdminDashboardPage: React.FC = () => {
                     <div>{product.brand}</div>
                   </td>
                   <td>{product.category}</td>
+                  <td>{product.subcategory}</td>
                   <td>{formatCurrency(product.price)}</td>
                   <td>{product.stockQuantity}</td>
                   <td>
@@ -1029,46 +1216,107 @@ const AdminDashboardPage: React.FC = () => {
             </thead>
             <tbody>
               {orders.map((order) => (
-                <tr key={order.id}>
-                  <td>
-                    <strong>{order.orderNumber.slice(0, 8)}</strong>
-                    <div>{order.items.length} item(s)</div>
-                  </td>
-                  <td>
-                    <strong>{order.shippingName}</strong>
-                    <div>{order.email}</div>
-                  </td>
-                  <td>{formatDateTime(order.createdAt)}</td>
-                  <td>{formatCurrency(order.totalAmount)}</td>
-                  <td>
-                    <span className="admin-status-pill">{order.status}</span>
-                  </td>
-                  <td>
-                    <select
-                      value={order.status}
-                      disabled={statusUpdatingId === order.id}
-                      onChange={(event) =>
-                        void handleStatusChange(order.id, event.target.value)
-                      }
-                    >
-                      {ORDER_STATUS_OPTIONS.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <button
-                      className="link-button admin-danger-button"
-                      type="button"
-                      disabled={deletingOrderId === order.id}
-                      onClick={() => void handleDeleteOrder(order.id)}
-                    >
-                      {deletingOrderId === order.id ? "Deleting..." : "Delete"}
-                    </button>
-                  </td>
-                </tr>
+                <React.Fragment key={order.id}>
+                  <tr>
+                    <td>
+                      <button
+                        className="admin-order-toggle"
+                        type="button"
+                        onClick={() =>
+                          setExpandedOrderId((current) =>
+                            current === order.id ? null : order.id,
+                          )
+                        }
+                      >
+                        <strong>{order.orderNumber.slice(0, 8)}</strong>
+                        <span>
+                          {expandedOrderId === order.id ? "Hide details" : "Show details"}
+                        </span>
+                      </button>
+                      <div>{order.items.length} item(s)</div>
+                    </td>
+                    <td>
+                      <strong>{order.shippingName}</strong>
+                      <div>{order.email}</div>
+                    </td>
+                    <td>{formatDateTime(order.createdAt)}</td>
+                    <td>{formatCurrency(order.totalAmount)}</td>
+                    <td>
+                      <span className="admin-status-pill">{order.status}</span>
+                    </td>
+                    <td>
+                      <select
+                        value={order.status}
+                        disabled={statusUpdatingId === order.id}
+                        onChange={(event) =>
+                          void handleStatusChange(order.id, event.target.value)
+                        }
+                      >
+                        {ORDER_STATUS_OPTIONS.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <button
+                        className="link-button admin-danger-button"
+                        type="button"
+                        disabled={deletingOrderId === order.id}
+                        onClick={() => void handleDeleteOrder(order.id)}
+                      >
+                        {deletingOrderId === order.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </td>
+                  </tr>
+                  {expandedOrderId === order.id ? (
+                    <tr className="admin-order-details-row">
+                      <td colSpan={7}>
+                        <div className="admin-order-details">
+                          <section className="admin-order-details__section">
+                            <span className="eyebrow">User details</span>
+                            <strong>{order.shippingName}</strong>
+                            <p>{order.email}</p>
+                            <p>{order.phone}</p>
+                          </section>
+                          <section className="admin-order-details__section">
+                            <span className="eyebrow">Order details</span>
+                            <p>Order no: {order.orderNumber}</p>
+                            <p>Status: {order.status}</p>
+                            <p>Placed: {formatDateTime(order.createdAt)}</p>
+                            <p>Subtotal: {formatCurrency(order.subtotal)}</p>
+                            <p>Shipping: {formatCurrency(order.shippingCost)}</p>
+                            <p>Tax: {formatCurrency(order.taxAmount)}</p>
+                            <p>Total: {formatCurrency(order.totalAmount)}</p>
+                          </section>
+                          <section className="admin-order-details__section">
+                            <span className="eyebrow">Delivery details</span>
+                            <p>{order.shippingAddress}</p>
+                            <p>
+                              {order.city}, {order.postalCode}
+                            </p>
+                          </section>
+                          <section className="admin-order-details__section admin-order-details__section--full">
+                            <span className="eyebrow">Items</span>
+                            <div className="admin-order-item-list">
+                              {order.items.map((item) => (
+                                <div
+                                  key={`${order.id}-${item.productSlug}`}
+                                  className="admin-order-item"
+                                >
+                                  <strong>{item.productName}</strong>
+                                  <span>{item.quantity} qty</span>
+                                  <span>{formatCurrency(item.unitPrice)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </section>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null}
+                </React.Fragment>
               ))}
             </tbody>
           </table>

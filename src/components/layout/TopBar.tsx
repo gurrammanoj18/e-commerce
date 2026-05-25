@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "../../styles/layout/TopBar.css";
 
 const notices = [
   "Bulk orders for offices, gaming cafes, and system integrators.",

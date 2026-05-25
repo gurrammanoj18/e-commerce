@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { AxiosError } from "axios";
+import { toast } from "react-toastify";
 import {
   addCartItem,
   fetchCart,
@@ -25,7 +27,7 @@ const CART_STORAGE_KEY = "voltmart-cart-local";
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -44,12 +46,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
             brand: "",
             category: "",
             categorySlug: "",
+            subcategory: "",
+            subcategorySlug: "",
+            subcategoryId: 0,
             price: item.unitPrice,
             originalPrice: item.unitPrice,
+            discountPercentage: 0,
             rating: 0,
             reviewCount: 0,
             stockQuantity: item.stockQuantity,
             lowStock: false,
+            availability:
+              item.stockQuantity <= 0
+                ? "out-of-stock"
+                : item.stockQuantity <= 5
+                ? "low-stock"
+                : "in-stock",
             badge: "",
             shortDescription: "",
             description: "",
@@ -61,9 +73,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
             bestSeller: false,
             bulkEligible: false,
             newArrival: false,
+            warrantyAvailable: false,
+            replacementAvailable: item.stockQuantity > 0,
           },
         }))
       );
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.status === 401) {
+        setItems([]);
+        logout();
+        return;
+      }
+
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -91,8 +113,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const addToCart = async (product: Product, quantity = 1) => {
     if (isAuthenticated) {
-      await addCartItem(product.id, quantity);
-      await loadRemoteCart();
+      try {
+        await addCartItem(product.id, quantity);
+        await loadRemoteCart();
+      } catch (error) {
+        if (error instanceof AxiosError && error.response?.status === 401) {
+          setItems([]);
+          logout();
+          return;
+        }
+
+        toast.error("Couldn't add this item to cart right now.");
+      }
       return;
     }
 
@@ -113,7 +145,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     if (isAuthenticated) {
       const item = items.find((cartItem) => cartItem.product.id === productId);
       if (item?.id) {
-        await removeCartItem(item.id);
+        const previousItems = items;
+        setItems((currentItems) =>
+          currentItems.filter((cartItem) => cartItem.product.id !== productId)
+        );
+        try {
+          await removeCartItem(item.id);
+        } catch (error) {
+          setItems(previousItems);
+          if (error instanceof AxiosError && error.response?.status === 401) {
+            setItems([]);
+            logout();
+            return;
+          }
+
+          toast.error("Couldn't remove this item from cart right now.");
+          return;
+        }
+
         await loadRemoteCart();
       }
       return;
@@ -133,8 +182,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     if (isAuthenticated) {
       const item = items.find((cartItem) => cartItem.product.id === productId);
       if (item?.id) {
-        await updateCartItem(item.id, productId, quantity);
-        await loadRemoteCart();
+        try {
+          await updateCartItem(item.id, productId, quantity);
+          await loadRemoteCart();
+        } catch (error) {
+          if (error instanceof AxiosError && error.response?.status === 401) {
+            setItems([]);
+            logout();
+            return;
+          }
+
+          toast.error("Couldn't update cart quantity right now.");
+        }
       }
       return;
     }

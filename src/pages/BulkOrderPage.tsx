@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import "../styles/pages/BulkOrderPage.css";
 import { toast } from "react-toastify";
 import { submitBulkOrder } from "../services/supportService";
 
@@ -68,11 +69,11 @@ const BulkOrderPage: React.FC = () => {
                 <option value="" disabled>
                   Select category
                 </option>
-                <option>Laptops</option>
-                <option>Networking</option>
-                <option>Audio</option>
-                <option>Gaming</option>
-                <option>Components</option>
+                <option>Electrical Appliances</option>
+                <option>Hardware Products</option>
+                <option>Cleaning Products</option>
+                <option>Home Utility Products</option>
+                <option>Tools & Accessories</option>
               </select>
             </label>
             <label>

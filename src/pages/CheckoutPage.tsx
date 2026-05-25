@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import "../styles/pages/CheckoutPage.css";
 import { toast } from "react-toastify";
 import { useCart } from "../contexts/CartContext";
 import { checkout } from "../services/orderService";

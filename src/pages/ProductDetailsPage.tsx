@@ -1,17 +1,20 @@
 import React, { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import "../styles/pages/ProductDetailsPage.css";
 import ProductGallery from "../components/product/ProductGallery";
 import ProductCard from "../components/product/ProductCard";
 import QuantitySelector from "../components/product/QuantitySelector";
 import LoadingState from "../components/shared/LoadingState";
 import { useCart } from "../contexts/CartContext";
 import { useProducts } from "../contexts/ProductContext";
+import { useWishlist } from "../contexts/WishlistContext";
 import { Product } from "../types/store";
 import { formatCurrency } from "../utils/currency";
 
 const ProductDetailsPage: React.FC = () => {
   const { slug = "" } = useParams();
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const { getProductBySlug, getRelatedProducts, loading } = useProducts();
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<Product | null>(null);
@@ -74,6 +77,9 @@ const ProductDetailsPage: React.FC = () => {
             <QuantitySelector value={quantity} onChange={setQuantity} />
             <button type="button" onClick={() => void addToCart(product, quantity)}>
               Add to cart
+            </button>
+            <button type="button" onClick={() => void toggleWishlist(product)}>
+              {isInWishlist(product.id) ? "Remove from wishlist" : "Save to wishlist"}
             </button>
           </div>
 

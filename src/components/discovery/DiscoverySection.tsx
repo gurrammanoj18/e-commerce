@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import "./discoverySection.css";
+import "../../styles/components/DiscoverySection.css";
 
 const DiscoverySection: React.FC = () => {
   const sectionRef = useRef(null);

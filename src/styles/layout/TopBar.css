@@ -1,0 +1,38 @@
+.top-bar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 52px;
+  background: #2d2d2d;
+  color: #f3eee8;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.top-bar p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.top-bar__nav {
+  width: 42px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: inherit;
+}
+
+@media (max-width: 560px) {
+  .top-bar {
+    padding: 0 12px;
+  }
+
+  .top-bar p {
+    text-align: center;
+    font-size: 12px;
+  }
+}

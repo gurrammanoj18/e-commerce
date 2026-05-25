@@ -6,7 +6,12 @@ import {
   getProductBySlug,
   getProducts,
 } from "../services/productService";
-import { CategorySummary, Product, ProductSort } from "../types/store";
+import {
+  CategorySummary,
+  Product,
+  ProductAvailabilityFilter,
+  ProductSort,
+} from "../types/store";
 
 interface ProductContextValue {
   products: Product[];
@@ -15,7 +20,11 @@ interface ProductContextValue {
   loading: boolean;
   error: string;
   searchTerm: string;
+  availableBrands: string[];
+  selectedBrand: string;
   selectedCategory: string;
+  availabilityFilter: ProductAvailabilityFilter;
+  minimumDiscount: number;
   priceRange: { min: number; max: number };
   sortBy: ProductSort;
   currentPage: number;
@@ -26,7 +35,10 @@ interface ProductContextValue {
   totalPages: number;
   maxCatalogPrice: number;
   setSearchTerm: (value: string) => void;
+  setSelectedBrand: (value: string) => void;
   setSelectedCategory: (value: string) => void;
+  setAvailabilityFilter: (value: ProductAvailabilityFilter) => void;
+  setMinimumDiscount: (value: number) => void;
   setPriceRange: (value: { min: number; max: number }) => void;
   setSortBy: (value: ProductSort) => void;
   setCurrentPage: (value: number) => void;
@@ -48,7 +60,11 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTermState] = useState("");
+  const [selectedBrand, setSelectedBrandState] = useState("All");
   const [selectedCategory, setSelectedCategoryState] = useState("All");
+  const [availabilityFilter, setAvailabilityFilterState] =
+    useState<ProductAvailabilityFilter>("all");
+  const [minimumDiscount, setMinimumDiscountState] = useState(0);
   const [sortBy, setSortByState] = useState<ProductSort>("featured");
   const [currentPage, setCurrentPageState] = useState(1);
   const [priceRange, setPriceRangeState] = useState({ min: 0, max: 250000 });
@@ -92,6 +108,11 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
     [products]
   );
 
+  const availableBrands = useMemo(
+    () => [...new Set(products.map((product) => product.brand))].sort((left, right) => left.localeCompare(right)),
+    [products]
+  );
+
   const filteredProducts = useMemo(
     () =>
       products
@@ -102,24 +123,60 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
             product.name.toLowerCase().includes(query) ||
             product.brand.toLowerCase().includes(query) ||
             product.category.toLowerCase().includes(query) ||
+            product.subcategory.toLowerCase().includes(query) ||
             product.tags.some((tag) => tag.toLowerCase().includes(query));
 
           const matchesCategory =
-            selectedCategory === "All" || product.category === selectedCategory;
+            selectedCategory === "All" ||
+            product.category === selectedCategory ||
+            product.categorySlug === selectedCategory ||
+            product.subcategory === selectedCategory ||
+            product.subcategorySlug === selectedCategory;
+
+          const matchesBrand =
+            selectedBrand === "All" || product.brand === selectedBrand;
 
           const matchesPrice =
             product.price >= priceRange.min && product.price <= priceRange.max;
 
-          return matchesSearch && matchesCategory && matchesPrice;
+          const matchesAvailability =
+            availabilityFilter === "all" || product.availability === availabilityFilter;
+
+          const matchesDiscount =
+            minimumDiscount <= 0 || product.discountPercentage >= minimumDiscount;
+
+          return (
+            matchesSearch &&
+            matchesCategory &&
+            matchesBrand &&
+            matchesPrice &&
+            matchesAvailability &&
+            matchesDiscount
+          );
         })
         .sort((left, right) => {
           if (sortBy === "price-low") return left.price - right.price;
           if (sortBy === "price-high") return right.price - left.price;
           if (sortBy === "rating") return right.rating - left.rating;
           if (sortBy === "newest") return Number(right.newArrival) - Number(left.newArrival);
+          if (sortBy === "discount-high") {
+            return right.discountPercentage - left.discountPercentage;
+          }
+          if (sortBy === "name-asc") return left.name.localeCompare(right.name);
+          if (sortBy === "name-desc") return right.name.localeCompare(left.name);
           return Number(right.featured) - Number(left.featured);
         }),
-    [priceRange.max, priceRange.min, products, searchTerm, selectedCategory, sortBy]
+    [
+      availabilityFilter,
+      minimumDiscount,
+      priceRange.max,
+      priceRange.min,
+      products,
+      searchTerm,
+      selectedBrand,
+      selectedCategory,
+      sortBy,
+    ]
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / productsPerPage));
@@ -139,6 +196,21 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
     setCurrentPageState(1);
   };
 
+  const setSelectedBrand = (value: string) => {
+    setSelectedBrandState(value);
+    setCurrentPageState(1);
+  };
+
+  const setAvailabilityFilter = (value: ProductAvailabilityFilter) => {
+    setAvailabilityFilterState(value);
+    setCurrentPageState(1);
+  };
+
+  const setMinimumDiscount = (value: number) => {
+    setMinimumDiscountState(value);
+    setCurrentPageState(1);
+  };
+
   const setPriceRange = (value: { min: number; max: number }) => {
     setPriceRangeState(value);
     setCurrentPageState(1);
@@ -153,7 +225,10 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const resetFilters = () => {
     setSearchTermState("");
+    setSelectedBrandState("All");
     setSelectedCategoryState("All");
+    setAvailabilityFilterState("all");
+    setMinimumDiscountState(0);
     setSortByState("featured");
     setCurrentPageState(1);
     setPriceRangeState({ min: 0, max: maxCatalogPrice || 250000 });
@@ -175,7 +250,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
     products
       .filter(
         (candidate) =>
-          candidate.category === product.category && candidate.id !== product.id
+          candidate.subcategory === product.subcategory && candidate.id !== product.id
       )
       .slice(0, 4);
 
@@ -188,7 +263,11 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
         loading,
         error,
         searchTerm,
+        availableBrands,
+        selectedBrand,
         selectedCategory,
+        availabilityFilter,
+        minimumDiscount,
         priceRange,
         sortBy,
         currentPage: safePage,
@@ -199,7 +278,10 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
         totalPages,
         maxCatalogPrice,
         setSearchTerm,
+        setSelectedBrand,
         setSelectedCategory,
+        setAvailabilityFilter,
+        setMinimumDiscount,
         setPriceRange,
         setSortBy,
         setCurrentPage,

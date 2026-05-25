@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import "../../styles/layout/Footer.css";
 
 const Footer: React.FC = () => {
   return (
@@ -22,9 +23,9 @@ const Footer: React.FC = () => {
 
         <div>
           <h4>Categories</h4>
-          <span>Laptops & Workstations</span>
-          <span>Networking</span>
-          <span>Audio & Gaming</span>
+          <span>Electrical Appliances</span>
+          <span>Hardware Products</span>
+          <span>Tools & Accessories</span>
         </div>
 
         <div>

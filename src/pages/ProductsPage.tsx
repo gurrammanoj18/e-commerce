@@ -1,27 +1,40 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import "../styles/pages/ProductsPage.css";
 import FiltersSidebar from "../components/product/FiltersSidebar";
 import ProductCard from "../components/product/ProductCard";
 import LoadingState from "../components/shared/LoadingState";
+import Pagination from "../components/shared/Pagination";
 import SearchBar from "../components/shared/SearchBar";
 import { useProducts } from "../contexts/ProductContext";
 
 const ProductsPage: React.FC = () => {
   const {
+    availabilityFilter,
+    availableBrands,
     bestSellerProducts,
     categories,
+    currentPage,
     filteredProducts,
     loading,
     maxCatalogPrice,
+    minimumDiscount,
+    paginatedProducts,
     priceRange,
     resetFilters,
     searchTerm,
+    selectedBrand,
     selectedCategory,
+    setAvailabilityFilter,
+    setCurrentPage,
+    setMinimumDiscount,
     setPriceRange,
+    setSelectedBrand,
     setSearchTerm,
     setSelectedCategory,
     setSortBy,
     sortBy,
+    totalPages,
   } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
   const appliedQuerySignature = useRef("");
@@ -77,10 +90,11 @@ const ProductsPage: React.FC = () => {
               <div className="shell hero-banner__content">
                 <div className="hero-copy">
                   <span className="eyebrow">Modern hardware storefront</span>
-                  <h1>Build smarter workspaces with trusted electronics.</h1>
+                  <h1>Source appliances, hardware, cleaning, utility, and tool products in one place.</h1>
                   <p>
-                    Explore laptops, audio, networking, gaming, and business-ready
-                    hardware designed for teams, creators, and enthusiasts.
+                    Browse your catalog through focused product groups built around
+                    electrical appliances, hardware products, cleaning products,
+                    home utility products, and tools and accessories.
                   </p>
                   <div className="hero-actions">
                     <Link className="button button--light" to="/products?discover=1">
@@ -95,8 +109,8 @@ const ProductsPage: React.FC = () => {
                 <div className="hero-panel">
                   <div className="store-card hero-panel__card">
                     <span>Top category</span>
-                    <strong>Networking & office setups</strong>
-                    <p>Upgrade your home office, studio, or team floor with high-uptime gear.</p>
+                    <strong>Electrical appliances and utility essentials</strong>
+                    <p>Browse category-led inventory built for practical home and project needs.</p>
                   </div>
                   <div className="store-card hero-panel__card">
                     <span>Fast dispatch</span>
@@ -113,7 +127,7 @@ const ProductsPage: React.FC = () => {
       <section className="shell section page-section">
         <div className="page-header">
           <span className="eyebrow">Product listing</span>
-          <h1>Hardware & electronics catalog</h1>
+          <h1>Category-driven product catalog</h1>
           <p>
             {isDiscoverMode
               ? "Search products, filter by category, and narrow the catalog by price and ranking."
@@ -142,12 +156,19 @@ const ProductsPage: React.FC = () => {
         ) : isDiscoverMode ? (
           <div className="listing-layout">
             <FiltersSidebar
+              brands={availableBrands}
+              selectedBrand={selectedBrand}
+              onBrandChange={setSelectedBrand}
               categories={categories}
               selectedCategory={selectedCategory}
               onCategoryChange={(value) => {
                 setSelectedCategory(value);
                 updateDiscoverParams({ category: value });
               }}
+              availabilityFilter={availabilityFilter}
+              onAvailabilityChange={setAvailabilityFilter}
+              minimumDiscount={minimumDiscount}
+              onMinimumDiscountChange={setMinimumDiscount}
               sortBy={sortBy}
               onSortChange={setSortBy}
               priceRange={priceRange}
@@ -162,16 +183,21 @@ const ProductsPage: React.FC = () => {
 
             <div>
               <div className="product-grid">
-                {filteredProducts.map((product) => (
+                {paginatedProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
               {!filteredProducts.length && (
                 <div className="store-card empty-state">
                   <h3>No products matched your filters.</h3>
-                  <p>Try changing the search, category, or price range.</p>
+                  <p>Try changing the search, brand, category, price, discount, or availability filters.</p>
                 </div>
               )}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
             </div>
           </div>
         ) : (
@@ -196,12 +222,12 @@ const ProductsPage: React.FC = () => {
           <section className="shell promo-grid">
             <article className="store-card promo-card promo-card--dark">
               <span className="eyebrow">Promo</span>
-              <h3>Creator workstation week</h3>
+              <h3>Category-led product discovery</h3>
               <p>
-                Save on displays, docking stations, wireless audio, and accessory
-                bundles built for production desks.
+                Move through your five primary catalog groups with cleaner
+                category-first browsing and management.
               </p>
-              <Link to="/products?discover=1&category=Components">Explore bundles</Link>
+              <Link to="/products?discover=1&category=electrical-appliances">Explore category</Link>
             </article>
             <article className="store-card promo-card promo-card--light">
               <span className="eyebrow">Business sales</span>

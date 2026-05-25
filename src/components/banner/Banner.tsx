@@ -1,5 +1,5 @@
 import React from "react";
-import "./banner.css";
+import "../../styles/components/Banner.css";
 
 const Banner: React.FC = () => {
     return (

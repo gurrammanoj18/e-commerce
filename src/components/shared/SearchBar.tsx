@@ -1,4 +1,5 @@
 import React from "react";
+import "../../styles/shared/SearchBar.css";
 
 interface SearchBarProps {
   value: string;

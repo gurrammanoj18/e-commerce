@@ -1,14 +1,33 @@
 import api from "./api";
 import { CategorySummary, PagedResponse, Product, ProductApiShape } from "../types/store";
 
-export const transformProduct = (product: ProductApiShape): Product => ({
-  ...product,
-  specs: Object.entries(product.specifications || {}).map(([label, value]) => ({
+export const transformProduct = (product: ProductApiShape): Product => {
+  const stockQuantity = product.stockQuantity ?? product.stock ?? 0;
+  const specs = Object.entries(product.specifications || {}).map(([label, value]) => ({
     label,
     value: String(value),
-  })),
-  images: product.images || [],
-});
+  }));
+  const discountPercentage =
+    product.discountPercentage ??
+    (product.originalPrice > product.price
+      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+      : 0);
+  const lowStock = typeof product.lowStock === "boolean" ? product.lowStock : stockQuantity > 0 && stockQuantity <= 5;
+  const availability =
+    stockQuantity <= 0 ? "out-of-stock" : lowStock ? "low-stock" : "in-stock";
+
+  return {
+    ...product,
+    stockQuantity,
+    lowStock,
+    availability,
+    discountPercentage,
+    warrantyAvailable: product.warrantyAvailable,
+    replacementAvailable: product.replacementAvailable,
+    specs,
+    images: product.images || [],
+  };
+};
 
 export const getProducts = async (params?: {
   category?: string;
@@ -28,10 +47,15 @@ export const getProducts = async (params?: {
       product.name.toLowerCase().includes(query) ||
       product.brand.toLowerCase().includes(query) ||
       product.category.toLowerCase().includes(query) ||
+      product.subcategory.toLowerCase().includes(query) ||
       product.tags.some((tag) => tag.toLowerCase().includes(query));
 
     const matchesCategory =
-      !category || product.categorySlug.toLowerCase() === category || product.category.toLowerCase() === category;
+      !category ||
+      product.categorySlug.toLowerCase() === category ||
+      product.category.toLowerCase() === category ||
+      product.subcategorySlug.toLowerCase() === category ||
+      product.subcategory.toLowerCase() === category;
 
     return matchesSearch && matchesCategory;
   });
@@ -74,12 +98,17 @@ export const getBestSellerProducts = async (): Promise<Product[]> => {
 
 export const getCategories = async (): Promise<CategorySummary[]> => {
   const response = await api.get<any[]>("/categories");
-  return response.data.map((category) => ({
+  const mapCategory = (category: any): CategorySummary => ({
     id: category.id,
     name: category.name,
     slug: category.slug,
     count: category.productCount,
     description: category.description,
     icon: category.icon,
-  }));
+    parentId: category.parentId,
+    isLeaf: category.leaf,
+    subcategories: (category.subcategories || []).map(mapCategory),
+  });
+
+  return response.data.map(mapCategory);
 };

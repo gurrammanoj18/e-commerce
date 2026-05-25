@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import "./productGrid.css";
+import "../../styles/components/ProductGrid.css";
 
 // images
 import p1Image from "../../product-grid-assets/p4.webp";

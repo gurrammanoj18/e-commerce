@@ -1,0 +1,37 @@
+@import "../shared/PageChrome.css";
+@import "../shared/FormStyles.css";
+
+.checkout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+}
+
+.summary-card {
+  align-self: start;
+  display: grid;
+  gap: 16px;
+}
+
+.summary-card div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.summary-total {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.summary-total strong {
+  display: block;
+  font-size: 1.3rem;
+}
+
+@media (max-width: 1080px) {
+  .checkout-layout {
+    grid-template-columns: 1fr;
+  }
+}
