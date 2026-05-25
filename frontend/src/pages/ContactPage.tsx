@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import "../styles/pages/ContactPage.css";
 
 const ContactPage: React.FC = () => {
   const [sent, setSent] = useState(false);

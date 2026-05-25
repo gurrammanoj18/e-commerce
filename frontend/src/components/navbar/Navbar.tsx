@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import "./navbar.css";
+import "../../styles/components/LegacyNavbar.css";
 
 const Navbar: React.FC = () => {
   useEffect(() => {

@@ -1,4 +1,5 @@
 import React from "react";
+import "../styles/pages/CategoriesPage.css";
 import CategoryCard from "../components/product/CategoryCard";
 import LoadingState from "../components/shared/LoadingState";
 import { useProducts } from "../contexts/ProductContext";
@@ -10,10 +11,11 @@ const CategoriesPage: React.FC = () => {
     <section className="shell section page-section">
       <div className="page-header">
         <span className="eyebrow">Categories</span>
-        <h1>Shop by setup and use case</h1>
+        <h1>Shop by category and subcategory</h1>
         <p>
-          Jump into curated product groups for gaming, productivity, audio,
-          networking, and more.
+          Explore your core catalog groups for electrical appliances, hardware
+          products, cleaning products, home utility products, and tools and
+          accessories.
         </p>
       </div>
 

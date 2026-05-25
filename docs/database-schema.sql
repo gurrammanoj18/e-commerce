@@ -32,8 +32,22 @@ create table product (
     best_seller boolean not null,
     new_arrival boolean not null,
     bulk_eligible boolean not null,
+    warranty_available boolean not null,
+    replacement_available boolean not null,
     badge varchar(255) not null,
     hero_tag varchar(255) not null,
+    created_at timestamp not null
+);
+
+create table wishlist (
+    id bigserial primary key,
+    user_id bigint not null unique references users(id)
+);
+
+create table wishlist_item (
+    id bigserial primary key,
+    wishlist_id bigint not null references wishlist(id),
+    product_id bigint not null references product(id),
     created_at timestamp not null
 );
 

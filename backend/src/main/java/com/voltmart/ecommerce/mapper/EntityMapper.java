@@ -11,11 +11,14 @@ import com.voltmart.ecommerce.dto.order.OrderItemResponse;
 import com.voltmart.ecommerce.dto.order.OrderResponse;
 import com.voltmart.ecommerce.dto.product.ProductResponse;
 import com.voltmart.ecommerce.dto.user.UserResponse;
+import com.voltmart.ecommerce.dto.wishlist.WishlistItemResponse;
+import com.voltmart.ecommerce.dto.wishlist.WishlistResponse;
 import com.voltmart.ecommerce.entity.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -33,13 +36,28 @@ public class EntityMapper {
     }
 
     public ProductResponse toProductResponse(Product product, Inventory inventory) {
+        Category leafCategory = product.getCategory();
+        Category parentCategory = leafCategory.getParent() == null ? leafCategory : leafCategory.getParent();
+        int discountPercentage = product.getOriginalPrice() != null
+                && product.getOriginalPrice().compareTo(BigDecimal.ZERO) > 0
+                && product.getOriginalPrice().compareTo(product.getPrice()) > 0
+                ? product.getOriginalPrice()
+                    .subtract(product.getPrice())
+                    .multiply(BigDecimal.valueOf(100))
+                    .divide(product.getOriginalPrice(), 0, RoundingMode.HALF_UP)
+                    .intValue()
+                : 0;
+
         return new ProductResponse(
                 product.getId(),
                 product.getSlug(),
                 product.getName(),
                 product.getBrand(),
-                product.getCategory().getName(),
-                product.getCategory().getSlug(),
+                parentCategory.getName(),
+                parentCategory.getSlug(),
+                leafCategory.getName(),
+                leafCategory.getSlug(),
+                leafCategory.getId(),
                 product.getPrice(),
                 product.getOriginalPrice(),
                 product.getShortDescription(),
@@ -49,6 +67,9 @@ public class EntityMapper {
                 product.getReviewCount(),
                 inventory.getStockQuantity(),
                 inventory.getStockQuantity() <= inventory.getLowStockThreshold(),
+                discountPercentage,
+                product.getWarrantyAvailable(),
+                product.getReplacementAvailable(),
                 product.getFeatured(),
                 product.getBestSeller(),
                 product.getNewArrival(),
@@ -60,8 +81,22 @@ public class EntityMapper {
         );
     }
 
-    public CategoryResponse toCategoryResponse(Category category, long productCount) {
-        return new CategoryResponse(category.getId(), category.getName(), category.getSlug(), category.getDescription(), category.getIcon(), productCount);
+    public CategoryResponse toCategoryResponse(
+            Category category,
+            long productCount,
+            List<CategoryResponse> subcategories
+    ) {
+        return new CategoryResponse(
+                category.getId(),
+                category.getName(),
+                category.getSlug(),
+                category.getDescription(),
+                category.getIcon(),
+                category.getParent() == null ? null : category.getParent().getId(),
+                category.getChildren().isEmpty(),
+                productCount,
+                subcategories
+        );
     }
 
     public CartResponse toCartResponse(Cart cart) {
@@ -84,6 +119,21 @@ public class EntityMapper {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return new CartResponse(cart.getId(), items, items.stream().mapToInt(CartItemResponse::quantity).sum(), subtotal);
+    }
+
+    public WishlistResponse toWishlistResponse(Wishlist wishlist, Map<Long, Inventory> inventoryByProductId) {
+        List<WishlistItemResponse> items = wishlist.getItems().stream()
+                .map(item -> new WishlistItemResponse(item.getId(), item.getProduct().getId(), item.getCreatedAt()))
+                .toList();
+        List<ProductResponse> products = wishlist.getItems().stream()
+                .map(WishlistItem::getProduct)
+                .map(product -> toProductResponse(
+                        product,
+                        inventoryByProductId.get(product.getId())
+                ))
+                .toList();
+
+        return new WishlistResponse(wishlist.getId(), items, products, items.size());
     }
 
     public OrderResponse toOrderResponse(Order order) {

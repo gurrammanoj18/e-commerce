@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import "../styles/pages/AdminLoginPage.css";
 import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
 

@@ -7,7 +7,18 @@ import com.voltmart.ecommerce.dto.product.ProductResponse;
 import java.util.List;
 
 public interface ProductService {
-    PagedResponse<ProductResponse> getProducts(String category, String search, String sort, int page, int size);
+    PagedResponse<ProductResponse> getProducts(
+            String category,
+            String search,
+            String brand,
+            java.math.BigDecimal minPrice,
+            java.math.BigDecimal maxPrice,
+            Integer minDiscount,
+            String availability,
+            String sort,
+            int page,
+            int size
+    );
     List<ProductResponse> getAllProducts();
     ProductResponse getProductBySlug(String slug);
     List<ProductResponse> getFeaturedProducts();

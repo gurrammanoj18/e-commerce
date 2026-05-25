@@ -7,11 +7,13 @@ import com.voltmart.ecommerce.dto.auth.SignupRequest;
 import com.voltmart.ecommerce.dto.common.ApiResponse;
 import com.voltmart.ecommerce.entity.Cart;
 import com.voltmart.ecommerce.entity.User;
+import com.voltmart.ecommerce.entity.Wishlist;
 import com.voltmart.ecommerce.entity.enums.Role;
 import com.voltmart.ecommerce.exception.BadRequestException;
 import com.voltmart.ecommerce.mapper.EntityMapper;
 import com.voltmart.ecommerce.repository.CartRepository;
 import com.voltmart.ecommerce.repository.UserRepository;
+import com.voltmart.ecommerce.repository.WishlistRepository;
 import com.voltmart.ecommerce.security.JwtService;
 import com.voltmart.ecommerce.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
+    private final WishlistRepository wishlistRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EntityMapper entityMapper;
@@ -49,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
                 .build());
 
         cartRepository.save(Cart.builder().user(user).build());
+        wishlistRepository.save(Wishlist.builder().user(user).build());
         String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
         return new AuthResponse(token, entityMapper.toUserResponse(user));
     }

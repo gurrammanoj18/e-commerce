@@ -6,6 +6,9 @@ public record CategoryResponse(
         String slug,
         String description,
         String icon,
-        long productCount
+        Long parentId,
+        boolean leaf,
+        long productCount,
+        java.util.List<CategoryResponse> subcategories
 ) {
 }

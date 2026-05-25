@@ -6,86 +6,156 @@ import com.voltmart.ecommerce.mapper.EntityMapper;
 import com.voltmart.ecommerce.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 @Component
+@Order(10)
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
+    private static final List<String> LEGACY_CATEGORY_SLUGS = List.of(
+            "laptops",
+            "audio",
+            "networking",
+            "components"
+    );
 
+    private final CartItemRepository cartItemRepository;
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final WishlistItemRepository wishlistItemRepository;
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
+    private final WishlistRepository wishlistRepository;
     private final PasswordEncoder passwordEncoder;
     private final EntityMapper entityMapper;
 
     @Override
     public void run(String... args) {
         seedUsers();
-        if (categoryRepository.count() > 0 || productRepository.count() > 0) {
+        removeLegacyCatalog();
+        Map<String, Category> categories = seedCategories();
+        if (productRepository.count() > 0) {
             return;
         }
 
-        Category laptops = categoryRepository.save(Category.builder().name("Laptops").slug("laptops").description("Portable productivity hardware").icon("💻").build());
-        Category audio = categoryRepository.save(Category.builder().name("Audio").slug("audio").description("Headphones and speakers").icon("🎧").build());
-        Category networking = categoryRepository.save(Category.builder().name("Networking").slug("networking").description("Wi-Fi and office connectivity").icon("📡").build());
-        Category components = categoryRepository.save(Category.builder().name("Components").slug("components").description("Displays and upgrade parts").icon("🧩").build());
+        seedProduct("home-ease-mixer", "Home Ease Mixer", "HomeEase", categories.get("electrical-appliances"), "Kitchen essential", "Popular",
+                List.of("/catalog/atlas-book.webp", "/catalog/pulse-laptop.webp", "/catalog/dock-station.webp"),
+                Map.of("Power", "750W", "Jars", "3 stainless steel", "Warranty", "2 years"),
+                BigDecimal.valueOf(4299), BigDecimal.valueOf(4999), 25, true, false, true, true);
 
-        seedProduct("atlas-pro-14", "Atlas Pro 14 Laptop", "VoltForge", laptops, "Workstation ready", "Featured",
-                List.of("/catalog/atlas-book.webp", "/catalog/pulse-laptop.webp", "/catalog/lumen-monitor.webp"),
-                Map.of("Processor", "Intel Core Ultra 7", "Memory", "16GB DDR5", "Storage", "1TB SSD"),
-                BigDecimal.valueOf(94999), BigDecimal.valueOf(102999), 18, true, true, true, true);
+        seedProduct("utility-storage-rack", "Utility Storage Rack", "HouseLine", categories.get("home-utility-products"), "Home organization", "New",
+                List.of("/catalog/dock-station.webp", "/catalog/atlas-book.webp", "/catalog/lumen-monitor.webp"),
+                Map.of("Material", "Powder-coated steel", "Shelves", "5", "Load Capacity", "120kg"),
+                BigDecimal.valueOf(3499), BigDecimal.valueOf(3999), 18, true, false, true, true);
 
-        seedProduct("sonicpulse-x9-headphones", "SonicPulse X9 Headphones", "SonicPulse", audio, "Immersive audio", "Best seller",
-                List.of("/catalog/sonic-headset.webp", "/catalog/forge-speaker.webp", "/catalog/dock-station.webp"),
-                Map.of("Battery", "35 hours", "Driver", "40mm", "Connectivity", "BT 5.3"),
-                BigDecimal.valueOf(18999), BigDecimal.valueOf(22999), 34, true, true, false, false);
+        seedProduct("pro-grip-tool-kit", "Pro Grip Tool Kit", "ForgeMax", categories.get("tools-accessories"), "Workshop-ready", "Top rated",
+                List.of("/catalog/vector-keyboard.webp", "/catalog/quantum-gpu.webp", "/catalog/dock-station.webp"),
+                Map.of("Pieces", "46", "Case", "Impact-resistant", "Use", "Home and workshop"),
+                BigDecimal.valueOf(2799), BigDecimal.valueOf(3299), 38, false, true, false, true);
 
-        seedProduct("nova-mesh-6-router", "Nova Mesh 6 Router", "NetSphere", networking, "Reliable connectivity", "Popular",
-                List.of("/catalog/nova-router.webp", "/catalog/mesh-router.webp", "/catalog/orbit-camera.webp"),
-                Map.of("Wi-Fi", "AX3000", "Coverage", "2,500 sq.ft", "Security", "WPA3"),
-                BigDecimal.valueOf(12999), BigDecimal.valueOf(14999), 28, true, false, true, true);
+        seedProduct("steel-fix-fastener-set", "Steel Fix Fastener Set", "Hardline", categories.get("hardware-products"), "Durable hardware", "Featured",
+                List.of("/catalog/quantum-gpu.webp", "/catalog/vector-keyboard.webp", "/catalog/dock-station.webp"),
+                Map.of("Material", "Stainless steel", "Pack Size", "120 pieces", "Finish", "Rust resistant"),
+                BigDecimal.valueOf(699), BigDecimal.valueOf(849), 140, false, true, false, true);
 
-        seedProduct("lumenview-27-monitor", "LumenView 27 Monitor", "PixelCraft", components, "Desk upgrade", "New",
-                List.of("/catalog/lumen-monitor.webp", "/catalog/dock-station.webp", "/catalog/atlas-book.webp"),
-                Map.of("Resolution", "2560x1440", "Refresh rate", "100Hz", "Panel", "IPS"),
-                BigDecimal.valueOf(24999), BigDecimal.valueOf(28999), 16, true, false, true, true);
+        seedProduct("fresh-wipe-floor-cleaner", "Fresh Wipe Floor Cleaner", "PureNest", categories.get("cleaning-products"), "Daily cleaning", "Value pick",
+                List.of("/catalog/orbit-camera.webp", "/catalog/forge-speaker.webp", "/catalog/dock-station.webp"),
+                Map.of("Volume", "2L", "Surface", "Tiles and marble", "Fragrance", "Citrus"),
+                BigDecimal.valueOf(349), BigDecimal.valueOf(399), 96, false, true, true, true);
+
+        seedProduct("flowguard-bath-fitting", "FlowGuard Bath Fitting", "AquaLine", categories.get("home-utility-products"), "Bathroom upgrade", "Featured",
+                List.of("/catalog/mesh-router.webp", "/catalog/orbit-camera.webp", "/catalog/dock-station.webp"),
+                Map.of("Finish", "Chrome", "Mount", "Wall mount", "Warranty", "5 years"),
+                BigDecimal.valueOf(2199), BigDecimal.valueOf(2599), 22, true, false, true, true);
+    }
+
+    private Map<String, Category> seedCategories() {
+        Map<String, Category> categories = new LinkedHashMap<>();
+
+        categories.put("electrical-appliances", upsertCategory("Electrical Appliances", "electrical-appliances", "Mixer, grinder, and everyday powered home products.", "🔌", null));
+        categories.put("hardware-products", upsertCategory("Hardware Products", "hardware-products", "Locks, fasteners, brackets, and durable hardware essentials.", "🔩", null));
+        categories.put("cleaning-products", upsertCategory("Cleaning Products", "cleaning-products", "Cleaning, maintenance, and care essentials.", "🧼", null));
+        categories.put("home-utility-products", upsertCategory("Home Utility Products", "home-utility-products", "Household utility and organization products.", "🏠", null));
+        categories.put("tools-accessories", upsertCategory("Tools & Accessories", "tools-accessories", "Hand tools, kits, and repair accessories.", "🛠️", null));
+
+        return categories;
+    }
+
+    private void removeLegacyCatalog() {
+        List<Product> legacyProducts = productRepository.findByCategorySlugIn(LEGACY_CATEGORY_SLUGS);
+        if (!legacyProducts.isEmpty()) {
+            List<Long> productIds = legacyProducts.stream()
+                    .map(Product::getId)
+                    .toList();
+            cartItemRepository.deleteByProductIdIn(productIds);
+            orderItemRepository.deleteByProductIdIn(productIds);
+            wishlistItemRepository.deleteByProductIdIn(productIds);
+            inventoryRepository.deleteByProductIdIn(productIds);
+            productRepository.deleteAll(legacyProducts);
+        }
+
+        List<Category> legacyCategories = categoryRepository.findBySlugIn(LEGACY_CATEGORY_SLUGS);
+        if (!legacyCategories.isEmpty()) {
+            categoryRepository.deleteAll(legacyCategories);
+        }
+    }
+
+    private Category upsertCategory(String name, String slug, String description, String icon, Category parent) {
+        Category category = categoryRepository.findBySlug(slug)
+                .orElseGet(() -> Category.builder().slug(slug).build());
+        category.setName(name);
+        category.setSlug(slug);
+        category.setDescription(description);
+        category.setIcon(icon);
+        category.setParent(parent);
+        return categoryRepository.save(category);
     }
 
     private void seedUsers() {
-        if (userRepository.existsByEmail("admin@voltmart.in")) {
-            return;
-        }
+        User admin = userRepository.findByEmail("admin@voltmart.in")
+                .orElseGet(() -> userRepository.save(User.builder()
+                        .fullName("VoltMart Admin")
+                        .email("admin@voltmart.in")
+                        .password(passwordEncoder.encode("Admin@123"))
+                        .role(Role.ROLE_ADMIN)
+                        .createdAt(LocalDateTime.now())
+                        .build()));
+        User customer = userRepository.findByEmail("customer@voltmart.in")
+                .orElseGet(() -> userRepository.save(User.builder()
+                        .fullName("Demo Customer")
+                        .email("customer@voltmart.in")
+                        .password(passwordEncoder.encode("Customer@123"))
+                        .role(Role.ROLE_CUSTOMER)
+                        .createdAt(LocalDateTime.now())
+                        .build()));
 
-        User admin = userRepository.save(User.builder()
-                .fullName("VoltMart Admin")
-                .email("admin@voltmart.in")
-                .password(passwordEncoder.encode("Admin@123"))
-                .role(Role.ROLE_ADMIN)
-                .createdAt(LocalDateTime.now())
-                .build());
-        User customer = userRepository.save(User.builder()
-                .fullName("Demo Customer")
-                .email("customer@voltmart.in")
-                .password(passwordEncoder.encode("Customer@123"))
-                .role(Role.ROLE_CUSTOMER)
-                .createdAt(LocalDateTime.now())
-                .build());
-
-        cartRepository.save(Cart.builder().user(admin).build());
-        cartRepository.save(Cart.builder().user(customer).build());
+        cartRepository.findByUserId(admin.getId())
+                .orElseGet(() -> cartRepository.save(Cart.builder().user(admin).build()));
+        cartRepository.findByUserId(customer.getId())
+                .orElseGet(() -> cartRepository.save(Cart.builder().user(customer).build()));
+        wishlistRepository.findByUserId(admin.getId())
+                .orElseGet(() -> wishlistRepository.save(Wishlist.builder().user(admin).build()));
+        wishlistRepository.findByUserId(customer.getId())
+                .orElseGet(() -> wishlistRepository.save(Wishlist.builder().user(customer).build()));
     }
 
     private void seedProduct(String slug, String name, String brand, Category category, String heroTag, String badge,
                              List<String> images, Map<String, String> specifications, BigDecimal price, BigDecimal originalPrice,
                              int stockQuantity, boolean featured, boolean bestSeller, boolean newArrival, boolean bulkEligible) {
+        if (category == null) {
+            throw new IllegalStateException("Seed category missing for product " + slug);
+        }
+
         Product product = productRepository.save(Product.builder()
                 .slug(slug)
                 .name(name)
@@ -102,6 +172,8 @@ public class DataSeeder implements CommandLineRunner {
                 .bestSeller(bestSeller)
                 .newArrival(newArrival)
                 .bulkEligible(bulkEligible)
+                .warrantyAvailable(specifications.keySet().stream().anyMatch(key -> key.equalsIgnoreCase("Warranty")))
+                .replacementAvailable(true)
                 .badge(badge)
                 .heroTag(heroTag)
                 .imageUrls(images)

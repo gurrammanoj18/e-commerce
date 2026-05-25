@@ -7,6 +7,7 @@ import com.voltmart.ecommerce.entity.Cart;
 import com.voltmart.ecommerce.entity.CartItem;
 import com.voltmart.ecommerce.exception.BadRequestException;
 import com.voltmart.ecommerce.exception.ResourceNotFoundException;
+import com.voltmart.ecommerce.repository.CartItemRepository;
 import com.voltmart.ecommerce.repository.CartRepository;
 import com.voltmart.ecommerce.repository.InventoryRepository;
 import com.voltmart.ecommerce.repository.ProductRepository;
@@ -17,12 +18,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
 
+    private final CartItemRepository cartItemRepository;
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository;
@@ -68,6 +69,9 @@ public class CartServiceImpl implements CartService {
                 .filter(cartItem -> cartItem.getId().equals(itemId))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Cart item not found"));
+        if (request.quantity() <= 0) {
+            return removeItem(itemId);
+        }
         item.setQuantity(request.quantity());
         return toResponse(cartRepository.save(cart));
     }
@@ -76,10 +80,16 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public CartResponse removeItem(Long itemId) {
         Cart cart = currentUserCart();
-        cart.setItems(new ArrayList<>(cart.getItems().stream()
-                .filter(item -> !item.getId().equals(itemId))
-                .toList()));
-        return toResponse(cartRepository.save(cart));
+        CartItem item = cart.getItems().stream()
+                .filter(cartItem -> cartItem.getId().equals(itemId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found"));
+
+        cart.getItems().remove(item);
+        cartItemRepository.delete(item);
+        cartRepository.flush();
+
+        return toResponse(cart);
     }
 
     @Override

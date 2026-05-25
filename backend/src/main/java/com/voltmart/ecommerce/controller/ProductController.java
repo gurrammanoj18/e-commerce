@@ -6,6 +6,7 @@ import com.voltmart.ecommerce.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -19,11 +20,27 @@ public class ProductController {
     public PagedResponse<ProductResponse> getProducts(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Integer minDiscount,
+            @RequestParam(required = false) String availability,
             @RequestParam(defaultValue = "featured") String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "8") int size
     ) {
-        return productService.getProducts(category, search, sort, page, size);
+        return productService.getProducts(
+                category,
+                search,
+                brand,
+                minPrice,
+                maxPrice,
+                minDiscount,
+                availability,
+                sort,
+                page,
+                size
+        );
     }
 
     @GetMapping("/catalog")

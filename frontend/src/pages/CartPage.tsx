@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import "../styles/pages/CartPage.css";
 import QuantitySelector from "../components/product/QuantitySelector";
 import { useCart } from "../contexts/CartContext";
 import { formatCurrency } from "../utils/currency";

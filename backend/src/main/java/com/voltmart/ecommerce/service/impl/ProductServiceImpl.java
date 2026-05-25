@@ -7,9 +7,12 @@ import com.voltmart.ecommerce.entity.Inventory;
 import com.voltmart.ecommerce.entity.Product;
 import com.voltmart.ecommerce.exception.ResourceNotFoundException;
 import com.voltmart.ecommerce.mapper.EntityMapper;
+import com.voltmart.ecommerce.repository.CartItemRepository;
 import com.voltmart.ecommerce.repository.CategoryRepository;
 import com.voltmart.ecommerce.repository.InventoryRepository;
+import com.voltmart.ecommerce.repository.OrderItemRepository;
 import com.voltmart.ecommerce.repository.ProductRepository;
+import com.voltmart.ecommerce.repository.WishlistItemRepository;
 import com.voltmart.ecommerce.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -18,7 +21,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -28,16 +33,40 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository;
     private final CategoryRepository categoryRepository;
+    private final CartItemRepository cartItemRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final WishlistItemRepository wishlistItemRepository;
     private final EntityMapper entityMapper;
 
     @Override
-    public PagedResponse<ProductResponse> getProducts(String category, String search, String sort, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, resolveSort(sort));
-        var productPage = productRepository.search(emptyToNull(category), emptyToNull(search), pageable);
-        var content = productPage.getContent().stream()
+    public PagedResponse<ProductResponse> getProducts(
+            String category,
+            String search,
+            String brand,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Integer minDiscount,
+            String availability,
+            String sort,
+            int page,
+            int size
+    ) {
+        var filteredProducts = productRepository.findAll().stream()
                 .map(product -> entityMapper.toProductResponse(product, inventoryFor(product.getId())))
+                .filter(product -> matchesCategory(product, category))
+                .filter(product -> matchesSearch(product, search))
+                .filter(product -> matchesBrand(product, brand))
+                .filter(product -> matchesPrice(product, minPrice, maxPrice))
+                .filter(product -> matchesDiscount(product, minDiscount))
+                .filter(product -> matchesAvailability(product, availability))
+                .sorted(resolveComparator(sort))
                 .toList();
-        return new PagedResponse<>(content, page, size, productPage.getTotalElements(), productPage.getTotalPages());
+
+        int fromIndex = Math.min(page * size, filteredProducts.size());
+        int toIndex = Math.min(fromIndex + size, filteredProducts.size());
+        var content = filteredProducts.subList(fromIndex, toIndex);
+        int totalPages = size <= 0 ? 1 : Math.max(1, (int) Math.ceil((double) filteredProducts.size() / size));
+        return new PagedResponse<>(content, page, size, filteredProducts.size(), totalPages);
     }
 
     @Override
@@ -106,8 +135,13 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void deleteProduct(Long id) {
-        productRepository.delete(productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found")));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+        cartItemRepository.deleteByProductIdIn(List.of(id));
+        orderItemRepository.deleteByProductIdIn(List.of(id));
+        wishlistItemRepository.deleteByProductIdIn(List.of(id));
+        inventoryRepository.deleteByProductIdIn(List.of(id));
+        productRepository.delete(product);
     }
 
     private Product buildProduct(Product product, ProductRequest request) {
@@ -127,6 +161,8 @@ public class ProductServiceImpl implements ProductService {
         product.setBestSeller(request.bestSeller());
         product.setNewArrival(request.newArrival());
         product.setBulkEligible(request.bulkEligible());
+        product.setWarrantyAvailable(request.warrantyAvailable());
+        product.setReplacementAvailable(request.replacementAvailable());
         product.setBadge(request.badge());
         product.setHeroTag(request.heroTag());
         product.setImageUrls(request.images() == null ? List.of() : request.images());
@@ -152,10 +188,98 @@ public class ProductServiceImpl implements ProductService {
         if ("newest".equalsIgnoreCase(sort)) {
             return Sort.by("createdAt").descending();
         }
+        if ("discount-high".equalsIgnoreCase(sort)) {
+            return Sort.by(Sort.Order.desc("originalPrice"), Sort.Order.asc("price"));
+        }
+        if ("name-asc".equalsIgnoreCase(sort)) {
+            return Sort.by("name").ascending();
+        }
+        if ("name-desc".equalsIgnoreCase(sort)) {
+            return Sort.by("name").descending();
+        }
         return Sort.by(Sort.Order.desc("featured"), Sort.Order.desc("createdAt"));
+    }
+
+    private Comparator<ProductResponse> resolveComparator(String sort) {
+        if ("price-low".equalsIgnoreCase(sort)) {
+            return Comparator.comparing(ProductResponse::price);
+        }
+        if ("price-high".equalsIgnoreCase(sort)) {
+            return Comparator.comparing(ProductResponse::price).reversed();
+        }
+        if ("rating".equalsIgnoreCase(sort)) {
+            return Comparator.comparing(ProductResponse::rating).reversed();
+        }
+        if ("newest".equalsIgnoreCase(sort)) {
+            return Comparator.comparing(ProductResponse::newArrival).reversed()
+                    .thenComparing(ProductResponse::featured, Comparator.reverseOrder());
+        }
+        if ("discount-high".equalsIgnoreCase(sort)) {
+            return Comparator.comparing(ProductResponse::discountPercentage).reversed();
+        }
+        if ("name-asc".equalsIgnoreCase(sort)) {
+            return Comparator.comparing(ProductResponse::name, String.CASE_INSENSITIVE_ORDER);
+        }
+        if ("name-desc".equalsIgnoreCase(sort)) {
+            return Comparator.comparing(ProductResponse::name, String.CASE_INSENSITIVE_ORDER).reversed();
+        }
+        return Comparator.comparing(ProductResponse::featured).reversed()
+                .thenComparing(ProductResponse::newArrival, Comparator.reverseOrder());
     }
 
     private String emptyToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    private boolean matchesCategory(ProductResponse product, String category) {
+        String normalizedCategory = emptyToNull(category);
+        if (normalizedCategory == null) {
+            return true;
+        }
+        return product.categorySlug().equalsIgnoreCase(normalizedCategory)
+                || product.subcategorySlug().equalsIgnoreCase(normalizedCategory)
+                || product.category().equalsIgnoreCase(normalizedCategory)
+                || product.subcategory().equalsIgnoreCase(normalizedCategory);
+    }
+
+    private boolean matchesSearch(ProductResponse product, String search) {
+        String normalizedSearch = emptyToNull(search);
+        if (normalizedSearch == null) {
+            return true;
+        }
+        String query = normalizedSearch.toLowerCase();
+        return product.name().toLowerCase().contains(query)
+                || product.brand().toLowerCase().contains(query)
+                || product.category().toLowerCase().contains(query)
+                || product.subcategory().toLowerCase().contains(query)
+                || product.tags().stream().anyMatch(tag -> tag.toLowerCase().contains(query));
+    }
+
+    private boolean matchesBrand(ProductResponse product, String brand) {
+        String normalizedBrand = emptyToNull(brand);
+        return normalizedBrand == null || product.brand().equalsIgnoreCase(normalizedBrand);
+    }
+
+    private boolean matchesPrice(ProductResponse product, BigDecimal minPrice, BigDecimal maxPrice) {
+        boolean aboveMin = minPrice == null || product.price().compareTo(minPrice) >= 0;
+        boolean belowMax = maxPrice == null || product.price().compareTo(maxPrice) <= 0;
+        return aboveMin && belowMax;
+    }
+
+    private boolean matchesDiscount(ProductResponse product, Integer minDiscount) {
+        return minDiscount == null || product.discountPercentage() >= minDiscount;
+    }
+
+    private boolean matchesAvailability(ProductResponse product, String availability) {
+        String normalizedAvailability = emptyToNull(availability);
+        if (normalizedAvailability == null || "all".equalsIgnoreCase(normalizedAvailability)) {
+            return true;
+        }
+        return switch (normalizedAvailability.toLowerCase()) {
+            case "in-stock" -> product.stockQuantity() > 0 && !product.lowStock();
+            case "low-stock" -> product.stockQuantity() > 0 && product.lowStock();
+            case "out-of-stock" -> product.stockQuantity() <= 0;
+            default -> true;
+        };
     }
 }

@@ -1,0 +1,14 @@
+@import "../shared/PageChrome.css";
+@import "../shared/FormStyles.css";
+
+.bulk-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+}
+
+@media (max-width: 1080px) {
+  .bulk-layout {
+    grid-template-columns: 1fr;
+  }
+}

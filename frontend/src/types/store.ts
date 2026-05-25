@@ -10,12 +10,16 @@ export interface ProductApiShape {
   brand: string;
   category: string;
   categorySlug: string;
+  subcategory: string;
+  subcategorySlug: string;
+  subcategoryId: number;
   price: number;
   originalPrice: number;
   rating: number;
   reviewCount: number;
-  stockQuantity: number;
-  lowStock: boolean;
+  stockQuantity?: number;
+  stock?: number;
+  lowStock?: boolean;
   badge: string;
   shortDescription: string;
   description: string;
@@ -26,8 +30,13 @@ export interface ProductApiShape {
   bestSeller: boolean;
   bulkEligible: boolean;
   newArrival: boolean;
+  discountPercentage?: number;
+  warrantyAvailable: boolean;
+  replacementAvailable: boolean;
   specifications?: Record<string, string>;
 }
+
+export type ProductAvailability = "in-stock" | "low-stock" | "out-of-stock";
 
 export interface Product {
   id: number;
@@ -36,12 +45,17 @@ export interface Product {
   brand: string;
   category: string;
   categorySlug: string;
+  subcategory: string;
+  subcategorySlug: string;
+  subcategoryId: number;
   price: number;
   originalPrice: number;
+  discountPercentage: number;
   rating: number;
   reviewCount: number;
   stockQuantity: number;
   lowStock: boolean;
+  availability: ProductAvailability;
   badge: string;
   shortDescription: string;
   description: string;
@@ -53,6 +67,8 @@ export interface Product {
   bestSeller: boolean;
   bulkEligible: boolean;
   newArrival: boolean;
+  warrantyAvailable: boolean;
+  replacementAvailable: boolean;
 }
 
 export interface CartItem {
@@ -73,7 +89,16 @@ export type ProductSort =
   | "price-low"
   | "price-high"
   | "rating"
-  | "newest";
+  | "newest"
+  | "discount-high"
+  | "name-asc"
+  | "name-desc";
+
+export type ProductAvailabilityFilter =
+  | "all"
+  | "in-stock"
+  | "low-stock"
+  | "out-of-stock";
 
 export interface CategorySummary {
   id?: number;
@@ -82,6 +107,9 @@ export interface CategorySummary {
   count: number;
   description: string;
   icon: string;
+  parentId?: number | null;
+  isLeaf?: boolean;
+  subcategories?: CategorySummary[];
 }
 
 export interface AuthResponse {
@@ -106,6 +134,19 @@ export interface CartApiResponse {
   items: CartApiItem[];
   itemCount: number;
   subtotal: number;
+}
+
+export interface WishlistApiItem {
+  id: number;
+  productId: number;
+  addedAt: string;
+}
+
+export interface WishlistApiResponse {
+  id: number;
+  items: WishlistApiItem[];
+  products: ProductApiShape[];
+  itemCount: number;
 }
 
 export interface PagedResponse<T> {
@@ -184,6 +225,8 @@ export interface AdminProductPayload {
   bestSeller: boolean;
   newArrival: boolean;
   bulkEligible: boolean;
+  warrantyAvailable: boolean;
+  replacementAvailable: boolean;
   badge: string;
   heroTag: string;
   images: string[];

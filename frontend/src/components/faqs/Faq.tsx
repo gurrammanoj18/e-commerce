@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./faq.css";
+import "../../styles/components/Faq.css";
 
 const FAQ: React.FC = () => {
   const faqs = [

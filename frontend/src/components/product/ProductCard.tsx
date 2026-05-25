@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import "../../styles/product/ProductCard.css";
 import { useCart } from "../../contexts/CartContext";
+import { useWishlist } from "../../contexts/WishlistContext";
 import { Product } from "../../types/store";
 import { formatCurrency } from "../../utils/currency";
 
@@ -10,6 +12,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [hoverDirection, setHoverDirection] = useState<"left" | "right" | null>(
     null
   );
@@ -38,6 +41,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
     setHoverDirection(null);
   };
+
+  const stockLabel =
+    product.availability === "out-of-stock"
+      ? "Out of stock"
+      : product.availability === "low-stock"
+      ? `Low stock · ${product.stockQuantity} left`
+      : `In stock · ${product.stockQuantity} available`;
+  const savedToWishlist = isInWishlist(product.id);
 
   return (
     <article className="store-card product-card">
@@ -79,6 +90,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <span />
           <span />
         </div>
+        <span className="product-card__discount-badge">
+          {product.discountPercentage}% OFF
+        </span>
         <span className="badge">{product.badge}</span>
       </Link>
 
@@ -95,6 +109,25 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </Link>
         <p className="product-card__copy">{product.shortDescription}</p>
 
+        <div className="product-card__pricing">
+          <div>
+            <strong>{formatCurrency(product.price)}</strong>
+            <span>{formatCurrency(product.originalPrice)}</span>
+          </div>
+        </div>
+
+        <div className="product-card__highlights">
+          <span className={`product-pill product-pill--${product.availability}`}>
+            {stockLabel}
+          </span>
+          <span className="product-pill">
+            Warranty: {product.warrantyAvailable ? "Available" : "Not listed"}
+          </span>
+          <span className="product-pill">
+            Replacement: {product.replacementAvailable ? "Available" : "Unavailable"}
+          </span>
+        </div>
+
         <div className="product-card__specs">
           {product.specs.slice(0, 3).map((spec) => (
             <div key={spec.label}>
@@ -105,12 +138,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
 
         <div className="product-card__footer">
-          <div>
-            <strong>{formatCurrency(product.price)}</strong>
-            <span>{formatCurrency(product.originalPrice)}</span>
-          </div>
-          <button type="button" onClick={() => addToCart(product)}>
-            Add to cart
+          <button
+            type="button"
+            disabled={product.availability === "out-of-stock"}
+            onClick={() => void addToCart(product)}
+          >
+            {product.availability === "out-of-stock" ? "Unavailable" : "Add to cart"}
+          </button>
+          <button
+            className="product-card__share"
+            type="button"
+            onClick={() => void toggleWishlist(product)}
+          >
+            {savedToWishlist ? "In wishlist" : "Add to wishlist"}
           </button>
         </div>
       </div>

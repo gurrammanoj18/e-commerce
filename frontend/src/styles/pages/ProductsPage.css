@@ -1,0 +1,136 @@
+@import "../shared/HeroBanner.css";
+@import "../shared/PageChrome.css";
+
+.listing-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.listing-layout > div:last-child {
+  display: grid;
+  gap: 24px;
+  align-self: start;
+}
+
+.listing-layout .product-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.listing-layout .product-card__media {
+  height: 190px;
+  padding: 16px 16px 10px;
+}
+
+.listing-layout .product-card__content {
+  padding: 14px;
+  gap: 8px;
+}
+
+.listing-layout .product-card__title {
+  font-size: 1rem;
+}
+
+.listing-layout .product-card__copy,
+.listing-layout .product-card__meta,
+.listing-layout .product-pill,
+.listing-layout .product-card__specs strong,
+.listing-layout .product-card__specs span {
+  font-size: 0.68rem;
+}
+
+.listing-layout .product-card__pricing strong {
+  font-size: 1rem;
+}
+
+.listing-layout .product-card__discount-badge {
+  width: 46px;
+  height: 46px;
+  font-size: 0.62rem;
+}
+
+.listing-layout .product-card__image {
+  width: 76%;
+  height: 76%;
+}
+
+.listing-layout .badge,
+.listing-layout .product-card__wishlist-toggle {
+  font-size: 0.68rem;
+}
+
+.listing-layout .badge {
+  top: 14px;
+  right: 14px;
+}
+
+.listing-layout .product-card__wishlist-toggle {
+  right: 14px;
+  bottom: 12px;
+}
+
+.listing-layout .product-card__footer button {
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 0.72rem;
+}
+
+.promo-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 22px;
+  padding: 20px 0 8px;
+}
+
+.promo-card {
+  padding: 30px;
+}
+
+.promo-card--dark {
+  background: var(--dark);
+  color: #fff;
+}
+
+.promo-card--dark p {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.promo-card h3 {
+  margin: 14px 0;
+  font-size: 2rem;
+}
+
+.promo-card a {
+  font-weight: 700;
+}
+
+.promo-card--light {
+  background: linear-gradient(135deg, var(--accent-soft), #fff7f2);
+}
+
+@media (max-width: 1080px) {
+  .listing-layout,
+  .promo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .listing-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .listing-layout .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .promo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .listing-layout .product-grid {
+    grid-template-columns: 1fr;
+  }
+}

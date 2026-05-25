@@ -1,0 +1,97 @@
+.hero-banner {
+  min-height: calc(100vh - 132px);
+  margin: 0 16px;
+  border-radius: 0 0 28px 28px;
+  background: url("../../assets/shop-banner.webp") center/cover no-repeat;
+  overflow: hidden;
+}
+
+.hero-banner__overlay {
+  min-height: inherit;
+  background: linear-gradient(90deg, rgba(14, 14, 14, 0.82), rgba(14, 14, 14, 0.45));
+}
+
+.hero-banner__content {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr;
+  align-items: end;
+  gap: 40px;
+  min-height: inherit;
+  padding-bottom: 72px;
+}
+
+.hero-copy {
+  color: #fff;
+}
+
+.hero-copy h1 {
+  max-width: 10ch;
+  margin: 14px 0 18px;
+  font-size: clamp(3rem, 6vw, 5.2rem);
+  line-height: 0.95;
+}
+
+.hero-copy p {
+  max-width: 560px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.hero-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.hero-panel__card {
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.hero-panel__card span,
+.hero-panel__card p {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.hero-panel__card strong {
+  display: block;
+  margin: 10px 0;
+  font-size: 1.4rem;
+}
+
+.hero-panel__card--compact strong {
+  font-size: 1.15rem;
+}
+
+@media (max-width: 1080px) {
+  .hero-banner__content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .hero-banner {
+    min-height: auto;
+  }
+
+  .hero-banner__content {
+    grid-template-columns: 1fr;
+    padding: 72px 0 48px;
+  }
+}
+
+@media (max-width: 560px) {
+  .hero-copy h1 {
+    font-size: 2.3rem;
+  }
+}

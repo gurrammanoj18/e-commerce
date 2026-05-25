@@ -24,6 +24,8 @@ public record ProductRequest(
         @NotNull Boolean bestSeller,
         @NotNull Boolean newArrival,
         @NotNull Boolean bulkEligible,
+        @NotNull Boolean warrantyAvailable,
+        @NotNull Boolean replacementAvailable,
         @NotBlank String badge,
         @NotBlank String heroTag,
         List<String> images,

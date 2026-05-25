@@ -66,6 +66,12 @@ public class Product {
     private Boolean bulkEligible;
 
     @Column(nullable = false)
+    private Boolean warrantyAvailable;
+
+    @Column(nullable = false)
+    private Boolean replacementAvailable;
+
+    @Column(nullable = false)
     private String badge;
 
     @Column(nullable = false)
@@ -73,7 +79,7 @@ public class Product {
 
     @ElementCollection
     @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
-    @Column(name = "image_url")
+    @Column(name = "image_url", columnDefinition = "TEXT")
     @Builder.Default
     private List<String> imageUrls = new ArrayList<>();
 
