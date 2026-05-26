@@ -16,12 +16,14 @@ import CartPage from "./pages/CartPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import ContactPage from "./pages/ContactPage";
+import CouponsPage from "./pages/CouponsPage";
+import HelpCenterPage from "./pages/HelpCenterPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import OrdersPage from "./pages/OrdersPage";
 import ProductDetailsPage from "./pages/ProductDetailsPage";
 import ProductsPage from "./pages/ProductsPage";
-import SignupPage from "./pages/SignupPage";
 import WishlistPage from "./pages/WishlistPage";
 
 const App: React.FC = () => {
@@ -33,7 +35,6 @@ const App: React.FC = () => {
             <BrowserRouter>
               <Routes>
                 <Route path="login" element={<LoginPage />} />
-                <Route path="signup" element={<SignupPage />} />
                 <Route
                   element={
                     <ProtectedRoute>
@@ -48,6 +49,9 @@ const App: React.FC = () => {
                   <Route path="wishlist" element={<WishlistPage />} />
                   <Route path="cart" element={<CartPage />} />
                   <Route path="checkout" element={<CheckoutPage />} />
+                  <Route path="orders" element={<OrdersPage />} />
+                  <Route path="coupons" element={<CouponsPage />} />
+                  <Route path="help-center" element={<HelpCenterPage />} />
                   <Route path="bulk-order" element={<BulkOrderPage />} />
                   <Route path="contact" element={<ContactPage />} />
                   <Route path="*" element={<NotFoundPage />} />

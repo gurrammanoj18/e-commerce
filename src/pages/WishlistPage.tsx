@@ -48,27 +48,29 @@ const WishlistPage: React.FC = () => {
             <article className="store-card cart-item" key={item.product.id}>
               <img src={item.product.images[0]} alt={item.product.name} />
               <div className="cart-item__content">
-                <div>
+                <div className="cart-item__details">
                   <span>{item.product.brand}</span>
                   <h3>{item.product.name}</h3>
                   <p>{item.product.shortDescription}</p>
                 </div>
                 <div className="cart-item__meta">
-                  <strong>{formatCurrency(item.product.price)}</strong>
-                  <button
-                    className="button"
-                    type="button"
-                    onClick={() => void handleMoveToCart(item.product.id)}
-                  >
-                    Add to cart
-                  </button>
-                  <button
-                    className="link-button"
-                    type="button"
-                    onClick={() => void removeFromWishlist(item.product.id)}
-                  >
-                    Remove
-                  </button>
+                  <strong className="cart-item__price">{formatCurrency(item.product.price)}</strong>
+                  <div className="cart-item__actions">
+                    <button
+                      className="button"
+                      type="button"
+                      onClick={() => void handleMoveToCart(item.product.id)}
+                    >
+                      Add to cart
+                    </button>
+                    <button
+                      className="link-button"
+                      type="button"
+                      onClick={() => void removeFromWishlist(item.product.id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
               </div>
             </article>

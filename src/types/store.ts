@@ -80,7 +80,8 @@ export interface CartItem {
 export interface AuthUser {
   id: number;
   fullName: string;
-  email: string;
+  email?: string | null;
+  phoneNumber?: string | null;
   role: string;
 }
 
@@ -115,6 +116,12 @@ export interface CategorySummary {
 export interface AuthResponse {
   token: string;
   user: AuthUser;
+}
+
+export interface OtpChallengeResponse {
+  message: string;
+  email: string;
+  expiresAt: string;
 }
 
 export interface CartApiItem {
@@ -160,6 +167,7 @@ export interface PagedResponse<T> {
 export interface OrderItem {
   productName: string;
   productSlug: string;
+  image: string;
   quantity: number;
   unitPrice: number;
 }
@@ -204,7 +212,8 @@ export interface InventoryItem {
 export interface AdminUser {
   id: number;
   fullName: string;
-  email: string;
+  email?: string | null;
+  phoneNumber?: string | null;
   role: string;
   createdAt: string;
 }

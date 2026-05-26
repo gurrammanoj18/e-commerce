@@ -22,6 +22,9 @@ const ContactPage: React.FC = () => {
       <div className="contact-layout">
         <form className="store-card form-card" onSubmit={handleSubmit}>
           <h2>Contact form</h2>
+          <p className="contact-form__intro">
+            Send your question and our support team will get back to you shortly.
+          </p>
           <div className="form-grid">
             <label>
               Name
@@ -45,9 +48,20 @@ const ContactPage: React.FC = () => {
         <aside className="contact-stack">
           <div className="store-card support-card">
             <h2>Support hours</h2>
-            <p>Mon-Sat · 9:00 AM to 8:00 PM</p>
-            <p>support@voltmart.in</p>
-            <p>+91 98765 43210</p>
+            <div className="contact-info-list">
+              <div className="contact-info-item">
+                <span>Available</span>
+                <strong>Mon-Sat · 9:00 AM to 8:00 PM</strong>
+              </div>
+              <div className="contact-info-item">
+                <span>Email</span>
+                <strong>support@voltmart.in</strong>
+              </div>
+              <div className="contact-info-item">
+                <span>Phone</span>
+                <strong>+91 98765 43210</strong>
+              </div>
+            </div>
           </div>
           <a
             className="store-card whatsapp-card"

@@ -70,21 +70,35 @@
 
 @media (max-width: 820px) {
   .category-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px 10px;
   }
 
   .category-card {
-    max-width: 420px;
-    margin: 0 auto;
+    max-width: none;
+    margin: 0;
   }
 }
 
 @media (max-width: 560px) {
   .category-card {
-    border-radius: 28px;
+    border-radius: 18px;
+  }
+
+  .category-card__icon {
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    font-size: 0.85rem;
+  }
+
+  .category-card__content {
+    min-height: 44px;
+    padding: 8px 10px;
   }
 
   .category-card__content h3 {
-    font-size: 1.35rem;
+    font-size: 0.82rem;
   }
 }

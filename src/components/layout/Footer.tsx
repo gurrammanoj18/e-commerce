@@ -1,13 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import "../../styles/layout/Footer.css";
+import voltmartLogo from "../../assets/voltmart-logo.png";
 
 const Footer: React.FC = () => {
   return (
     <footer className="site-footer">
       <div className="shell footer-grid">
         <div>
-          <h3>VoltMart</h3>
+          <img className="footer-logo" src={voltmartLogo} alt="VoltMart" />
           <p>
             Reliable hardware, business electronics, and high-performance gear
             curated for builders, teams, and enthusiasts.

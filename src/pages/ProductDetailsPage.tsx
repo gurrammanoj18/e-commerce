@@ -59,12 +59,18 @@ const ProductDetailsPage: React.FC = () => {
         <ProductGallery images={product.images} alt={product.name} />
 
         <div className="store-card details-panel">
-          <span className="eyebrow">{product.heroTag}</span>
+       
           <h1>{product.name}</h1>
           <div className="details-rating">
             <span>⭐ {product.rating}</span>
             <span>{product.reviewCount} verified reviews</span>
-            <span>{product.stockQuantity} units ready to ship</span>
+            <span>
+              {product.availability === "out-of-stock"
+                ? "Out of stock"
+                : product.availability === "low-stock"
+                ? "Low stock"
+                : "In stock"}
+            </span>
           </div>
           <p>{product.description}</p>
 
@@ -81,6 +87,17 @@ const ProductDetailsPage: React.FC = () => {
             <button type="button" onClick={() => void toggleWishlist(product)}>
               {isInWishlist(product.id) ? "Remove from wishlist" : "Save to wishlist"}
             </button>
+          </div>
+
+          <div className="details-support">
+            <div>
+              <span>Warranty</span>
+              <strong>{product.warrantyAvailable ? "Available" : "Not listed"}</strong>
+            </div>
+            <div>
+              <span>Replacement</span>
+              <strong>{product.replacementAvailable ? "Available" : "Unavailable"}</strong>
+            </div>
           </div>
 
           <div className="spec-list">
