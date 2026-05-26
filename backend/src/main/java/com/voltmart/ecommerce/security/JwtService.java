@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 @Service
@@ -22,8 +23,12 @@ public class JwtService {
     private final long expiration;
 
     public JwtService(AppProperties properties) {
+        String secret = Objects.requireNonNull(
+                properties.getJwt().getSecret(),
+                "Missing JWT secret. Configure app.jwt.secret or APP_JWT_SECRET."
+        );
         this.secretKey = Keys.hmacShaKeyFor(
-                properties.getJwt().getSecret().getBytes(StandardCharsets.UTF_8)
+                secret.getBytes(StandardCharsets.UTF_8)
         );
         this.expiration = properties.getJwt().getExpiration();
     }

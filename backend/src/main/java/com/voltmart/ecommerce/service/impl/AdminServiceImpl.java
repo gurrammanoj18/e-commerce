@@ -38,7 +38,14 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public List<AdminUserResponse> getUsers() {
         return userRepository.findAll().stream()
-                .map(user -> new AdminUserResponse(user.getId(), user.getFullName(), user.getEmail(), user.getRole().name(), user.getCreatedAt()))
+                .map(user -> new AdminUserResponse(
+                        user.getId(),
+                        user.getFullName(),
+                        user.getEmail(),
+                        user.getPhoneNumber(),
+                        user.getRole().name(),
+                        user.getCreatedAt()
+                ))
                 .toList();
     }
 

@@ -79,7 +79,7 @@ public class Product {
 
     @ElementCollection
     @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
-    @Column(name = "image_url", columnDefinition = "TEXT")
+    @Column(name = "image_url", length = 2048)
     @Builder.Default
     private List<String> imageUrls = new ArrayList<>();
 

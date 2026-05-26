@@ -1,9 +1,19 @@
 create table users (
     id bigserial primary key,
     full_name varchar(255) not null,
-    email varchar(255) not null unique,
-    password varchar(255) not null,
+    email varchar(255) unique,
+    phone_number varchar(20) unique,
+    password varchar(255),
     role varchar(50) not null,
+    created_at timestamp not null
+);
+
+create table login_otp (
+    id bigserial primary key,
+    phone_number varchar(20) not null,
+    otp_code varchar(6) not null,
+    expires_at timestamp not null,
+    consumed_at timestamp,
     created_at timestamp not null
 );
 
@@ -51,20 +61,18 @@ create table wishlist_item (
     created_at timestamp not null
 );
 
-create table inventory (ll unique references users(id)
-);
-
-id bigserial primary key,
+create table inventory (
+    id bigserial primary key,
     product_id bigint not null unique references product(id),
     stock_quantity integer not null,
     low_stock_threshold integer not null,
     updated_at timestamp not null
 );
 
-
 create table cart (
-                      id bigserial primary key,
-                      user_id bigint not nu
+    id bigserial primary key,
+    user_id bigint not null unique references users(id)
+);
 create table cart_item (
     id bigserial primary key,
     cart_id bigint not null references cart(id),

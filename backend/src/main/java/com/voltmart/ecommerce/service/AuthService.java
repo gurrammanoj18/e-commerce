@@ -2,12 +2,14 @@ package com.voltmart.ecommerce.service;
 
 import com.voltmart.ecommerce.dto.auth.AuthRequest;
 import com.voltmart.ecommerce.dto.auth.AuthResponse;
-import com.voltmart.ecommerce.dto.auth.ForgotPasswordRequest;
-import com.voltmart.ecommerce.dto.auth.SignupRequest;
-import com.voltmart.ecommerce.dto.common.ApiResponse;
+import com.voltmart.ecommerce.dto.auth.GoogleAuthRequest;
+import com.voltmart.ecommerce.dto.auth.OtpChallengeResponse;
+import com.voltmart.ecommerce.dto.auth.OtpRequest;
+import com.voltmart.ecommerce.dto.auth.OtpVerifyRequest;
 
 public interface AuthService {
-    AuthResponse signup(SignupRequest request);
-    AuthResponse login(AuthRequest request);
-    ApiResponse forgotPassword(ForgotPasswordRequest request);
+    AuthResponse adminLogin(AuthRequest request);
+    AuthResponse googleLogin(GoogleAuthRequest request);
+    OtpChallengeResponse requestOtp(OtpRequest request);
+    AuthResponse verifyOtp(OtpVerifyRequest request);
 }

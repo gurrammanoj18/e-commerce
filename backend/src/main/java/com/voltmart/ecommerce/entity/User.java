@@ -27,10 +27,12 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String fullName;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(unique = true)
+    private String phoneNumber;
+
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -47,6 +49,6 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email;
+        return email != null && !email.isBlank() ? email : phoneNumber;
     }
 }

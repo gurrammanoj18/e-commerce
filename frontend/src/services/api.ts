@@ -4,6 +4,7 @@ declare global {
   interface Window {
     __APP_CONFIG__?: {
       REACT_APP_API_BASE_URL?: string;
+      REACT_APP_GOOGLE_CLIENT_ID?: string;
     };
   }
 }

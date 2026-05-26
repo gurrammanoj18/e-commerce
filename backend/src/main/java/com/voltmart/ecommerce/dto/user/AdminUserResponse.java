@@ -6,6 +6,7 @@ public record AdminUserResponse(
         Long id,
         String fullName,
         String email,
+        String phoneNumber,
         String role,
         LocalDateTime createdAt
 ) {

@@ -1,6 +1,17 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { login as loginRequest, signup as signupRequest } from "../services/authService";
-import { AuthUser } from "../types/store";
+import { AxiosError } from "axios";
+import {
+  adminLogin as adminLoginRequest,
+  googleLogin as googleLoginRequest,
+  requestOtp as requestOtpRequest,
+  verifyOtp as verifyOtpRequest,
+} from "../services/authService";
+import { AuthUser, OtpChallengeResponse } from "../types/store";
+
+interface AuthActionResult<T = void> {
+  data?: T;
+  error?: string;
+}
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -8,8 +19,10 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isAdmin: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string) => Promise<boolean>;
+  requestOtp: (email: string) => Promise<AuthActionResult<OtpChallengeResponse>>;
+  verifyOtp: (email: string, otpCode: string) => Promise<AuthActionResult>;
+  googleLogin: (credential: string) => Promise<AuthActionResult>;
+  adminLogin: (email: string, password: string) => Promise<AuthActionResult>;
   logout: () => void;
 }
 
@@ -17,6 +30,27 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = "voltmart-auth-user";
 const TOKEN_STORAGE_KEY = "voltmart-token";
+
+const extractErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof AxiosError) {
+    const responseMessage = error.response?.data?.message;
+    if (typeof responseMessage === "string" && responseMessage.trim()) {
+      return responseMessage;
+    }
+
+    const fieldErrors = error.response?.data?.errors;
+    if (fieldErrors && typeof fieldErrors === "object") {
+      const firstFieldMessage = Object.values(fieldErrors).find(
+        (value) => typeof value === "string" && value.trim(),
+      );
+      if (typeof firstFieldMessage === "string") {
+        return firstFieldMessage;
+      }
+    }
+  }
+
+  return fallback;
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -49,27 +83,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     window.localStorage.removeItem(TOKEN_STORAGE_KEY);
   };
 
-  const login = async (email: string, password: string) => {
+  const requestOtp = async (email: string) => {
     try {
-      const response = await loginRequest({ email, password });
-      persistAuth(response.user, response.token);
-      return true;
-    } catch {
-      return false;
+      return { data: await requestOtpRequest({ email }) };
+    } catch (error) {
+      return {
+        error: extractErrorMessage(error, "Unable to send OTP right now."),
+      };
     }
   };
 
-  const signup = async (name: string, email: string, password: string) => {
+  const verifyOtp = async (email: string, otpCode: string) => {
     try {
-      const response = await signupRequest({
-        fullName: name,
-        email,
-        password,
-      });
+      const response = await verifyOtpRequest({ email, otpCode });
       persistAuth(response.user, response.token);
-      return true;
-    } catch {
-      return false;
+      return {};
+    } catch (error) {
+      return {
+        error: extractErrorMessage(error, "Unable to verify OTP right now."),
+      };
+    }
+  };
+
+  const googleLogin = async (credential: string) => {
+    try {
+      const response = await googleLoginRequest({ credential });
+      persistAuth(response.user, response.token);
+      return {};
+    } catch (error) {
+      return {
+        error: extractErrorMessage(error, "Unable to log in with Google right now."),
+      };
+    }
+  };
+
+  const adminLogin = async (email: string, password: string) => {
+    try {
+      const response = await adminLoginRequest({ email, password });
+      persistAuth(response.user, response.token);
+      return {};
+    } catch (error) {
+      return {
+        error: extractErrorMessage(error, "Unable to log in right now."),
+      };
     }
   };
 
@@ -85,8 +141,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAuthenticated: Boolean(user && token),
         isAdmin: user?.role === "ROLE_ADMIN",
         loading,
-        login,
-        signup,
+        requestOtp,
+        verifyOtp,
+        googleLogin,
+        adminLogin,
         logout,
       }}
     >

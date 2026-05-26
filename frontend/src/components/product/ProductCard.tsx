@@ -46,8 +46,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     product.availability === "out-of-stock"
       ? "Out of stock"
       : product.availability === "low-stock"
-      ? `Low stock · ${product.stockQuantity} left`
-      : `In stock · ${product.stockQuantity} available`;
+      ? "Low stock"
+      : "In stock";
+  const mobileDeliveryLabel =
+    product.availability === "out-of-stock"
+      ? "Currently unavailable"
+      : product.availability === "low-stock"
+      ? "Delivery soon, limited stock"
+      : "Delivery available";
   const savedToWishlist = isInWishlist(product.id);
 
   return (
@@ -93,7 +99,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <span className="product-card__discount-badge">
           {product.discountPercentage}% OFF
         </span>
-        <span className="badge">{product.badge}</span>
       </Link>
 
       <div className="product-card__content">
@@ -113,18 +118,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div>
             <strong>{formatCurrency(product.price)}</strong>
             <span>{formatCurrency(product.originalPrice)}</span>
+            <em>{product.discountPercentage}% OFF</em>
           </div>
+        </div>
+
+        <div className="product-card__delivery">
+          <span aria-hidden="true">🚚</span>
+          <span>{mobileDeliveryLabel}</span>
         </div>
 
         <div className="product-card__highlights">
           <span className={`product-pill product-pill--${product.availability}`}>
             {stockLabel}
-          </span>
-          <span className="product-pill">
-            Warranty: {product.warrantyAvailable ? "Available" : "Not listed"}
-          </span>
-          <span className="product-pill">
-            Replacement: {product.replacementAvailable ? "Available" : "Unavailable"}
           </span>
         </div>
 

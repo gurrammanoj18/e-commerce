@@ -1,0 +1,77 @@
+@import "../shared/PageChrome.css";
+
+.orders-list {
+  display: grid;
+  gap: 18px;
+}
+
+.order-card {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.order-card__header,
+.order-card__meta,
+.order-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.order-card__header span,
+.order-card__meta span,
+.order-card__copy {
+  color: var(--muted);
+}
+
+.order-card__header h2 {
+  margin: 4px 0 0;
+}
+
+.order-card__items {
+  display: grid;
+  gap: 12px;
+}
+
+.order-card__item {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--surface-alt);
+}
+
+.order-card__item img {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.order-card__item-content {
+  display: grid;
+  gap: 6px;
+}
+
+.order-card__item-price,
+.order-card__item-status {
+  color: var(--muted);
+}
+
+.order-card__item-rating {
+  color: #f59e0b;
+  letter-spacing: 0.12em;
+  font-size: 1rem;
+}
+
+@media (max-width: 640px) {
+  .order-card__item {
+    grid-template-columns: 1fr;
+  }
+}

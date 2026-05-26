@@ -1,51 +1,174 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import "../styles/pages/LoginPage.css";
 import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
 
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential: string }) => void;
+          }) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: Record<string, string>,
+          ) => void;
+        };
+      };
+    };
+  }
+}
+
 const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const location = useLocation();
+  const { isAuthenticated, requestOtp, verifyOtp, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState("");
+  const googleClientId =
+    window.__APP_CONFIG__?.REACT_APP_GOOGLE_CLIENT_ID ||
+    process.env.REACT_APP_GOOGLE_CLIENT_ID;
+  const redirectTo =
+    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/";
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [isAuthenticated, navigate, redirectTo]);
+
+  useEffect(() => {
+    if (!googleClientId) {
+      return;
+    }
+
+    const existingScript = document.querySelector(
+      'script[src="https://accounts.google.com/gsi/client"]',
+    ) as HTMLScriptElement | null;
+
+    const renderGoogleButton = () => {
+      const container = document.getElementById("google-signin-button");
+      if (!container || !window.google) {
+        return;
+      }
+
+      container.innerHTML = "";
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: async ({ credential }) => {
+          const result = await googleLogin(credential);
+          if (result.error) {
+            setError(result.error);
+            return;
+          }
+
+          toast.success("Logged in with Google");
+        },
+      });
+      window.google.accounts.id.renderButton(container, {
+        theme: "outline",
+        size: "large",
+        shape: "pill",
+        text: "continue_with",
+        width: "320",
+      });
+    };
+
+    if (existingScript) {
+      if (window.google) {
+        renderGoogleButton();
+      } else {
+        existingScript.addEventListener("load", renderGoogleButton, { once: true });
+      }
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = renderGoogleButton;
+    document.body.appendChild(script);
+
+    return () => {
+      script.onload = null;
+    };
+  }, [googleClientId, googleLogin, navigate]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!(await login(email, password))) {
-      setError("Enter a valid email and a password with at least 6 characters.");
+    setError("");
+
+    if (!otpSent) {
+      if (!email.trim()) {
+        setError("Enter your email address to receive an OTP.");
+        return;
+      }
+      const result = await requestOtp(email);
+      if (result.error || !result.data) {
+        setError(result.error || "Unable to send OTP right now.");
+        return;
+      }
+
+      setEmail(result.data.email);
+      setOtpSent(true);
+      toast.success(result.data.message);
       return;
     }
+
+    const result = await verifyOtp(email, otpCode);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
     toast.success("Logged in successfully");
-    navigate("/", { replace: true });
   };
 
   return (
     <section className="shell section page-section auth-page">
       <form className="store-card auth-card" onSubmit={handleSubmit}>
         <span className="eyebrow">Login</span>
-        <h1>Welcome back</h1>
-        <p>Access saved carts, checkout faster, and track future orders.</p>
+        <h1>Email OTP login</h1>
+        <p>Use your email to access saved carts, checkout faster, and track orders.</p>
         <label>
           Email
-          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-        </label>
-        <label>
-          Password
           <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={otpSent}
+            placeholder="you@example.com"
           />
         </label>
+        {otpSent ? (
+          <label>
+            OTP
+            <input
+              inputMode="numeric"
+              maxLength={6}
+              value={otpCode}
+              onChange={(event) => setOtpCode(event.target.value)}
+            />
+          </label>
+        ) : null}
         {error ? <p className="form-error">{error}</p> : null}
         <button className="button" type="submit">
-          Login
+          {otpSent ? "Verify OTP" : "Send OTP"}
         </button>
-        <p>
-          New here? <Link to="/signup">Create an account</Link>
-        </p>
+        {otpSent ? <p>Check your email inbox for the OTP code.</p> : null}
+        {googleClientId ? (
+          <>
+            <p style={{ textAlign: "center", margin: "0.75rem 0" }}>or</p>
+            <div id="google-signin-button" />
+          </>
+        ) : null}
       </form>
     </section>
   );

@@ -4,6 +4,15 @@
   color: #fff;
 }
 
+.footer-logo {
+  display: block;
+  width: min(260px, 100%);
+  height: auto;
+  margin-bottom: 16px;
+  border: 0;
+  box-shadow: none;
+}
+
 .footer-grid {
   display: grid;
   grid-template-columns: 1.3fr 0.8fr 0.8fr 0.9fr;

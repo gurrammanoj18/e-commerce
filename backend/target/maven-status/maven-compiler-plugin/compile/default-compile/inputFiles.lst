@@ -12,8 +12,10 @@ C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecomme
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\controller\WishlistController.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\auth\AuthRequest.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\auth\AuthResponse.java
-C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\auth\ForgotPasswordRequest.java
-C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\auth\SignupRequest.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\auth\GoogleAuthRequest.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\auth\OtpChallengeResponse.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\auth\OtpRequest.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\auth\OtpVerifyRequest.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\bulk\BulkOrderRequest.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\cart\CartItemRequest.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\cart\CartItemResponse.java
@@ -40,6 +42,7 @@ C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecomme
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\enums\OrderStatus.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\enums\Role.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\Inventory.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\LoginOtp.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\Order.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\OrderItem.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\Product.java
@@ -55,6 +58,7 @@ C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecomme
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\repository\CartRepository.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\repository\CategoryRepository.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\repository\InventoryRepository.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\repository\LoginOtpRepository.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\repository\OrderItemRepository.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\repository\OrderRepository.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\repository\ProductRepository.java

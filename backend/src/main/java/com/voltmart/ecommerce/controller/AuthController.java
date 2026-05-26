@@ -2,13 +2,13 @@ package com.voltmart.ecommerce.controller;
 
 import com.voltmart.ecommerce.dto.auth.AuthRequest;
 import com.voltmart.ecommerce.dto.auth.AuthResponse;
-import com.voltmart.ecommerce.dto.auth.ForgotPasswordRequest;
-import com.voltmart.ecommerce.dto.auth.SignupRequest;
-import com.voltmart.ecommerce.dto.common.ApiResponse;
+import com.voltmart.ecommerce.dto.auth.GoogleAuthRequest;
+import com.voltmart.ecommerce.dto.auth.OtpChallengeResponse;
+import com.voltmart.ecommerce.dto.auth.OtpRequest;
+import com.voltmart.ecommerce.dto.auth.OtpVerifyRequest;
 import com.voltmart.ecommerce.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,19 +18,23 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping("/signup")
-    @ResponseStatus(HttpStatus.CREATED)
-    public AuthResponse signup(@Valid @RequestBody SignupRequest request) {
-        return authService.signup(request);
+    @PostMapping("/admin/login")
+    public AuthResponse adminLogin(@Valid @RequestBody AuthRequest request) {
+        return authService.adminLogin(request);
     }
 
-    @PostMapping("/login")
-    public AuthResponse login(@Valid @RequestBody AuthRequest request) {
-        return authService.login(request);
+    @PostMapping("/google")
+    public AuthResponse googleLogin(@Valid @RequestBody GoogleAuthRequest request) {
+        return authService.googleLogin(request);
     }
 
-    @PostMapping("/forgot-password")
-    public ApiResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        return authService.forgotPassword(request);
+    @PostMapping("/otp/request")
+    public OtpChallengeResponse requestOtp(@Valid @RequestBody OtpRequest request) {
+        return authService.requestOtp(request);
+    }
+
+    @PostMapping("/otp/verify")
+    public AuthResponse verifyOtp(@Valid @RequestBody OtpVerifyRequest request) {
+        return authService.verifyOtp(request);
     }
 }

@@ -13,6 +13,7 @@ public class AppProperties {
 
     private final Jwt jwt = new Jwt();
     private final Cors cors = new Cors();
+    private final Google google = new Google();
     private final Whatsapp whatsapp = new Whatsapp();
     private final Email email = new Email();
 
@@ -27,6 +28,12 @@ public class AppProperties {
     @Setter
     public static class Cors {
         private List<String> allowedOrigins = List.of("http://localhost:3000");
+    }
+
+    @Getter
+    @Setter
+    public static class Google {
+        private String clientId;
     }
 
     @Getter

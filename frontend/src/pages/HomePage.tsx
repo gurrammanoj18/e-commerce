@@ -5,24 +5,10 @@ import ProductCard from "../components/product/ProductCard";
 import LoadingState from "../components/shared/LoadingState";
 import { useProducts } from "../contexts/ProductContext";
 import { Product } from "../types/store";
-
-const walletRewards = [
-  {
-    title: "Wallet cashback",
-    value: "5% back",
-    copy: "Earn wallet rewards on prepaid orders and use them on your next upgrade.",
-  },
-  {
-    title: "Referral bonus",
-    value: "Rs. 500",
-    copy: "Invite teammates and unlock bonus balance after their first delivered order.",
-  },
-  {
-    title: "Loyalty tier",
-    value: "Double points",
-    copy: "Featured launches and festival campaigns unlock higher wallet multipliers.",
-  },
-];
+import banner from "../assets/banners/banner.png";
+import banner1 from "../assets/banners/banner1.png";
+import banner2 from "../assets/banners/banner2.png";
+import banner4 from "../assets/banners/banner4.png";
 
 const getItemsPerPage = () => {
   if (window.innerWidth <= 820) {
@@ -44,10 +30,92 @@ const chunkProducts = (products: Product[], size: number) => {
   return pages;
 };
 
+const homepageBanners = [
+  {
+    image: banner,
+    alt: "VoltMart banner featuring everyday hardware, home utility, and accessories",
+  },
+  {
+    image: banner1,
+    alt: "VoltMart savings banner with big deals across product categories",
+  },
+  {
+    image: banner2,
+    alt: "VoltMart category banner showing hardware, home utility, and accessories",
+  },
+  {
+    image: banner4,
+    alt: "VoltMart offers banner highlighting savings and fast delivery",
+  },
+];
+
+const BannerCarousel: React.FC = () => {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setActiveIndex((currentIndex) => (currentIndex + 1) % homepageBanners.length);
+    }, 4500);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  return (
+    <section className="banner-carousel" aria-label="Homepage banners">
+      <div className="banner-carousel__viewport">
+        <div
+          className="banner-carousel__track"
+          style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+        >
+          {homepageBanners.map((slide) => (
+            <div className="banner-carousel__slide" key={slide.image}>
+              <img src={slide.image} alt={slide.alt} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="banner-carousel__arrow banner-carousel__arrow--prev"
+        onClick={() =>
+          setActiveIndex((currentIndex) =>
+            currentIndex === 0 ? homepageBanners.length - 1 : currentIndex - 1
+          )
+        }
+        aria-label="Show previous banner"
+      >
+        ←
+      </button>
+      <button
+        type="button"
+        className="banner-carousel__arrow banner-carousel__arrow--next"
+        onClick={() =>
+          setActiveIndex((currentIndex) => (currentIndex + 1) % homepageBanners.length)
+        }
+        aria-label="Show next banner"
+      >
+        →
+      </button>
+
+      <div className="banner-carousel__dots" aria-label="Banner slide selector">
+        {homepageBanners.map((slide, index) => (
+          <button
+            key={slide.image}
+            type="button"
+            className={index === activeIndex ? "is-active" : ""}
+            onClick={() => setActiveIndex(index)}
+            aria-label={`Show banner ${index + 1}`}
+          />
+        ))}
+      </div>
+    </section>
+  );
+};
+
 interface ProductCarouselSectionProps {
   title: string;
   eyebrow: string;
-  description: string;
   products: Product[];
   loading: boolean;
 }
@@ -55,7 +123,6 @@ interface ProductCarouselSectionProps {
 const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
   title,
   eyebrow,
-  description,
   products,
   loading,
 }) => {
@@ -88,7 +155,6 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
         <div>
           <span className="eyebrow">{eyebrow}</span>
           <h2>{title}</h2>
-          <p>{description}</p>
         </div>
         {!loading && productPages.length > 1 ? (
           <div className="carousel-controls" aria-label={`${title} controls`}>
@@ -166,39 +232,7 @@ const HomePage: React.FC = () => {
 
   return (
     <>
-      <section className="hero-banner hero-banner--homepage">
-        <div className="hero-banner__overlay">
-          <div className="shell hero-banner__content hero-banner__content--homepage">
-            <div className="hero-copy">
-              <span className="eyebrow">Modern shopping homepage</span>
-              <h1>Browse, filter, and slide through products without leaving the page.</h1>
-              <p>
-                Let shoppers use the navbar search and pincode selector, browse
-                categories, and move through curated product rows with quick arrow
-                controls from the homepage.
-              </p>
-            </div>
-
-            <div className="hero-panel hero-panel--homepage">
-              <div className="store-card hero-panel__card">
-                <span>Trending now</span>
-                <strong>Swipe-style product discovery</strong>
-                <p>Move through popular products from the homepage with a single click.</p>
-              </div>
-              <div className="store-card hero-panel__card">
-                <span>Fresh arrivals</span>
-                <strong>Recently added items stay visible</strong>
-                <p>New products rotate inline instead of sending shoppers to another screen.</p>
-              </div>
-              <div className="store-card hero-panel__card hero-panel__card--compact">
-                <span>Featured reach</span>
-                <strong>{featuredProducts.length}+ featured SKUs</strong>
-                <p>Keep best sellers, new arrivals, and spotlight items in one landing flow.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <BannerCarousel />
 
       <section className="shell section">
         <div className="section-heading">
@@ -217,7 +251,6 @@ const HomePage: React.FC = () => {
       <ProductCarouselSection
         eyebrow="Trending products"
         title="High-interest picks shoppers are engaging with now"
-        description="Use the arrow controls to slide through more trending products."
         products={trendingProducts}
         loading={loading}
       />
@@ -225,33 +258,13 @@ const HomePage: React.FC = () => {
       <ProductCarouselSection
         eyebrow="Recently added products"
         title="Fresh arrivals ready for discovery"
-        description="New products slide in place so shoppers can keep browsing without a page jump."
         products={recentlyAddedProducts}
         loading={loading}
       />
 
-      <section className="shell wallet-rewards store-card section">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">Wallet rewards</span>
-            <h2>Reward repeat shoppers and campaign participation</h2>
-          </div>
-        </div>
-        <div className="wallet-rewards__grid">
-          {walletRewards.map((reward) => (
-            <article key={reward.title} className="wallet-reward-card">
-              <span>{reward.title}</span>
-              <strong>{reward.value}</strong>
-              <p>{reward.copy}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
       <ProductCarouselSection
         eyebrow="Best-selling products"
         title="Proven performers that convert consistently"
-        description="Move right to reveal more top sellers from the same row."
         products={bestSellerProducts}
         loading={loading}
       />
@@ -259,7 +272,6 @@ const HomePage: React.FC = () => {
       <ProductCarouselSection
         eyebrow="Featured products"
         title="Homepage spotlight products"
-        description="Featured items slide in as you browse, keeping the homepage focused."
         products={featuredProducts}
         loading={loading}
       />

@@ -40,7 +40,7 @@ const CartPage: React.FC = () => {
             <article className="store-card cart-item" key={item.product.id}>
               <img src={item.product.images[0]} alt={item.product.name} />
               <div className="cart-item__content">
-                <div>
+                <div className="cart-item__details">
                   <span>{item.product.brand}</span>
                   <h3>{item.product.name}</h3>
                   <p>{item.product.shortDescription}</p>
@@ -50,14 +50,18 @@ const CartPage: React.FC = () => {
                     value={item.quantity}
                     onChange={(value) => void updateQuantity(item.product.id, value)}
                   />
-                  <strong>{formatCurrency(item.product.price * item.quantity)}</strong>
-                  <button
-                    className="link-button"
-                    type="button"
-                    onClick={() => void removeFromCart(item.product.id)}
-                  >
-                    Remove
-                  </button>
+                  <strong className="cart-item__price">
+                    {formatCurrency(item.product.price * item.quantity)}
+                  </strong>
+                  <div className="cart-item__actions">
+                    <button
+                      className="link-button"
+                      type="button"
+                      onClick={() => void removeFromCart(item.product.id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
               </div>
             </article>

@@ -1,49 +1,97 @@
-@import "../shared/HeroBanner.css";
 @import "../shared/PageChrome.css";
 
-.hero-banner--homepage {
-  background:
-    radial-gradient(circle at top right, rgba(255, 125, 59, 0.4), transparent 30%),
-    url("../../assets/shop-banner.webp") center/cover no-repeat;
+.banner-carousel {
+  position: relative;
+  margin: 0 16px 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
 }
 
-.hero-banner__content--homepage {
-  align-items: center;
-  padding: 56px 0 64px;
+.banner-carousel__viewport {
+  overflow: hidden;
+}
+
+.banner-carousel__track {
+  display: flex;
+  transition: transform 0.45s ease;
+  will-change: transform;
+}
+
+.banner-carousel__slide {
+  flex: 0 0 100%;
+}
+
+.banner-carousel__slide img {
+  display: block;
+  width: 100%;
+  height: 45vh;
+  min-height: 220px;
+  max-height: 420px;
+  object-fit: cover;
+}
+
+.banner-carousel__arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  background: rgba(17, 24, 39, 0.36);
+  color: #fff;
+  font-size: 1.3rem;
+  transform: translateY(-50%);
+  backdrop-filter: blur(10px);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.banner-carousel__arrow:hover {
+  background: rgba(17, 24, 39, 0.56);
+  transform: translateY(calc(-50% - 2px));
+}
+
+.banner-carousel__arrow--prev {
+  left: 18px;
+}
+
+.banner-carousel__arrow--next {
+  right: 18px;
+}
+
+.banner-carousel__dots {
+  position: absolute;
+  inset: auto 0 18px;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.banner-carousel__dots button {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.banner-carousel__dots button.is-active {
+  width: 28px;
+  background: #fff;
+}
+
+.hero-banner--homepage {
+  display: none;
 }
 
 .hero-panel--homepage {
   grid-template-columns: 1fr;
-}
-
-.wallet-rewards {
-  margin-top: 24px;
-  padding-inline: 28px;
-  background: linear-gradient(135deg, #fff8f3, #fff);
-}
-
-.wallet-rewards__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px;
-}
-
-.wallet-reward-card {
-  display: grid;
-  gap: 10px;
-  padding: 22px;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(255, 125, 59, 0.14);
-}
-
-.wallet-reward-card span,
-.wallet-reward-card p {
-  color: var(--muted);
-}
-
-.wallet-reward-card strong {
-  font-size: 1.7rem;
 }
 
 .home-carousel {
@@ -98,23 +146,78 @@
   font-weight: 700;
 }
 
-@media (max-width: 1080px) {
-  .wallet-rewards__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (max-width: 820px) {
+  .banner-carousel {
+    margin: 0 10px 6px;
+    border-radius: 0 0 22px 22px;
+  }
+
+  .banner-carousel__slide img {
+    height: 34vh;
+    min-height: 180px;
+    max-height: 320px;
+  }
+
+  .banner-carousel__arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+
+  .banner-carousel__arrow--prev {
+    left: 10px;
+  }
+
+  .banner-carousel__arrow--next {
+    right: 10px;
   }
 }
 
 @media (max-width: 560px) {
-  .wallet-rewards {
-    padding-inline: 20px;
+  .banner-carousel {
+    margin: 0 8px 4px;
+    border-radius: 0 0 18px 18px;
   }
 
-  .wallet-rewards__grid {
-    grid-template-columns: 1fr;
+  .banner-carousel__slide img {
+    height: 28vh;
+    min-height: 150px;
+    max-height: 220px;
+  }
+
+  .banner-carousel__arrow {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+
+  .banner-carousel__dots {
+    bottom: 12px;
+    gap: 8px;
+  }
+
+  .banner-carousel__dots button {
+    width: 8px;
+    height: 8px;
+  }
+
+  .banner-carousel__dots button.is-active {
+    width: 20px;
   }
 
   .carousel-controls {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .section-heading--carousel h2 {
+    width: 100%;
+    max-width: 100%;
+    font-size: 1.02rem;
+    line-height: 1.2;
+  }
+
+  .carousel-controls__status {
+    font-size: 0.82rem;
   }
 }

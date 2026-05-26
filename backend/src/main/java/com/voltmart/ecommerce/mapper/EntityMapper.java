@@ -32,7 +32,13 @@ public class EntityMapper {
     private final AppProperties appProperties;
 
     public UserResponse toUserResponse(User user) {
-        return new UserResponse(user.getId(), user.getFullName(), user.getEmail(), user.getRole().name());
+        return new UserResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getPhoneNumber(),
+                user.getRole().name()
+        );
     }
 
     public ProductResponse toProductResponse(Product product, Inventory inventory) {
@@ -138,7 +144,13 @@ public class EntityMapper {
 
     public OrderResponse toOrderResponse(Order order) {
         List<OrderItemResponse> items = order.getItems().stream()
-                .map(item -> new OrderItemResponse(item.getProduct().getName(), item.getProduct().getSlug(), item.getQuantity(), item.getUnitPrice()))
+                .map(item -> new OrderItemResponse(
+                        item.getProduct().getName(),
+                        item.getProduct().getSlug(),
+                        item.getProduct().getImageUrls().isEmpty() ? "" : item.getProduct().getImageUrls().getFirst(),
+                        item.getQuantity(),
+                        item.getUnitPrice()
+                ))
                 .toList();
         return new OrderResponse(
                 order.getId(),

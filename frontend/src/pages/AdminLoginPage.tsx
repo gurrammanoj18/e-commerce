@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../styles/pages/AdminLoginPage.css";
 import { toast } from "react-toastify";
@@ -9,7 +9,7 @@ const AUTH_STORAGE_KEY = "voltmart-auth-user";
 const AdminLoginPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { login, logout } = useAuth();
+  const { adminLogin, isAdmin, isAuthenticated, logout } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,12 +17,19 @@ const AdminLoginPage: React.FC = () => {
     (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ??
     "/admin/dashboard";
 
+  useEffect(() => {
+    if (isAuthenticated && isAdmin) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [isAdmin, isAuthenticated, navigate, redirectTo]);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
 
-    if (!(await login(email, password))) {
-      setError("Enter valid admin credentials to continue.");
+    const result = await adminLogin(email, password);
+    if (result.error) {
+      setError(result.error);
       return;
     }
 
@@ -36,7 +43,6 @@ const AdminLoginPage: React.FC = () => {
     }
 
     toast.success("Admin login successful");
-    navigate(redirectTo, { replace: true });
   };
 
   return (

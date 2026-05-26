@@ -45,6 +45,9 @@ app:
     secret: voltmart-super-secret-key-voltmart-super-secret-key
     expiration: 86400000
 
+  google:
+    client-id: 302745292687-8pkf6i6gfdqvohe9jr45q5q77qb585bi.apps.googleusercontent.com
+
   cors:
     allowed-origins: http://localhost:3000
 

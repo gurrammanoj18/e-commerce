@@ -34,8 +34,6 @@ public class DataSeeder implements CommandLineRunner {
     private final OrderItemRepository orderItemRepository;
     private final WishlistItemRepository wishlistItemRepository;
     private final UserRepository userRepository;
-    private final CartRepository cartRepository;
-    private final WishlistRepository wishlistRepository;
     private final PasswordEncoder passwordEncoder;
     private final EntityMapper entityMapper;
 
@@ -130,23 +128,6 @@ public class DataSeeder implements CommandLineRunner {
                         .role(Role.ROLE_ADMIN)
                         .createdAt(LocalDateTime.now())
                         .build()));
-        User customer = userRepository.findByEmail("customer@voltmart.in")
-                .orElseGet(() -> userRepository.save(User.builder()
-                        .fullName("Demo Customer")
-                        .email("customer@voltmart.in")
-                        .password(passwordEncoder.encode("Customer@123"))
-                        .role(Role.ROLE_CUSTOMER)
-                        .createdAt(LocalDateTime.now())
-                        .build()));
-
-        cartRepository.findByUserId(admin.getId())
-                .orElseGet(() -> cartRepository.save(Cart.builder().user(admin).build()));
-        cartRepository.findByUserId(customer.getId())
-                .orElseGet(() -> cartRepository.save(Cart.builder().user(customer).build()));
-        wishlistRepository.findByUserId(admin.getId())
-                .orElseGet(() -> wishlistRepository.save(Wishlist.builder().user(admin).build()));
-        wishlistRepository.findByUserId(customer.getId())
-                .orElseGet(() -> wishlistRepository.save(Wishlist.builder().user(customer).build()));
     }
 
     private void seedProduct(String slug, String name, String brand, Category category, String heroTag, String badge,

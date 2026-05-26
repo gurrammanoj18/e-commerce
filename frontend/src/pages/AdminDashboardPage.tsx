@@ -1333,13 +1333,13 @@ const AdminDashboardPage: React.FC = () => {
           </div>
           <div className="admin-user-list">
             {users.slice(0, 6).map((user) => (
-              <div key={user.id} className="admin-user-list__item">
-                <div>
-                  <strong>{user.fullName}</strong>
-                  <span>{user.email}</span>
+                <div key={user.id} className="admin-user-list__item">
+                  <div>
+                    <strong>{user.fullName}</strong>
+                    <span>{user.email || user.phoneNumber || "No contact info"}</span>
+                  </div>
+                  <span>{user.role.replace("ROLE_", "")}</span>
                 </div>
-                <span>{user.role.replace("ROLE_", "")}</span>
-              </div>
             ))}
           </div>
         </article>

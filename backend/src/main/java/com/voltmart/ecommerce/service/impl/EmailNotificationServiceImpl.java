@@ -34,6 +34,31 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
     private final AppProperties appProperties;
 
     @Override
+    public void sendLoginOtp(String recipient, String otpCode) {
+        if (!isConfigured()) {
+            throw new IllegalStateException("Email OTP delivery is not configured");
+        }
+
+        String subject = "Your VoltMart login OTP";
+        String html = """
+                <!DOCTYPE html>
+                <html lang="en">
+                  <body style="margin:0;padding:24px;background:#111318;font-family:Arial,sans-serif;color:#f3f4f6;">
+                    <div style="max-width:560px;margin:0 auto;background:#1a1d24;border:1px solid #2a2f39;border-radius:24px;padding:32px;">
+                      <p style="margin:0 0 12px;color:#cbd5e1;font-size:14px;">VoltMart sign in</p>
+                      <h1 style="margin:0 0 16px;font-size:28px;color:#ffffff;">Your email OTP</h1>
+                      <p style="margin:0 0 24px;color:#d1d5db;font-size:16px;line-height:1.5;">Use the code below to log in. This OTP expires in 5 minutes.</p>
+                      <div style="display:inline-block;background:#243447;border-radius:18px;padding:18px 24px;font-size:32px;letter-spacing:0.35em;color:#ffffff;font-weight:700;">%s</div>
+                      <p style="margin:24px 0 0;color:#9ca3af;font-size:14px;">Do not share this OTP with anyone.</p>
+                    </div>
+                  </body>
+                </html>
+                """.formatted(escapeHtml(otpCode));
+
+        sendEmail(recipient, subject, html, "login otp");
+    }
+
+    @Override
     public void sendOrderPlacedNotification(Order order) {
         if (!isConfigured()) {
             return;
@@ -101,6 +126,9 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
             helper.setText(buildPlainTextFallback(subject, htmlBody), htmlBody);
             mailSender.send(message);
         } catch (Exception exception) {
+            if ("login otp".equals(eventName)) {
+                throw new IllegalStateException("Unable to send email OTP", exception);
+            }
             log.warn("Unable to send email {} to {}: {}", eventName, recipient, exception.getMessage());
         }
     }

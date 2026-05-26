@@ -4,8 +4,9 @@ Base URL: `/api`
 
 ## Auth
 
-- `POST /auth/signup`
-- `POST /auth/login`
+- `POST /auth/otp/request`
+- `POST /auth/otp/verify`
+- `POST /auth/admin/login`
 
 ## Catalog
 
@@ -45,4 +46,8 @@ Base URL: `/api`
 ## Default seed accounts
 
 - Admin: `admin@voltmart.in` / `Admin@123`
-- Customer: `customer@voltmart.in` / `Customer@123`
+- Customer: created on first successful phone OTP verification
+
+## OTP Provider
+
+- Customer OTP delivery is configured for email-based verification.
