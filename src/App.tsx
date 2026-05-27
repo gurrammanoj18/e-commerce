@@ -7,11 +7,18 @@ import AdminLayout from "./components/layout/AdminLayout";
 import Layout from "./components/layout/Layout";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
+import { CollectionAnimationProvider } from "./contexts/CollectionAnimationContext";
+import { ProcessingProvider } from "./contexts/ProcessingContext";
 import { ProductProvider } from "./contexts/ProductContext";
 import { WishlistProvider } from "./contexts/WishlistContext";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminBannersPage from "./pages/AdminBannersPage";
+import AdminBulkInquiriesPage from "./pages/AdminBulkInquiriesPage";
+import AdminCategoriesPage from "./pages/AdminCategoriesPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
+import AboutPage from "./pages/AboutPage";
 import BulkOrderPage from "./pages/BulkOrderPage";
+import BuyingGuidesPage from "./pages/BuyingGuidesPage";
 import CartPage from "./pages/CartPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import CheckoutPage from "./pages/CheckoutPage";
@@ -22,78 +29,114 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import OrdersPage from "./pages/OrdersPage";
+import PrivacyPage from "./pages/PrivacyPage";
 import ProductDetailsPage from "./pages/ProductDetailsPage";
 import ProductsPage from "./pages/ProductsPage";
+import ReturnsPage from "./pages/ReturnsPage";
+import TermsPage from "./pages/TermsPage";
 import WishlistPage from "./pages/WishlistPage";
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <ProductProvider>
-        <CartProvider>
-          <WishlistProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="login" element={<LoginPage />} />
-                <Route
-                  element={
-                    <ProtectedRoute>
-                      <Layout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route index element={<HomePage />} />
-                  <Route path="products" element={<ProductsPage />} />
-                  <Route path="categories" element={<CategoriesPage />} />
-                  <Route path="products/:slug" element={<ProductDetailsPage />} />
-                  <Route path="wishlist" element={<WishlistPage />} />
-                  <Route path="cart" element={<CartPage />} />
-                  <Route path="checkout" element={<CheckoutPage />} />
-                  <Route path="orders" element={<OrdersPage />} />
-                  <Route path="coupons" element={<CouponsPage />} />
-                  <Route path="help-center" element={<HelpCenterPage />} />
-                  <Route path="bulk-order" element={<BulkOrderPage />} />
-                  <Route path="contact" element={<ContactPage />} />
-                  <Route path="*" element={<NotFoundPage />} />
-                </Route>
-                <Route
-                  path="admin"
-                  element={<AdminLayout />}
-                >
-                  <Route path="login" element={<AdminLoginPage />} />
-                  <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                  <Route
-                    path="dashboard"
-                    element={
-                      <ProtectedRoute adminOnly>
-                        <AdminDashboardPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="inventory"
-                    element={
-                      <ProtectedRoute adminOnly>
-                        <AdminDashboardPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="orders"
-                    element={
-                      <ProtectedRoute adminOnly>
-                        <AdminDashboardPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                </Route>
-              </Routes>
-              <ToastContainer position="top-right" autoClose={2500} />
-            </BrowserRouter>
-          </WishlistProvider>
-        </CartProvider>
-      </ProductProvider>
-    </AuthProvider>
+    <ProcessingProvider>
+      <AuthProvider>
+        <ProductProvider>
+          <CartProvider>
+            <WishlistProvider>
+              <CollectionAnimationProvider>
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="login" element={<LoginPage />} />
+                    <Route
+                      element={
+                        <ProtectedRoute>
+                          <Layout />
+                        </ProtectedRoute>
+                      }
+                    >
+                      <Route index element={<HomePage />} />
+                      <Route path="about" element={<AboutPage />} />
+                      <Route path="products" element={<ProductsPage />} />
+                      <Route path="categories" element={<CategoriesPage />} />
+                      <Route path="products/:slug" element={<ProductDetailsPage />} />
+                      <Route path="wishlist" element={<WishlistPage />} />
+                      <Route path="cart" element={<CartPage />} />
+                      <Route path="checkout" element={<CheckoutPage />} />
+                      <Route path="orders" element={<OrdersPage />} />
+                      <Route path="coupons" element={<CouponsPage />} />
+                      <Route path="help-center" element={<HelpCenterPage />} />
+                      <Route path="terms" element={<TermsPage />} />
+                      <Route path="privacy" element={<PrivacyPage />} />
+                      <Route path="returns" element={<ReturnsPage />} />
+                      <Route path="buying-guides" element={<BuyingGuidesPage />} />
+                      <Route path="bulk-order" element={<BulkOrderPage />} />
+                      <Route path="contact" element={<ContactPage />} />
+                      <Route path="*" element={<NotFoundPage />} />
+                    </Route>
+                    <Route
+                      path="admin"
+                      element={<AdminLayout />}
+                    >
+                      <Route path="login" element={<AdminLoginPage />} />
+                      <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                      <Route
+                        path="dashboard"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <AdminDashboardPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="inventory"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <AdminDashboardPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="orders"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <AdminDashboardPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="categories"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <AdminCategoriesPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="banners"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <AdminBannersPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="bulk-inquiries"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <AdminBulkInquiriesPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                    </Route>
+                  </Routes>
+                  <ToastContainer position="top-right" autoClose={2500} />
+                </BrowserRouter>
+              </CollectionAnimationProvider>
+            </WishlistProvider>
+          </CartProvider>
+        </ProductProvider>
+      </AuthProvider>
+    </ProcessingProvider>
   );
 };
 

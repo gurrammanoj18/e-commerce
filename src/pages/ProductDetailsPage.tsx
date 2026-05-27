@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import "../styles/pages/ProductDetailsPage.css";
 import ProductGallery from "../components/product/ProductGallery";
@@ -6,6 +6,7 @@ import ProductCard from "../components/product/ProductCard";
 import QuantitySelector from "../components/product/QuantitySelector";
 import LoadingState from "../components/shared/LoadingState";
 import { useCart } from "../contexts/CartContext";
+import { useCollectionAnimation } from "../contexts/CollectionAnimationContext";
 import { useProducts } from "../contexts/ProductContext";
 import { useWishlist } from "../contexts/WishlistContext";
 import { Product } from "../types/store";
@@ -15,10 +16,12 @@ const ProductDetailsPage: React.FC = () => {
   const { slug = "" } = useParams();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { animateProductToTarget } = useCollectionAnimation();
   const { getProductBySlug, getRelatedProducts, loading } = useProducts();
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<Product | null>(null);
   const [resolved, setResolved] = useState(false);
+  const heroImageRef = useRef<HTMLImageElement | null>(null);
 
   React.useEffect(() => {
     const loadProduct = async () => {
@@ -52,14 +55,26 @@ const ProductDetailsPage: React.FC = () => {
   }
 
   const relatedProducts = getRelatedProducts(product);
+  const savedToWishlist = isInWishlist(product.id);
+
+  const animateProduct = async (target: "cart" | "wishlist") => {
+    if (!product.images[0] || !heroImageRef.current) {
+      return;
+    }
+
+    await animateProductToTarget({
+      imageSrc: product.images[0],
+      sourceRect: heroImageRef.current.getBoundingClientRect(),
+      target,
+    });
+  };
 
   return (
     <section className="shell section page-section">
       <div className="details-layout">
-        <ProductGallery images={product.images} alt={product.name} />
+        <ProductGallery images={product.images} alt={product.name} heroImageRef={heroImageRef} />
 
         <div className="store-card details-panel">
-       
           <h1>{product.name}</h1>
           <div className="details-rating">
             <span>⭐ {product.rating}</span>
@@ -72,7 +87,6 @@ const ProductDetailsPage: React.FC = () => {
                 : "In stock"}
             </span>
           </div>
-          <p>{product.description}</p>
 
           <div className="details-price">
             <strong>{formatCurrency(product.price)}</strong>
@@ -81,11 +95,33 @@ const ProductDetailsPage: React.FC = () => {
 
           <div className="details-purchase">
             <QuantitySelector value={quantity} onChange={setQuantity} />
-            <button type="button" onClick={() => void addToCart(product, quantity)}>
-              Add to cart
+            <button
+              type="button"
+              className="details-action-button details-action-button--primary"
+              onClick={() =>
+                void (async () => {
+                  await animateProduct("cart");
+                  await addToCart(product, quantity);
+                })()
+              }
+            >
+              <span aria-hidden="true">🛒</span>
+              <span>Add to cart</span>
             </button>
-            <button type="button" onClick={() => void toggleWishlist(product)}>
-              {isInWishlist(product.id) ? "Remove from wishlist" : "Save to wishlist"}
+            <button
+              type="button"
+              className="details-action-button details-action-button--secondary"
+              onClick={() =>
+                void (async () => {
+                  if (!savedToWishlist) {
+                    await animateProduct("wishlist");
+                  }
+                  await toggleWishlist(product);
+                })()
+              }
+            >
+              <span aria-hidden="true">{savedToWishlist ? "♥" : "♡"}</span>
+              <span>{savedToWishlist ? "Wishlisted" : "Wishlist"}</span>
             </button>
           </div>
 
@@ -100,13 +136,9 @@ const ProductDetailsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="spec-list">
-            {product.specs.map((spec) => (
-              <div key={spec.label}>
-                <span>{spec.label}</span>
-                <strong>{spec.value}</strong>
-              </div>
-            ))}
+          <div className="details-description">
+            <span className="eyebrow">Description</span>
+            <p>{product.description}</p>
           </div>
         </div>
       </div>

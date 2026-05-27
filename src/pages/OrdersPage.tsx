@@ -81,6 +81,11 @@ const OrdersPage: React.FC = () => {
             </div>
             <div className="order-card__meta">
               <span>{new Date(order.createdAt).toLocaleString()}</span>
+              <span>
+                {order.deliveryMode === "STORE_PICKUP" ? "Pick up at store" : "Home delivery"}
+              </span>
+              <span>{order.deliverySlot || "Standard slot"}</span>
+              {order.priorityOrder ? <span>Priority order</span> : null}
               <span>{order.city}</span>
               <span>{order.items.length} item(s)</span>
             </div>

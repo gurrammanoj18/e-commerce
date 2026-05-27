@@ -1,95 +1,52 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "../../styles/components/ProductGrid.css";
-
-// images
-import p1Image from "../../product-grid-assets/p4.webp";
-import p2Image from "../../product-grid-assets/p2.webp";
-import p3Image from "../../product-grid-assets/p3.webp";
-import p4Image from "../../product-grid-assets/p4.webp";
-
-import product1image1 from "../../assets/imagesP1/p1.webp";
-import product1image2 from "../../assets/imagesP1/p11.jpg";
-import product1image3 from "../../assets/imagesP1/p12.webp";
-import product1image4 from "../../assets/imagesP1/p13.webp";
-
-import product2image1 from "../../assets/imagesP2/p3.webp";
-import product2image2 from "../../assets/imagesP2/p21.webp";
-import product2image3 from "../../assets/imagesP2/p22.webp";
-import product2image4 from "../../assets/imagesP2/p23.jpg";
-
-interface Product {
-  id: number;
-  brand: string;
-  name: string;
-  price: string;
-  rating: number;
-  images: string[];
-  specs: {
-    driver: string;
-    weight: string;
-    battery: string;
-  };
-}
-
-const airBeats: Omit<Product, "id"> = {
-  brand: "SONICPULSE",
-  name: "Air Beats",
-  price: "Rs. 45,000.00",
-  rating: 5.0,
-  images: [product1image2, product1image1, product1image3, product1image4],
-  specs: { driver: "40mm", weight: "285 g", battery: "35h" },
-};
-
-const oasisFlow: Omit<Product, "id"> = {
-  brand: "RESONANCE",
-  name: "Oasis Flow",
-  price: "Rs. 27,100.00",
-  rating: 5.0,
-  images: [product2image2, product2image1, product2image3, product2image4],
-  specs: { driver: "40mm", weight: "244 g", battery: "19h" },
-};
-
-const products: Product[] = Array.from({ length: 28 }, (_, i) => {
-  const isAirBeats = i % 2 === 0;
-  return {
-    id: i + 1,
-    ...(isAirBeats ? airBeats : oasisFlow),
-    images:
-      i % 3 === 0
-        ? [p1Image, p3Image, p4Image]
-        : isAirBeats
-        ? airBeats.images
-        : [p2Image, p4Image, p1Image],
-  };
-});
+import { getBestSellerProducts } from "../../services/productService";
+import { Product } from "../../types/store";
+import { formatCurrency } from "../../utils/currency";
 
 const ProductGrid: React.FC = () => {
-  const [slideIndices, setSlideIndices] = useState<{ [key: number]: number }>(
-    () => Object.fromEntries(products.map((p) => [p.id, 1]))
-  );
+  const [products, setProducts] = useState<Product[]>([]);
+  const [slideIndices, setSlideIndices] = useState<{ [key: number]: number }>({});
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 12;
-  const totalPages = Math.ceil(products.length / productsPerPage);
-
+  const totalPages = Math.max(1, Math.ceil(products.length / productsPerPage));
   const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const bestSellers = await getBestSellerProducts();
+        setProducts(bestSellers);
+        setSlideIndices(Object.fromEntries(bestSellers.map((product) => [product.id, 0])));
+      } catch {
+        setProducts([]);
+      }
+    };
+
+    void loadProducts();
+  }, []);
 
   const currentProducts = products.slice(
     (currentPage - 1) * productsPerPage,
-    currentPage * productsPerPage
+    currentPage * productsPerPage,
   );
 
-  const handleMouseMove = (e: React.MouseEvent, id: number) => {
+  const handleMouseMove = (e: React.MouseEvent, id: number, imageCount: number) => {
+    if (imageCount <= 1) {
+      return;
+    }
+
     const { left, width } = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - left;
 
     setSlideIndices((prev) => ({
       ...prev,
-      [id]: x < width / 3 ? 0 : x > (2 * width) / 3 ? 2 : 1,
+      [id]: x < width / 3 ? 0 : x > (2 * width) / 3 ? Math.min(2, imageCount - 1) : Math.min(1, imageCount - 1),
     }));
   };
 
   const handleMouseLeave = (id: number) => {
-    setSlideIndices((prev) => ({ ...prev, [id]: 1 }));
+    setSlideIndices((prev) => ({ ...prev, [id]: 0 }));
   };
 
   const handlePrev = () => {
@@ -105,60 +62,33 @@ const ProductGrid: React.FC = () => {
   return (
     <div>
       <section className="product-grid" ref={gridRef}>
-        {currentProducts.map((p) => (
+        {currentProducts.map((product) => (
           <div
-            key={p.id}
+            key={product.id}
             className="product-card"
-            onMouseMove={(e) => handleMouseMove(e, p.id)}
-            onMouseLeave={() => handleMouseLeave(p.id)}
+            onMouseMove={(e) => handleMouseMove(e, product.id, product.images.length)}
+            onMouseLeave={() => handleMouseLeave(product.id)}
           >
             <div className="product-img-slider">
               <div
                 className="product-img-track"
                 style={{
-                  transform: `translateX(-${slideIndices[p.id] * 100}%)`,
+                  transform: `translateX(-${(slideIndices[product.id] || 0) * 100}%)`,
                   transition: "transform 0.4s ease",
                 }}
               >
-                {p.images.map((img, i) => (
-                  <img className="product-image" key={i} src={img} alt="" />
+                {(product.images.length ? product.images : [""]).map((img, i) => (
+                  <img className="product-image" key={i} src={img} alt={product.name} />
                 ))}
               </div>
-              <span className="rating">⭐ {p.rating}</span>
+              <span className="rating">⭐ {product.rating}</span>
             </div>
 
             <div className="product-info">
-              <p className="brand">{p.brand}</p>
+              <p className="brand">{product.brand}</p>
               <div className="name-price-div">
-                <h3 className="name">{p.name}</h3>
-                <p className="price">{p.price}</p>
-              </div>
-            </div>
-
-            <div className="product-specs">
-              <div className="icon-container">
-                <span className="icon">🎧</span>
-                <p>
-                  {p.specs.driver}
-                  <br />
-                  <small>Driver size</small>
-                </p>
-              </div>
-              <div className="icon-container">
-                <span className="icon">⚖️</span>
-                <p>
-                  {p.specs.weight}
-                  <br />
-                  <small>Product weight</small>
-                </p>
-              </div>
-              <div className="icon-container">
-                <span className="icon">🔋</span>
-                <p>
-                  {p.specs.battery}
-                  <br />
-                  <small>Battery life</small>
-                </p>
+                <h3 className="name">{product.name}</h3>
+                <p className="price">{formatCurrency(product.price)}</p>
               </div>
             </div>
           </div>

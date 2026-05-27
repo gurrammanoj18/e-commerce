@@ -1,8 +1,3 @@
-export interface ProductSpec {
-  label: string;
-  value: string;
-}
-
 export interface ProductApiShape {
   id: number;
   slug: string;
@@ -33,10 +28,17 @@ export interface ProductApiShape {
   discountPercentage?: number;
   warrantyAvailable: boolean;
   replacementAvailable: boolean;
-  specifications?: Record<string, string>;
 }
 
 export type ProductAvailability = "in-stock" | "low-stock" | "out-of-stock";
+export type DeliveryMode = "STORE_PICKUP" | "HOME_DELIVERY";
+export type BulkQuoteStatus =
+  | "NEW"
+  | "REVIEWING"
+  | "QUOTED"
+  | "NEGOTIATION"
+  | "WON"
+  | "LOST";
 
 export interface Product {
   id: number;
@@ -61,7 +63,6 @@ export interface Product {
   description: string;
   heroTag: string;
   images: string[];
-  specs: ProductSpec[];
   tags: string[];
   featured: boolean;
   bestSeller: boolean;
@@ -83,6 +84,18 @@ export interface AuthUser {
   email?: string | null;
   phoneNumber?: string | null;
   role: string;
+  preferredDeliveryMode?: DeliveryMode | null;
+}
+
+export interface UserAddress {
+  id: number;
+  label: string;
+  recipientName: string;
+  phone: string;
+  streetAddress: string;
+  city: string;
+  postalCode: string;
+  defaultAddress: boolean;
 }
 
 export type ProductSort =
@@ -108,6 +121,7 @@ export interface CategorySummary {
   count: number;
   description: string;
   icon: string;
+  image?: string;
   parentId?: number | null;
   isLeaf?: boolean;
   subcategories?: CategorySummary[];
@@ -116,6 +130,8 @@ export interface CategorySummary {
 export interface AuthResponse {
   token: string;
   user: AuthUser;
+  requiresProfileCompletion: boolean;
+  showWelcomeGreeting: boolean;
 }
 
 export interface OtpChallengeResponse {
@@ -176,12 +192,17 @@ export interface Order {
   id: number;
   orderNumber: string;
   status: string;
+  deliveryMode: DeliveryMode;
   shippingName: string;
   email: string;
   phone: string;
   shippingAddress: string;
   city: string;
   postalCode: string;
+  addressId?: number | null;
+  deliverySlot?: string | null;
+  priorityOrder: boolean;
+  priorityNotes?: string | null;
   subtotal: number;
   shippingCost: number;
   taxAmount: number;
@@ -227,7 +248,6 @@ export interface AdminProductPayload {
   originalPrice: number;
   shortDescription: string;
   description: string;
-  specifications: Record<string, string>;
   rating: number;
   reviewCount: number;
   featured: boolean;
@@ -242,4 +262,82 @@ export interface AdminProductPayload {
   tags: string[];
   stockQuantity: number;
   lowStockThreshold: number;
+}
+
+export interface CategoryPayload {
+  name: string;
+  slug: string;
+  description?: string;
+  icon?: string;
+  image?: string;
+  parentId?: number | null;
+}
+
+export interface Banner {
+  id: number;
+  title: string;
+  subtitle?: string | null;
+  imageUrl: string;
+  ctaLabel?: string | null;
+  ctaHref?: string | null;
+  displayOrder: number;
+  active: boolean;
+}
+
+export interface BannerPayload {
+  title: string;
+  subtitle?: string;
+  imageUrl: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  displayOrder: number;
+  active: boolean;
+}
+
+export interface SaveForLaterItem {
+  id: number;
+  quantity: number;
+  createdAt: string;
+  product: Product;
+}
+
+export interface SaveForLaterResponse {
+  items: SaveForLaterItem[];
+  itemCount: number;
+}
+
+export interface BulkInquiryLineItemPayload {
+  productId?: number | null;
+  productName?: string;
+  quantity: number;
+}
+
+export interface BulkInquiryLineItem {
+  id: number;
+  productId?: number | null;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  discountPercentage: number;
+  estimatedLineTotal: number;
+}
+
+export interface BulkInquiry {
+  id: number;
+  companyName: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  productCategory: string;
+  estimatedQuantity: number;
+  deliveryCity?: string | null;
+  budgetAmount?: number | null;
+  rfqRequired: boolean;
+  priorityRequest: boolean;
+  requirements: string;
+  estimatedTotal?: number | null;
+  quoteStatus: BulkQuoteStatus;
+  adminNotes?: string | null;
+  createdAt: string;
+  items: BulkInquiryLineItem[];
 }

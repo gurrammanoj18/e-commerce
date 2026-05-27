@@ -90,11 +90,11 @@ const ProductsPage: React.FC = () => {
               <div className="shell hero-banner__content">
                 <div className="hero-copy">
                   <span className="eyebrow">Modern hardware storefront</span>
-                  <h1>Source appliances, hardware, cleaning, utility, and tool products in one place.</h1>
+                  <h1>Source appliances, electricals, tools, hardware, and home essentials in one place.</h1>
                   <p>
                     Browse your catalog through focused product groups built around
-                    electrical appliances, hardware products, cleaning products,
-                    home utility products, and tools and accessories.
+                    appliances, electricals, power and hand tools, hardware,
+                    lighting and fans, bathroom, plumbing, and kitchen needs.
                   </p>
                   <div className="hero-actions">
                     <Link className="button button--light" to="/products?discover=1">
@@ -109,7 +109,7 @@ const ProductsPage: React.FC = () => {
                 <div className="hero-panel">
                   <div className="store-card hero-panel__card">
                     <span>Top category</span>
-                    <strong>Electrical appliances and utility essentials</strong>
+                    <strong>Appliances and project essentials</strong>
                     <p>Browse category-led inventory built for practical home and project needs.</p>
                   </div>
                   <div className="store-card hero-panel__card">
@@ -224,10 +224,10 @@ const ProductsPage: React.FC = () => {
               <span className="eyebrow">Promo</span>
               <h3>Category-led product discovery</h3>
               <p>
-                Move through your five primary catalog groups with cleaner
+                Move through your eight primary catalog groups with cleaner
                 category-first browsing and management.
               </p>
-              <Link to="/products?discover=1&category=electrical-appliances">Explore category</Link>
+              <Link to="/products?discover=1&category=appliances">Explore category</Link>
             </article>
             <article className="store-card promo-card promo-card--light">
               <span className="eyebrow">Business sales</span>

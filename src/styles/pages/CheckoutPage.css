@@ -13,6 +13,39 @@
   gap: 16px;
 }
 
+.checkout-delivery-mode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--surface-alt);
+}
+
+.checkout-delivery-mode span {
+  color: var(--muted);
+}
+
+.checkout-pickup-note {
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface-alt);
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.checkout-inline-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.checkout-inline-check input {
+  width: auto;
+}
+
 .summary-card div {
   display: flex;
   align-items: center;

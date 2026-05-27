@@ -1,13 +1,18 @@
 import api from "./api";
-import { Order } from "../types/store";
+import { DeliveryMode, Order } from "../types/store";
 
 export const checkout = async (payload: {
+  deliveryMode: DeliveryMode;
   shippingName: string;
   email: string;
   phone: string;
+  addressId?: number | null;
   shippingAddress: string;
   city: string;
   postalCode: string;
+  deliverySlot?: string;
+  priorityOrder: boolean;
+  priorityNotes?: string;
 }) => {
   const response = await api.post<Order>("/orders/checkout", payload);
   return response.data;

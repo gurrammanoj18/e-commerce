@@ -1,0 +1,90 @@
+.delivery-preference-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.54);
+  backdrop-filter: blur(8px);
+}
+
+.delivery-preference-modal__card {
+  width: min(100%, 460px);
+  padding: 28px;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 30px 60px rgba(15, 23, 42, 0.22);
+}
+
+.delivery-preference-modal__card h2 {
+  margin: 10px 0 12px;
+}
+
+.delivery-preference-modal__card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.delivery-preference-modal__card form {
+  margin-top: 18px;
+}
+
+.delivery-preference-modal__card label {
+  display: grid;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.delivery-preference-modal__card input {
+  min-height: 50px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--text);
+}
+
+.delivery-preference-modal__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.delivery-preference-modal__button {
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.delivery-preference-modal__button--primary {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: #fff;
+}
+
+.delivery-preference-modal .form-error {
+  margin: 12px 0 0;
+}
+
+@media (max-width: 560px) {
+  .delivery-preference-modal {
+    padding: 16px;
+  }
+
+  .delivery-preference-modal__card {
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .delivery-preference-modal__actions {
+    grid-template-columns: 1fr;
+  }
+}

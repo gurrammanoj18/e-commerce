@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { AxiosError } from "axios";
 import { toast } from "react-toastify";
 import { Product } from "../types/store";
 import { useAuth } from "./AuthContext";
+import { useProcessing } from "./ProcessingContext";
 import {
   addWishlistItem,
   fetchWishlist,
@@ -33,10 +34,11 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { isAuthenticated, logout } = useAuth();
+  const { startProcessing, stopProcessing } = useProcessing();
   const [items, setItems] = useState<WishlistEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const loadRemoteWishlist = async () => {
+  const loadRemoteWishlist = useCallback(async () => {
     setLoading(true);
     try {
       const wishlist = await fetchWishlist();
@@ -59,7 +61,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [logout]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -73,7 +75,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setItems([]);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, loadRemoteWishlist]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -116,6 +118,10 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
         setItems((currentItems) =>
           currentItems.filter((wishlistItem) => wishlistItem.product.id !== productId),
         );
+        const processingId = startProcessing({
+          title: "Updating wishlist",
+          message: "Removing this product from your saved items...",
+        });
         try {
           await removeWishlistItem(item.id);
         } catch (error) {
@@ -128,6 +134,8 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
 
           toast.error("Couldn't remove this item from wishlist right now.");
           return;
+        } finally {
+          stopProcessing(processingId);
         }
 
         await loadRemoteWishlist();

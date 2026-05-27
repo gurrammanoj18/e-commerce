@@ -3,10 +3,6 @@ import { CategorySummary, PagedResponse, Product, ProductApiShape } from "../typ
 
 export const transformProduct = (product: ProductApiShape): Product => {
   const stockQuantity = product.stockQuantity ?? product.stock ?? 0;
-  const specs = Object.entries(product.specifications || {}).map(([label, value]) => ({
-    label,
-    value: String(value),
-  }));
   const discountPercentage =
     product.discountPercentage ??
     (product.originalPrice > product.price
@@ -24,7 +20,6 @@ export const transformProduct = (product: ProductApiShape): Product => {
     discountPercentage,
     warrantyAvailable: product.warrantyAvailable,
     replacementAvailable: product.replacementAvailable,
-    specs,
     images: product.images || [],
   };
 };
@@ -105,6 +100,7 @@ export const getCategories = async (): Promise<CategorySummary[]> => {
     count: category.productCount,
     description: category.description,
     icon: category.icon,
+    image: category.image,
     parentId: category.parentId,
     isLeaf: category.leaf,
     subcategories: (category.subcategories || []).map(mapCategory),

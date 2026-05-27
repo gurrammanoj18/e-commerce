@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "../styles/pages/LoginPage.css";
 import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
@@ -24,7 +24,6 @@ declare global {
 }
 
 const LoginPage: React.FC = () => {
-  const location = useLocation();
   const { isAuthenticated, requestOtp, verifyOtp, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -34,14 +33,12 @@ const LoginPage: React.FC = () => {
   const googleClientId =
     window.__APP_CONFIG__?.REACT_APP_GOOGLE_CLIENT_ID ||
     process.env.REACT_APP_GOOGLE_CLIENT_ID;
-  const redirectTo =
-    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/";
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(redirectTo, { replace: true });
+      navigate("/", { replace: true });
     }
-  }, [isAuthenticated, navigate, redirectTo]);
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     if (!googleClientId) {
@@ -65,10 +62,7 @@ const LoginPage: React.FC = () => {
           const result = await googleLogin(credential);
           if (result.error) {
             setError(result.error);
-            return;
           }
-
-          toast.success("Logged in with Google");
         },
       });
       window.google.accounts.id.renderButton(container, {

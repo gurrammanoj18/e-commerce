@@ -7,6 +7,12 @@
   gap: 24px;
 }
 
+.bulk-line-item-list {
+  display: grid;
+  gap: 16px;
+  margin: 22px 0;
+}
+
 @media (max-width: 1080px) {
   .bulk-layout {
     grid-template-columns: 1fr;

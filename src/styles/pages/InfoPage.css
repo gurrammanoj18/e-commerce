@@ -1,0 +1,34 @@
+.info-page-header {
+  max-width: 760px;
+}
+
+.info-page-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.info-page-card {
+  padding: 28px;
+}
+
+.info-page-card h2 {
+  margin: 0 0 12px;
+  color: #101828;
+  font-size: 1.2rem;
+}
+
+.info-page-card p {
+  margin: 0 0 12px;
+  color: #475467;
+  line-height: 1.7;
+}
+
+.info-page-card p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 560px) {
+  .info-page-card {
+    padding: 22px 18px;
+  }
+}
