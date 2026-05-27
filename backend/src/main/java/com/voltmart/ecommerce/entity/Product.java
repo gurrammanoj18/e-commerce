@@ -44,9 +44,6 @@ public class Product {
     @Column(nullable = false, length = 4000)
     private String description;
 
-    @Column(length = 1000)
-    private String specifications;
-
     @Column(nullable = false)
     private Double rating;
 

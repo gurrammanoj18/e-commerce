@@ -2,7 +2,6 @@ package com.voltmart.ecommerce.dto.product;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 public record ProductResponse(
         Long id,
@@ -18,7 +17,6 @@ public record ProductResponse(
         BigDecimal originalPrice,
         String shortDescription,
         String description,
-        Map<String, String> specifications,
         Double rating,
         Integer reviewCount,
         Integer stockQuantity,

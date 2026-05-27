@@ -1,5 +1,6 @@
 package com.voltmart.ecommerce.entity;
 
+import com.voltmart.ecommerce.entity.enums.DeliveryMode;
 import com.voltmart.ecommerce.entity.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,6 +34,10 @@ public class Order {
     @Column(nullable = false)
     private OrderStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DeliveryMode deliveryMode;
+
     @Column(nullable = false)
     private String shippingName;
 
@@ -50,6 +55,18 @@ public class Order {
 
     @Column(nullable = false)
     private String postalCode;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_address_id")
+    private UserAddress userAddress;
+
+    private String deliverySlot;
+
+    @Column(nullable = false)
+    private boolean priorityOrder;
+
+    @Column(length = 1000)
+    private String priorityNotes;
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal subtotal;

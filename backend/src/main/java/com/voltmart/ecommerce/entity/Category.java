@@ -29,6 +29,9 @@ public class Category {
 
     private String icon;
 
+    @Lob
+    private String image;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private Category parent;

@@ -101,9 +101,10 @@ public class CartServiceImpl implements CartService {
     }
 
     private Cart currentUserCart() {
-        Long userId = currentUserService.getCurrentUser().getId();
+        var user = currentUserService.getCurrentUser();
+        Long userId = user.getId();
         return cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
+                .orElseGet(() -> cartRepository.save(Cart.builder().user(user).build()));
     }
 
     private CartResponse toResponse(Cart cart) {

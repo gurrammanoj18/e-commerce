@@ -7,10 +7,12 @@ import com.voltmart.ecommerce.entity.LoginOtp;
 import com.voltmart.ecommerce.entity.User;
 import com.voltmart.ecommerce.entity.Wishlist;
 import com.voltmart.ecommerce.config.AppProperties;
+import com.voltmart.ecommerce.dto.auth.DeliveryPreferenceRequest;
 import com.voltmart.ecommerce.dto.auth.GoogleAuthRequest;
 import com.voltmart.ecommerce.dto.auth.OtpChallengeResponse;
 import com.voltmart.ecommerce.dto.auth.OtpRequest;
 import com.voltmart.ecommerce.dto.auth.OtpVerifyRequest;
+import com.voltmart.ecommerce.dto.auth.ProfileCompletionRequest;
 import com.voltmart.ecommerce.entity.enums.Role;
 import com.voltmart.ecommerce.exception.BadRequestException;
 import com.voltmart.ecommerce.mapper.EntityMapper;
@@ -20,6 +22,7 @@ import com.voltmart.ecommerce.repository.UserRepository;
 import com.voltmart.ecommerce.repository.WishlistRepository;
 import com.voltmart.ecommerce.security.JwtService;
 import com.voltmart.ecommerce.service.AuthService;
+import com.voltmart.ecommerce.service.CurrentUserService;
 import com.voltmart.ecommerce.service.EmailNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -47,6 +50,7 @@ public class AuthServiceImpl implements AuthService {
     private final AppProperties appProperties;
     private final AuthenticationManager authenticationManager;
     private final EmailNotificationService emailNotificationService;
+    private final CurrentUserService currentUserService;
 
     @Override
     public AuthResponse adminLogin(AuthRequest request) {
@@ -60,7 +64,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
-        return new AuthResponse(token, entityMapper.toUserResponse(user));
+        return buildAuthResponse(user, token, false);
     }
 
     @Override
@@ -105,13 +109,10 @@ public class AuthServiceImpl implements AuthService {
                     if (existingUser.getRole() == Role.ROLE_ADMIN) {
                         throw new BadRequestException("Use admin login for administrator access.");
                     }
-                    if (!StringUtils.hasText(existingUser.getFullName()) && StringUtils.hasText(googleName)) {
-                        existingUser.setFullName(googleName.trim());
-                    }
                     return userRepository.save(existingUser);
                 })
                 .orElseGet(() -> userRepository.save(User.builder()
-                        .fullName(StringUtils.hasText(googleName) ? googleName.trim() : "Customer")
+                        .fullName("")
                         .email(email)
                         .role(Role.ROLE_CUSTOMER)
                         .createdAt(LocalDateTime.now())
@@ -123,7 +124,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseGet(() -> wishlistRepository.save(Wishlist.builder().user(user).build()));
 
         String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
-        return new AuthResponse(token, entityMapper.toUserResponse(user));
+        return buildAuthResponse(user, token, true);
     }
 
     @Override
@@ -182,7 +183,7 @@ public class AuthServiceImpl implements AuthService {
                     return existingUser;
                 })
                 .orElseGet(() -> userRepository.save(User.builder()
-                        .fullName("Customer")
+                        .fullName("")
                         .email(email)
                         .role(Role.ROLE_CUSTOMER)
                         .createdAt(LocalDateTime.now())
@@ -197,6 +198,51 @@ public class AuthServiceImpl implements AuthService {
         loginOtpRepository.save(loginOtp);
 
         String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
-        return new AuthResponse(token, entityMapper.toUserResponse(user));
+        return buildAuthResponse(user, token, true);
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse completeProfile(ProfileCompletionRequest request) {
+        User user = userRepository.findById(currentUserService.getCurrentUser().getId())
+                .orElseThrow(() -> new BadRequestException("User not found"));
+        if (user.getRole() != Role.ROLE_CUSTOMER) {
+            throw new BadRequestException("Profile completion is only available for customer accounts");
+        }
+
+        user.setFullName(request.fullName().trim());
+        User savedUser = userRepository.save(user);
+        String token = jwtService.generateToken(savedUser, Map.of("role", savedUser.getRole().name()));
+        return buildAuthResponse(savedUser, token, false);
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse updateDeliveryPreference(DeliveryPreferenceRequest request) {
+        User user = userRepository.findById(currentUserService.getCurrentUser().getId())
+                .orElseThrow(() -> new BadRequestException("User not found"));
+        if (user.getRole() != Role.ROLE_CUSTOMER) {
+            throw new BadRequestException("Delivery preference can only be set for customer accounts");
+        }
+        user.setPreferredDeliveryMode(request.preferredDeliveryMode());
+        User savedUser = userRepository.save(user);
+        String token = jwtService.generateToken(savedUser, Map.of("role", savedUser.getRole().name()));
+        return buildAuthResponse(savedUser, token, false);
+    }
+
+    private AuthResponse buildAuthResponse(User user, String token, boolean allowGreeting) {
+        boolean requiresProfileCompletion = requiresProfileCompletion(user);
+        return new AuthResponse(
+                token,
+                entityMapper.toUserResponse(user),
+                requiresProfileCompletion,
+                allowGreeting && !requiresProfileCompletion && user.getRole() == Role.ROLE_CUSTOMER
+        );
+    }
+
+    private boolean requiresProfileCompletion(User user) {
+        return user.getRole() == Role.ROLE_CUSTOMER
+                && (!StringUtils.hasText(user.getFullName())
+                || "customer".equalsIgnoreCase(user.getFullName().trim()));
     }
 }

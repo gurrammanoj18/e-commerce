@@ -1,41 +1,86 @@
 .site-footer {
-  padding: 36px 0 54px;
+  padding: 52px 0 28px;
   background: var(--dark);
   color: #fff;
 }
 
-.footer-logo {
-  display: block;
-  width: min(260px, 100%);
-  height: auto;
-  margin-bottom: 16px;
-  border: 0;
-  box-shadow: none;
-}
-
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.3fr 0.8fr 0.8fr 0.9fr;
-  gap: 24px;
+  grid-template-columns: 1fr 1fr 1.8fr;
+  gap: 44px;
 }
 
-.footer-grid h3,
-.footer-grid h4 {
-  margin: 0 0 16px;
+.footer-column h3 {
+  margin: 0 0 18px;
+  color: #fff6f6;
+  font-size: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
-.footer-grid a,
-.footer-grid span {
+.footer-column a,
+.footer-column span {
   display: block;
   margin-bottom: 12px;
+  color: rgba(255, 248, 248, 0.92);
+  text-decoration: none;
+  transition: opacity 0.2s ease;
 }
 
-.footer-grid p,
-.footer-grid span {
-  color: rgba(255, 255, 255, 0.68);
+.footer-column a:hover {
+  opacity: 0.78;
 }
 
-@media (max-width: 1080px) {
+.footer-column p {
+  margin: 0 0 12px;
+  color: rgba(255, 245, 245, 0.92);
+  line-height: 1.55;
+}
+
+.footer-column--about p {
+  max-width: 520px;
+}
+
+.footer-column--about p a {
+  display: inline;
+  margin: 0;
+  color: #fff;
+  font-weight: 800;
+}
+
+.footer-social-title {
+  margin-top: 34px;
+}
+
+.footer-socials {
+  display: flex;
+  gap: 14px;
+}
+
+.footer-socials a {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.footer-bottom {
+  margin-top: 44px;
+}
+
+.footer-bottom p {
+  margin: 0;
+  color: rgba(255, 245, 245, 0.92);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 1200px) {
   .footer-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -44,5 +89,14 @@
 @media (max-width: 820px) {
   .footer-grid {
     grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .site-footer {
+    padding-top: 40px;
+  }
+
+  .footer-bottom {
+    margin-top: 28px;
   }
 }

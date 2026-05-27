@@ -1,0 +1,17 @@
+export const aboutVoltmartParagraphs = [
+  "Welcome to our modern quick-commerce e-commerce platform, built to make shopping for electricals, hardware, home utility products, cleaning supplies, tools, and appliances faster, easier, and more reliable. Our mission is to provide customers with a smooth online shopping experience backed by quality products, quick delivery, and trusted customer support.",
+  "We are focused on delivering everyday essentials and professional-grade products through a secure, scalable, and customer-friendly platform. Whether you are looking for electrical appliances, plumbing fittings, cleaning products, switches and wires, tools, or hardware accessories, we bring everything together in one convenient place.",
+  "Our platform is designed with a quick-commerce approach, offering fast product search, smart category navigation, easy checkout, location-based delivery support, and mobile-friendly browsing for a seamless experience across all devices.",
+  "We believe in combining technology, convenience, and customer satisfaction. That is why our website supports fast product browsing and filtering, delivery tracking and status updates, bulk order inquiries, service request options for electricians, plumbers, carpenters, and other professionals, wallet rewards and customer benefits, and a responsive and secure shopping experience.",
+  "Our goal is to become a trusted destination for households, businesses, contractors, and professionals by offering reliable products, transparent pricing, and dependable delivery services.",
+  "With a future-ready and scalable architecture, our platform is continuously evolving to support new categories, smarter services, and enhanced customer experiences.",
+];
+
+export const aboutVoltmartHighlights = [
+  "Wide range of electrical, hardware, and utility products",
+  "Quick and reliable delivery support",
+  "Secure and user-friendly platform",
+  "Customer-focused services and support",
+  "Quality products from trusted brands",
+  "Future-ready shopping experience",
+];

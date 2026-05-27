@@ -7,6 +7,8 @@ Base URL: `/api`
 - `POST /auth/otp/request`
 - `POST /auth/otp/verify`
 - `POST /auth/admin/login`
+- `POST /auth/google`
+- `PATCH /auth/delivery-preference`
 
 ## Catalog
 
@@ -26,6 +28,7 @@ Base URL: `/api`
 ## Orders
 
 - `POST /orders/checkout`
+  Include `deliveryMode` with `STORE_PICKUP` or `HOME_DELIVERY`.
 - `GET /orders`
 
 ## Support

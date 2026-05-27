@@ -18,7 +18,7 @@ VoltMart is a responsive hardware and electronics e-commerce platform built with
 ## Features
 
 - Product catalog, search, filters, sorting, and pagination
-- Product details with gallery, specs, quantity selector, and cart actions
+- Product details with gallery, quantity selector, and cart actions
 - Cart, checkout, order creation, WhatsApp and email order confirmations, and delivery-status updates
 - User signup/login with JWT auth
 - Bulk order inquiry flow
@@ -89,3 +89,4 @@ Set `REACT_APP_API_BASE_URL` from `frontend/.env.example`.
 
 - API overview: `docs/api/api-documentation.md`
 - Database schema: `docs/database-schema.sql`
+- Backup and logging runbook: `docs/infrastructure/backup-and-logging.md`

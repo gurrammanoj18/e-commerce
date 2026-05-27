@@ -4,6 +4,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 public record BulkOrderRequest(
         @NotBlank String companyName,
         @NotBlank String contactPerson,
@@ -11,6 +14,11 @@ public record BulkOrderRequest(
         @NotBlank String phone,
         @NotBlank String productCategory,
         @NotNull Integer estimatedQuantity,
-        @NotBlank String requirements
+        @NotBlank String requirements,
+        String deliveryCity,
+        BigDecimal budgetAmount,
+        boolean rfqRequired,
+        boolean priorityRequest,
+        List<BulkInquiryLineItemRequest> items
 ) {
 }

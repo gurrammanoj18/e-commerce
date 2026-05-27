@@ -4,6 +4,8 @@ import com.voltmart.ecommerce.dto.user.UserResponse;
 
 public record AuthResponse(
         String token,
-        UserResponse user
+        UserResponse user,
+        boolean requiresProfileCompletion,
+        boolean showWelcomeGreeting
 ) {
 }

@@ -37,11 +37,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.PATCH, "/api/auth/delivery-preference").authenticated()
                         .requestMatchers(
                                 "/api/auth", "/api/auth/**",
                                 "/api/products", "/api/products/**",
                                 "/api/categories", "/api/categories/**",
-                                "/api/support", "/api/support/**"
+                                "/api/banners", "/api/banners/**",
+                                "/api/support", "/api/support/**",
+                                "/api/orders/checkout"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/orders/track/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, Outlet } from "react-router-dom";
+import AboutVoltmartSection from "./AboutVoltmartSection";
 import Footer from "./Footer";
 import Navbar from "./Navbar";
 import ScrollToTop from "./ScrollToTop";
@@ -17,6 +18,7 @@ const Layout: React.FC = () => {
         Support
       </Link>
       <Footer />
+      <AboutVoltmartSection />
     </div>
   );
 };

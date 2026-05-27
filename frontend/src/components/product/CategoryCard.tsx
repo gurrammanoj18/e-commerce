@@ -2,22 +2,33 @@ import React from "react";
 import { Link } from "react-router-dom";
 import "../../styles/product/CategoryCard.css";
 import { CategorySummary } from "../../types/store";
+import appliancesImage from "../../assets/categories/appliances.jpg";
+import bathroomImage from "../../assets/categories/bathroom.jpg";
+import electricalsImage from "../../assets/categories/electricals.jpg";
+import hardwareProImage from "../../assets/categories/hardware-pro.avif";
+import homeUtilityImage from "../../assets/categories/home-utility.avif";
+import lightingFansImage from "../../assets/categories/lighting-fans.jpg";
+import plumbingImage from "../../assets/categories/plumbing.jpg";
+import toolsImage from "../../assets/categories/tools-and-acce.avif";
 
 interface CategoryCardProps {
   category: CategorySummary;
 }
 
 const categoryImageMap: Record<string, string> = {
-  "electrical-appliances": "/catalog/atlas-book.webp",
-  "hardware-products": "/catalog/quantum-gpu.webp",
-  "cleaning-products": "/catalog/orbit-camera.webp",
-  "home-utility-products": "/catalog/dock-station.webp",
-  "tools-accessories": "/catalog/vector-keyboard.webp",
+  appliances: appliancesImage,
+  electricals: electricalsImage,
+  "power-hand-tools": toolsImage,
+  hardware: hardwareProImage,
+  "lighting-fans": lightingFansImage,
+  bathroom: bathroomImage,
+  plumbing: plumbingImage,
+  kitchen: homeUtilityImage,
 };
 
 const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
   const categoryKey = category.slug ?? category.name.toLowerCase().replace(/\s+/g, "-");
-  const categoryImage = categoryImageMap[categoryKey] ?? "/catalog/dock-station.webp";
+  const categoryImage = category.image || categoryImageMap[categoryKey] || homeUtilityImage;
   const categoryTarget = category.slug ?? category.name;
 
   return (

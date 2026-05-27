@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { AxiosError } from "axios";
 import "../styles/pages/AdminDashboardPage.css";
+import AdminWorkspaceNav from "../components/admin/AdminWorkspaceNav";
 import { useAuth } from "../contexts/AuthContext";
 import {
   createAdminProduct,
@@ -26,8 +27,10 @@ import {
   Order,
   Product,
 } from "../types/store";
+import { optimizeImageFile } from "../utils/imageUpload";
 
 type AdminView = "dashboard" | "inventory" | "orders";
+type AdminOrderDeliveryFilter = "HOME_DELIVERY" | "STORE_PICKUP";
 
 interface ProductFormState {
   slug: string;
@@ -39,7 +42,6 @@ interface ProductFormState {
   originalPrice: string;
   shortDescription: string;
   description: string;
-  specifications: string;
   rating: string;
   reviewCount: string;
   featured: boolean;
@@ -72,6 +74,7 @@ const ORDER_STATUS_OPTIONS = [
   "DELIVERED",
   "CANCELLED",
 ];
+const STORE_PICKUP_STATUS_OPTIONS = ["PENDING", "CONFIRMED", "DELIVERED"];
 
 const createEmptyFormState = (): ProductFormState => ({
   slug: "",
@@ -83,7 +86,6 @@ const createEmptyFormState = (): ProductFormState => ({
   originalPrice: "",
   shortDescription: "",
   description: "",
-  specifications: "Processor: \nConnectivity: \nWarranty: ",
   rating: "4.5",
   reviewCount: "0",
   featured: false,
@@ -119,42 +121,6 @@ const parseImageList = (value: string) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-const readFileAsDataUrl = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error(`Unable to read ${file.name}`));
-    reader.readAsDataURL(file);
-  });
-
-const loadImage = (src: string) =>
-  new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Unable to process selected image."));
-    image.src = src;
-  });
-
-const optimizeImageFile = async (file: File) => {
-  const sourceDataUrl = await readFileAsDataUrl(file);
-  const image = await loadImage(sourceDataUrl);
-  const maxDimension = 1200;
-  const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
-  const width = Math.max(1, Math.round(image.width * scale));
-  const height = Math.max(1, Math.round(image.height * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d");
-
-  if (!context) {
-    return sourceDataUrl;
-  }
-
-  context.drawImage(image, 0, 0, width, height);
-  return canvas.toDataURL("image/jpeg", 0.78);
-};
-
 const extractErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof AxiosError) {
     const message = error.response?.data?.message;
@@ -170,20 +136,6 @@ const extractErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
-const parseSpecifications = (value: string) =>
-  value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .reduce<Record<string, string>>((accumulator, line) => {
-      const [label, ...rest] = line.split(":");
-      if (!label || !rest.length) {
-        return accumulator;
-      }
-      accumulator[label.trim()] = rest.join(":").trim();
-      return accumulator;
-    }, {});
-
 const buildProductPayload = (form: ProductFormState): AdminProductPayload => ({
   slug: slugify(form.slug || form.name),
   name: form.name.trim(),
@@ -193,7 +145,6 @@ const buildProductPayload = (form: ProductFormState): AdminProductPayload => ({
   originalPrice: Number(form.originalPrice),
   shortDescription: form.shortDescription.trim(),
   description: form.description.trim(),
-  specifications: parseSpecifications(form.specifications),
   rating: Number(form.rating),
   reviewCount: Number(form.reviewCount),
   featured: form.featured,
@@ -232,7 +183,6 @@ const createFormStateFromProduct = (
     originalPrice: String(product.originalPrice),
     shortDescription: product.shortDescription,
     description: product.description,
-    specifications: product.specs.map((spec) => `${spec.label}: ${spec.value}`).join("\n"),
     rating: String(product.rating),
     reviewCount: String(product.reviewCount),
     featured: product.featured,
@@ -295,6 +245,9 @@ const AdminDashboardPage: React.FC = () => {
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+  const [isCustomerLedgerOpen, setIsCustomerLedgerOpen] = useState(false);
+  const [activeOrderDeliveryFilter, setActiveOrderDeliveryFilter] =
+    useState<AdminOrderDeliveryFilter>("HOME_DELIVERY");
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [secondsUntilRefresh, setSecondsUntilRefresh] = useState(
     Math.floor(REFRESH_INTERVAL_MS / 1000),
@@ -306,7 +259,21 @@ const AdminDashboardPage: React.FC = () => {
     orders: Order[];
   } | null>(null);
 
-  const loadAdminData = async (options?: { silent?: boolean }) => {
+  const handleAdminRequestError = useCallback((error: unknown, fallback: string) => {
+    if (error instanceof AxiosError && error.response?.status === 403) {
+      toast.error("Your admin session has expired or no longer has access. Please log in again.");
+      logout();
+      navigate("/admin/login", {
+        replace: true,
+        state: { from: location, adminOnly: true },
+      });
+      return;
+    }
+
+    toast.error(extractErrorMessage(error, fallback));
+  }, [location, logout, navigate]);
+
+  const loadAdminData = useCallback(async (options?: { silent?: boolean }) => {
     if (!options?.silent) {
       setLoading(true);
     }
@@ -399,7 +366,7 @@ const AdminDashboardPage: React.FC = () => {
         setLoading(false);
       }
     }
-  };
+  }, [handleAdminRequestError]);
 
   useEffect(() => {
     void loadAdminData();
@@ -416,7 +383,7 @@ const AdminDashboardPage: React.FC = () => {
       window.clearInterval(refreshTimer);
       window.clearInterval(countdownTimer);
     };
-  }, []);
+  }, [loadAdminData]);
 
   const resetProductForm = () => {
     setEditingProductId(null);
@@ -428,20 +395,6 @@ const AdminDashboardPage: React.FC = () => {
   );
   const availableSubcategories = selectedCategory?.subcategories || [];
   const productImages = parseImageList(productForm.images);
-
-  const handleAdminRequestError = (error: unknown, fallback: string) => {
-    if (error instanceof AxiosError && error.response?.status === 403) {
-      toast.error("Your admin session has expired or no longer has access. Please log in again.");
-      logout();
-      navigate("/admin/login", {
-        replace: true,
-        state: { from: location, adminOnly: true },
-      });
-      return;
-    }
-
-    toast.error(extractErrorMessage(error, fallback));
-  };
 
   const handleProductFormChange = (
     field: keyof ProductFormState,
@@ -541,11 +494,6 @@ const AdminDashboardPage: React.FC = () => {
       return;
     }
 
-    if (!Object.keys(payload.specifications).length) {
-      toast.error("Add at least one specification in Label: Value format.");
-      return;
-    }
-
     setSavingProduct(true);
     try {
       if (editingProductId) {
@@ -628,6 +576,15 @@ const AdminDashboardPage: React.FC = () => {
   const sortedInventory = [...inventory].sort(
     (left, right) => left.stockQuantity - right.stockQuantity,
   );
+  const filteredOrders = orders.filter(
+    (order) => order.deliveryMode === activeOrderDeliveryFilter,
+  );
+  const homeDeliveryOrderCount = orders.filter(
+    (order) => order.deliveryMode === "HOME_DELIVERY",
+  ).length;
+  const storePickupOrderCount = orders.filter(
+    (order) => order.deliveryMode === "STORE_PICKUP",
+  ).length;
 
   const renderDashboardView = () => (
     <>
@@ -1014,18 +971,6 @@ const AdminDashboardPage: React.FC = () => {
               ) : null}
             </label>
             <label className="form-grid__wide">
-              Specifications
-              <textarea
-                rows={5}
-                value={productForm.specifications}
-                onChange={(event) =>
-                  handleProductFormChange("specifications", event.target.value)
-                }
-                placeholder="Processor: Intel Core i7"
-                required
-              />
-            </label>
-            <label className="form-grid__wide">
               Tags
               <textarea
                 rows={3}
@@ -1200,6 +1145,36 @@ const AdminDashboardPage: React.FC = () => {
             <span className="eyebrow">Order operations</span>
             <h2>Realtime order management</h2>
           </div>
+          <div className="admin-order-filter-group" aria-label="Order delivery filters">
+            <button
+              type="button"
+              className={
+                activeOrderDeliveryFilter === "HOME_DELIVERY"
+                  ? "admin-order-filter-button is-active"
+                  : "admin-order-filter-button"
+              }
+              onClick={() => {
+                setActiveOrderDeliveryFilter("HOME_DELIVERY");
+                setExpandedOrderId(null);
+              }}
+            >
+              Home delivery ({homeDeliveryOrderCount})
+            </button>
+            <button
+              type="button"
+              className={
+                activeOrderDeliveryFilter === "STORE_PICKUP"
+                  ? "admin-order-filter-button is-active"
+                  : "admin-order-filter-button"
+              }
+              onClick={() => {
+                setActiveOrderDeliveryFilter("STORE_PICKUP");
+                setExpandedOrderId(null);
+              }}
+            >
+              Store pickup ({storePickupOrderCount})
+            </button>
+          </div>
         </div>
         <div className="admin-table">
           <table>
@@ -1215,7 +1190,7 @@ const AdminDashboardPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
+              {filteredOrders.length ? filteredOrders.map((order) => (
                 <React.Fragment key={order.id}>
                   <tr>
                     <td>
@@ -1252,7 +1227,10 @@ const AdminDashboardPage: React.FC = () => {
                           void handleStatusChange(order.id, event.target.value)
                         }
                       >
-                        {ORDER_STATUS_OPTIONS.map((status) => (
+                        {(order.deliveryMode === "STORE_PICKUP"
+                          ? STORE_PICKUP_STATUS_OPTIONS
+                          : ORDER_STATUS_OPTIONS
+                        ).map((status) => (
                           <option key={status} value={status}>
                             {status}
                           </option>
@@ -1284,6 +1262,12 @@ const AdminDashboardPage: React.FC = () => {
                             <span className="eyebrow">Order details</span>
                             <p>Order no: {order.orderNumber}</p>
                             <p>Status: {order.status}</p>
+                            <p>
+                              Delivery:{" "}
+                              {order.deliveryMode === "STORE_PICKUP"
+                                ? "Pick up at store"
+                                : "Home delivery"}
+                            </p>
                             <p>Placed: {formatDateTime(order.createdAt)}</p>
                             <p>Subtotal: {formatCurrency(order.subtotal)}</p>
                             <p>Shipping: {formatCurrency(order.shippingCost)}</p>
@@ -1317,7 +1301,19 @@ const AdminDashboardPage: React.FC = () => {
                     </tr>
                   ) : null}
                 </React.Fragment>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={7}>
+                    <div className="admin-empty-note">
+                      No{" "}
+                      {activeOrderDeliveryFilter === "HOME_DELIVERY"
+                        ? "home delivery"
+                        : "store pickup"}{" "}
+                      orders right now.
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -1325,23 +1321,33 @@ const AdminDashboardPage: React.FC = () => {
 
       <section className="admin-side-stack">
         <article className="store-card admin-panel">
-          <div className="admin-panel__heading">
+          <button
+            type="button"
+            className="admin-panel__heading admin-panel__heading--toggle"
+            onClick={() => setIsCustomerLedgerOpen((current) => !current)}
+            aria-expanded={isCustomerLedgerOpen}
+          >
             <div>
               <span className="eyebrow">Customer ledger</span>
               <h2>Users and access</h2>
             </div>
-          </div>
-          <div className="admin-user-list">
-            {users.slice(0, 6).map((user) => (
-                <div key={user.id} className="admin-user-list__item">
-                  <div>
-                    <strong>{user.fullName}</strong>
-                    <span>{user.email || user.phoneNumber || "No contact info"}</span>
+            <span className="admin-panel__toggle-indicator">
+              {isCustomerLedgerOpen ? "Hide" : "Open"}
+            </span>
+          </button>
+          {isCustomerLedgerOpen ? (
+            <div className="admin-user-list">
+              {users.slice(0, 6).map((user) => (
+                  <div key={user.id} className="admin-user-list__item">
+                    <div>
+                      <strong>{user.fullName}</strong>
+                      <span>{user.email || user.phoneNumber || "No contact info"}</span>
+                    </div>
+                    <span>{user.role.replace("ROLE_", "")}</span>
                   </div>
-                  <span>{user.role.replace("ROLE_", "")}</span>
-                </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : null}
         </article>
 
         <article className="store-card admin-panel">
@@ -1393,11 +1399,7 @@ const AdminDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      <nav className="admin-nav">
-        <NavLink to="/admin/dashboard">Dashboard</NavLink>
-        <NavLink to="/admin/inventory">Inventory & products</NavLink>
-        <NavLink to="/admin/orders">Orders & users</NavLink>
-      </nav>
+      <AdminWorkspaceNav />
 
       {loading && !overview ? (
         <div className="store-card empty-state">

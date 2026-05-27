@@ -6,6 +6,7 @@ public record CategoryResponse(
         String slug,
         String description,
         String icon,
+        String image,
         Long parentId,
         boolean leaf,
         long productCount,

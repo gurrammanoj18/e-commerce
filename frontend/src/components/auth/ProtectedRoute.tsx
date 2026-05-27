@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import PageLoader from "../shared/PageLoader";
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
@@ -15,7 +16,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { isAuthenticated, isAdmin, loading } = useAuth();
 
   if (loading) {
-    return null;
+    return <PageLoader />;
   }
 
   if (!isAuthenticated) {

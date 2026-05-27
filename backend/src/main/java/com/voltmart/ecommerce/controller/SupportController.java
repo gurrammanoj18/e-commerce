@@ -1,7 +1,7 @@
 package com.voltmart.ecommerce.controller;
 
 import com.voltmart.ecommerce.dto.bulk.BulkOrderRequest;
-import com.voltmart.ecommerce.dto.common.ApiResponse;
+import com.voltmart.ecommerce.dto.bulk.BulkOrderResponse;
 import com.voltmart.ecommerce.service.BulkOrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ public class SupportController {
     private final BulkOrderService bulkOrderService;
 
     @PostMapping("/bulk-order")
-    public ApiResponse submitBulkOrder(@Valid @RequestBody BulkOrderRequest request) {
+    public BulkOrderResponse submitBulkOrder(@Valid @RequestBody BulkOrderRequest request) {
         return bulkOrderService.submitInquiry(request);
     }
 }

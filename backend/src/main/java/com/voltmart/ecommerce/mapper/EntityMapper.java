@@ -1,8 +1,5 @@
 package com.voltmart.ecommerce.mapper;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.voltmart.ecommerce.config.AppProperties;
 import com.voltmart.ecommerce.dto.cart.CartItemResponse;
 import com.voltmart.ecommerce.dto.cart.CartResponse;
@@ -28,7 +25,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class EntityMapper {
 
-    private final ObjectMapper objectMapper;
     private final AppProperties appProperties;
 
     public UserResponse toUserResponse(User user) {
@@ -37,7 +33,8 @@ public class EntityMapper {
                 user.getFullName(),
                 user.getEmail(),
                 user.getPhoneNumber(),
-                user.getRole().name()
+                user.getRole().name(),
+                user.getPreferredDeliveryMode() == null ? null : user.getPreferredDeliveryMode().name()
         );
     }
 
@@ -68,7 +65,6 @@ public class EntityMapper {
                 product.getOriginalPrice(),
                 product.getShortDescription(),
                 product.getDescription(),
-                readSpecifications(product.getSpecifications()),
                 product.getRating(),
                 product.getReviewCount(),
                 inventory.getStockQuantity(),
@@ -98,6 +94,7 @@ public class EntityMapper {
                 category.getSlug(),
                 category.getDescription(),
                 category.getIcon(),
+                category.getImage(),
                 category.getParent() == null ? null : category.getParent().getId(),
                 category.getChildren().isEmpty(),
                 productCount,
@@ -156,12 +153,17 @@ public class EntityMapper {
                 order.getId(),
                 order.getOrderNumber().toString(),
                 order.getStatus().name(),
+                order.getDeliveryMode().name(),
                 order.getShippingName(),
                 order.getEmail(),
                 order.getPhone(),
                 order.getShippingAddress(),
                 order.getCity(),
                 order.getPostalCode(),
+                order.getUserAddress() == null ? null : order.getUserAddress().getId(),
+                order.getDeliverySlot(),
+                order.isPriorityOrder(),
+                order.getPriorityNotes(),
                 order.getSubtotal(),
                 order.getShippingCost(),
                 order.getTaxAmount(),
@@ -176,21 +178,5 @@ public class EntityMapper {
         String message = "Track order " + order.getOrderNumber() + " - status: " + order.getStatus();
         return "https://wa.me/" + appProperties.getWhatsapp().getSupportNumber() + "?text=" +
                 URLEncoder.encode(message, StandardCharsets.UTF_8);
-    }
-
-    public String writeSpecifications(Map<String, String> specifications) {
-        try {
-            return objectMapper.writeValueAsString(specifications == null ? Map.of() : specifications);
-        } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Unable to serialize specifications", exception);
-        }
-    }
-
-    private Map<String, String> readSpecifications(String specifications) {
-        try {
-            return objectMapper.readValue(specifications == null ? "{}" : specifications, new TypeReference<>() {});
-        } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Unable to deserialize specifications", exception);
-        }
     }
 }

@@ -2,10 +2,12 @@ package com.voltmart.ecommerce.controller;
 
 import com.voltmart.ecommerce.dto.auth.AuthRequest;
 import com.voltmart.ecommerce.dto.auth.AuthResponse;
+import com.voltmart.ecommerce.dto.auth.DeliveryPreferenceRequest;
 import com.voltmart.ecommerce.dto.auth.GoogleAuthRequest;
 import com.voltmart.ecommerce.dto.auth.OtpChallengeResponse;
 import com.voltmart.ecommerce.dto.auth.OtpRequest;
 import com.voltmart.ecommerce.dto.auth.OtpVerifyRequest;
+import com.voltmart.ecommerce.dto.auth.ProfileCompletionRequest;
 import com.voltmart.ecommerce.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,5 +38,15 @@ public class AuthController {
     @PostMapping("/otp/verify")
     public AuthResponse verifyOtp(@Valid @RequestBody OtpVerifyRequest request) {
         return authService.verifyOtp(request);
+    }
+
+    @PatchMapping("/profile")
+    public AuthResponse completeProfile(@Valid @RequestBody ProfileCompletionRequest request) {
+        return authService.completeProfile(request);
+    }
+
+    @PatchMapping("/delivery-preference")
+    public AuthResponse updateDeliveryPreference(@Valid @RequestBody DeliveryPreferenceRequest request) {
+        return authService.updateDeliveryPreference(request);
     }
 }

@@ -1,5 +1,6 @@
 package com.voltmart.ecommerce.entity;
 
+import com.voltmart.ecommerce.entity.enums.DeliveryMode;
 import com.voltmart.ecommerce.entity.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
@@ -38,6 +39,9 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    @Enumerated(EnumType.STRING)
+    private DeliveryMode preferredDeliveryMode;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

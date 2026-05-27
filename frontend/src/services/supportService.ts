@@ -1,4 +1,5 @@
 import api from "./api";
+import { BulkInquiry, BulkInquiryLineItemPayload } from "../types/store";
 
 export const submitBulkOrder = async (payload: {
   companyName: string;
@@ -8,7 +9,12 @@ export const submitBulkOrder = async (payload: {
   productCategory: string;
   estimatedQuantity: number;
   requirements: string;
+  deliveryCity?: string;
+  budgetAmount?: number | null;
+  rfqRequired: boolean;
+  priorityRequest: boolean;
+  items: BulkInquiryLineItemPayload[];
 }) => {
-  const response = await api.post<{ message: string }>("/support/bulk-order", payload);
+  const response = await api.post<BulkInquiry>("/support/bulk-order", payload);
   return response.data;
 };

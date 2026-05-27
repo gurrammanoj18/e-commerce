@@ -2,7 +2,6 @@ package com.voltmart.ecommerce.config;
 
 import com.voltmart.ecommerce.entity.*;
 import com.voltmart.ecommerce.entity.enums.Role;
-import com.voltmart.ecommerce.mapper.EntityMapper;
 import com.voltmart.ecommerce.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -24,7 +23,12 @@ public class DataSeeder implements CommandLineRunner {
             "laptops",
             "audio",
             "networking",
-            "components"
+            "components",
+            "electrical-appliances",
+            "hardware-products",
+            "cleaning-products",
+            "home-utility-products",
+            "tools-accessories"
     );
 
     private final CartItemRepository cartItemRepository;
@@ -35,8 +39,6 @@ public class DataSeeder implements CommandLineRunner {
     private final WishlistItemRepository wishlistItemRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EntityMapper entityMapper;
-
     @Override
     public void run(String... args) {
         seedUsers();
@@ -46,45 +48,42 @@ public class DataSeeder implements CommandLineRunner {
             return;
         }
 
-        seedProduct("home-ease-mixer", "Home Ease Mixer", "HomeEase", categories.get("electrical-appliances"), "Kitchen essential", "Popular",
+        seedProduct("home-ease-mixer", "Home Ease Mixer", "HomeEase", categories.get("kitchen"), "Kitchen essential", "Popular",
                 List.of("/catalog/atlas-book.webp", "/catalog/pulse-laptop.webp", "/catalog/dock-station.webp"),
-                Map.of("Power", "750W", "Jars", "3 stainless steel", "Warranty", "2 years"),
-                BigDecimal.valueOf(4299), BigDecimal.valueOf(4999), 25, true, false, true, true);
+                BigDecimal.valueOf(4299), BigDecimal.valueOf(4999), 25, true, false, true, true, true);
 
-        seedProduct("utility-storage-rack", "Utility Storage Rack", "HouseLine", categories.get("home-utility-products"), "Home organization", "New",
+        seedProduct("utility-storage-rack", "Utility Storage Rack", "HouseLine", categories.get("hardware"), "Home organization", "New",
                 List.of("/catalog/dock-station.webp", "/catalog/atlas-book.webp", "/catalog/lumen-monitor.webp"),
-                Map.of("Material", "Powder-coated steel", "Shelves", "5", "Load Capacity", "120kg"),
-                BigDecimal.valueOf(3499), BigDecimal.valueOf(3999), 18, true, false, true, true);
+                BigDecimal.valueOf(3499), BigDecimal.valueOf(3999), 18, true, false, true, true, false);
 
-        seedProduct("pro-grip-tool-kit", "Pro Grip Tool Kit", "ForgeMax", categories.get("tools-accessories"), "Workshop-ready", "Top rated",
+        seedProduct("pro-grip-tool-kit", "Pro Grip Tool Kit", "ForgeMax", categories.get("power-hand-tools"), "Workshop-ready", "Top rated",
                 List.of("/catalog/vector-keyboard.webp", "/catalog/quantum-gpu.webp", "/catalog/dock-station.webp"),
-                Map.of("Pieces", "46", "Case", "Impact-resistant", "Use", "Home and workshop"),
-                BigDecimal.valueOf(2799), BigDecimal.valueOf(3299), 38, false, true, false, true);
+                BigDecimal.valueOf(2799), BigDecimal.valueOf(3299), 38, false, true, false, true, false);
 
-        seedProduct("steel-fix-fastener-set", "Steel Fix Fastener Set", "Hardline", categories.get("hardware-products"), "Durable hardware", "Featured",
+        seedProduct("steel-fix-fastener-set", "Steel Fix Fastener Set", "Hardline", categories.get("hardware"), "Durable hardware", "Featured",
                 List.of("/catalog/quantum-gpu.webp", "/catalog/vector-keyboard.webp", "/catalog/dock-station.webp"),
-                Map.of("Material", "Stainless steel", "Pack Size", "120 pieces", "Finish", "Rust resistant"),
-                BigDecimal.valueOf(699), BigDecimal.valueOf(849), 140, false, true, false, true);
+                BigDecimal.valueOf(699), BigDecimal.valueOf(849), 140, false, true, false, true, false);
 
-        seedProduct("fresh-wipe-floor-cleaner", "Fresh Wipe Floor Cleaner", "PureNest", categories.get("cleaning-products"), "Daily cleaning", "Value pick",
+        seedProduct("fresh-wipe-floor-cleaner", "Fresh Wipe Floor Cleaner", "PureNest", categories.get("bathroom"), "Daily cleaning", "Value pick",
                 List.of("/catalog/orbit-camera.webp", "/catalog/forge-speaker.webp", "/catalog/dock-station.webp"),
-                Map.of("Volume", "2L", "Surface", "Tiles and marble", "Fragrance", "Citrus"),
-                BigDecimal.valueOf(349), BigDecimal.valueOf(399), 96, false, true, true, true);
+                BigDecimal.valueOf(349), BigDecimal.valueOf(399), 96, false, true, true, true, false);
 
-        seedProduct("flowguard-bath-fitting", "FlowGuard Bath Fitting", "AquaLine", categories.get("home-utility-products"), "Bathroom upgrade", "Featured",
+        seedProduct("flowguard-bath-fitting", "FlowGuard Bath Fitting", "AquaLine", categories.get("plumbing"), "Bathroom upgrade", "Featured",
                 List.of("/catalog/mesh-router.webp", "/catalog/orbit-camera.webp", "/catalog/dock-station.webp"),
-                Map.of("Finish", "Chrome", "Mount", "Wall mount", "Warranty", "5 years"),
-                BigDecimal.valueOf(2199), BigDecimal.valueOf(2599), 22, true, false, true, true);
+                BigDecimal.valueOf(2199), BigDecimal.valueOf(2599), 22, true, false, true, true, true);
     }
 
     private Map<String, Category> seedCategories() {
         Map<String, Category> categories = new LinkedHashMap<>();
 
-        categories.put("electrical-appliances", upsertCategory("Electrical Appliances", "electrical-appliances", "Mixer, grinder, and everyday powered home products.", "🔌", null));
-        categories.put("hardware-products", upsertCategory("Hardware Products", "hardware-products", "Locks, fasteners, brackets, and durable hardware essentials.", "🔩", null));
-        categories.put("cleaning-products", upsertCategory("Cleaning Products", "cleaning-products", "Cleaning, maintenance, and care essentials.", "🧼", null));
-        categories.put("home-utility-products", upsertCategory("Home Utility Products", "home-utility-products", "Household utility and organization products.", "🏠", null));
-        categories.put("tools-accessories", upsertCategory("Tools & Accessories", "tools-accessories", "Hand tools, kits, and repair accessories.", "🛠️", null));
+        categories.put("appliances", upsertCategory("Appliances", "appliances", "Essential machines and home-use appliances for daily living.", "🧺", null));
+        categories.put("electricals", upsertCategory("Electricals", "electricals", "Switches, wiring, connectors, and electrical essentials.", "🔌", null));
+        categories.put("power-hand-tools", upsertCategory("Power & Hand Tools", "power-hand-tools", "Repair kits, workshop tools, and job-ready equipment.", "🛠️", null));
+        categories.put("hardware", upsertCategory("Hardware", "hardware", "Fasteners, brackets, fixtures, and durable installation essentials.", "🔩", null));
+        categories.put("lighting-fans", upsertCategory("Lighting & Fans", "lighting-fans", "Lighting fixtures, bulbs, and fan solutions for every room.", "💡", null));
+        categories.put("bathroom", upsertCategory("Bathroom", "bathroom", "Bathroom care, fittings, and everyday utility products.", "🚿", null));
+        categories.put("plumbing", upsertCategory("Plumbing", "plumbing", "Pipes, valves, fittings, and flow-control solutions.", "🚰", null));
+        categories.put("kitchen", upsertCategory("Kitchen", "kitchen", "Kitchen appliances, storage, and prep essentials.", "🍽️", null));
 
         return categories;
     }
@@ -131,8 +130,9 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedProduct(String slug, String name, String brand, Category category, String heroTag, String badge,
-                             List<String> images, Map<String, String> specifications, BigDecimal price, BigDecimal originalPrice,
-                             int stockQuantity, boolean featured, boolean bestSeller, boolean newArrival, boolean bulkEligible) {
+                             List<String> images, BigDecimal price, BigDecimal originalPrice, int stockQuantity,
+                             boolean featured, boolean bestSeller, boolean newArrival, boolean bulkEligible,
+                             boolean warrantyAvailable) {
         if (category == null) {
             throw new IllegalStateException("Seed category missing for product " + slug);
         }
@@ -146,14 +146,13 @@ public class DataSeeder implements CommandLineRunner {
                 .originalPrice(originalPrice)
                 .shortDescription("Professional hardware crafted for high-performance ecommerce demos.")
                 .description("A production-ready seeded product to support catalog browsing, search, filters, cart, and checkout flows.")
-                .specifications(entityMapper.writeSpecifications(specifications))
                 .rating(4.8)
                 .reviewCount(120)
                 .featured(featured)
                 .bestSeller(bestSeller)
                 .newArrival(newArrival)
                 .bulkEligible(bulkEligible)
-                .warrantyAvailable(specifications.keySet().stream().anyMatch(key -> key.equalsIgnoreCase("Warranty")))
+                .warrantyAvailable(warrantyAvailable)
                 .replacementAvailable(true)
                 .badge(badge)
                 .heroTag(heroTag)

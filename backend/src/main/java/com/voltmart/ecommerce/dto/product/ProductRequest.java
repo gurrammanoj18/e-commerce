@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 public record ProductRequest(
         @NotBlank String slug,
@@ -17,7 +16,6 @@ public record ProductRequest(
         @NotNull @DecimalMin("0.0") BigDecimal originalPrice,
         @NotBlank String shortDescription,
         @NotBlank String description,
-        Map<String, String> specifications,
         @NotNull Double rating,
         @NotNull Integer reviewCount,
         @NotNull Boolean featured,

@@ -1,7 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import "../../styles/product/ProductCard.css";
+import "../../styles/shared/LoadingState.css";
+import { useAuth } from "../../contexts/AuthContext";
 import { useCart } from "../../contexts/CartContext";
+import { useCollectionAnimation } from "../../contexts/CollectionAnimationContext";
 import { useWishlist } from "../../contexts/WishlistContext";
 import { Product } from "../../types/store";
 import { formatCurrency } from "../../utils/currency";
@@ -11,11 +14,16 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const { user } = useAuth();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { animateProductToTarget } = useCollectionAnimation();
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [wishlistPending, setWishlistPending] = useState(false);
   const [hoverDirection, setHoverDirection] = useState<"left" | "right" | null>(
     null
   );
+  const productImageRef = useRef<HTMLImageElement | null>(null);
 
   const previewImages = useMemo(() => {
     const fallbackImage = product.images[0];
@@ -54,7 +62,51 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       : product.availability === "low-stock"
       ? "Delivery soon, limited stock"
       : "Delivery available";
+  const estimatedShipping =
+    product.price > 4999 ? "Free shipping" : `${formatCurrency(499)} shipping`;
+  const deliveryPreferenceLabel =
+    product.availability === "out-of-stock"
+      ? "Currently unavailable"
+      : user?.preferredDeliveryMode === "HOME_DELIVERY"
+      ? `Home delivery • ${estimatedShipping}`
+      : user?.preferredDeliveryMode === "STORE_PICKUP"
+      ? "Store pickup available"
+      : mobileDeliveryLabel;
   const savedToWishlist = isInWishlist(product.id);
+
+  const animateProduct = async (target: "cart" | "wishlist") => {
+    if (!product.images[0] || !productImageRef.current) {
+      return;
+    }
+
+    await animateProductToTarget({
+      imageSrc: product.images[0],
+      sourceRect: productImageRef.current.getBoundingClientRect(),
+      target,
+    });
+  };
+
+  const handleAddToCart = async () => {
+    setAddingToCart(true);
+    try {
+      await animateProduct("cart");
+      await addToCart(product);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  const handleToggleWishlist = async () => {
+    setWishlistPending(true);
+    try {
+      if (!savedToWishlist) {
+        await animateProduct("wishlist");
+      }
+      await toggleWishlist(product);
+    } finally {
+      setWishlistPending(false);
+    }
+  };
 
   return (
     <article className="store-card product-card">
@@ -66,6 +118,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       >
         <div className="product-card__image-stage">
           <img
+            ref={productImageRef}
             className={`product-card__image product-card__image--base ${
               hoverDirection === "left"
                 ? "is-leaving-right"
@@ -124,7 +177,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
         <div className="product-card__delivery">
           <span aria-hidden="true">🚚</span>
-          <span>{mobileDeliveryLabel}</span>
+          <span>{deliveryPreferenceLabel}</span>
         </div>
 
         <div className="product-card__highlights">
@@ -132,28 +185,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             {stockLabel}
           </span>
         </div>
-
-        <div className="product-card__specs">
-          {product.specs.slice(0, 3).map((spec) => (
-            <div key={spec.label}>
-              <strong>{spec.value}</strong>
-              <span>{spec.label}</span>
-            </div>
-          ))}
-        </div>
-
         <div className="product-card__footer">
           <button
             type="button"
-            disabled={product.availability === "out-of-stock"}
-            onClick={() => void addToCart(product)}
+            disabled={product.availability === "out-of-stock" || addingToCart}
+            onClick={() => void handleAddToCart()}
           >
             {product.availability === "out-of-stock" ? "Unavailable" : "Add to cart"}
           </button>
           <button
             className="product-card__share"
             type="button"
-            onClick={() => void toggleWishlist(product)}
+            disabled={wishlistPending}
+            onClick={() => void handleToggleWishlist()}
           >
             {savedToWishlist ? "In wishlist" : "Add to wishlist"}
           </button>

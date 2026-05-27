@@ -5,6 +5,7 @@ create table users (
     phone_number varchar(20) unique,
     password varchar(255),
     role varchar(50) not null,
+    preferred_delivery_mode varchar(50),
     created_at timestamp not null
 );
 
@@ -35,7 +36,6 @@ create table product (
     original_price numeric(12, 2) not null,
     short_description varchar(500) not null,
     description varchar(4000) not null,
-    specifications varchar(1000),
     rating double precision not null,
     review_count integer not null,
     featured boolean not null,
@@ -85,6 +85,7 @@ create table orders (
     order_number uuid not null unique,
     user_id bigint not null references users(id),
     status varchar(50) not null,
+    delivery_mode varchar(50) not null,
     shipping_name varchar(255) not null,
     email varchar(255) not null,
     phone varchar(50) not null,

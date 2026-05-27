@@ -154,7 +154,6 @@ public class ProductServiceImpl implements ProductService {
         product.setOriginalPrice(request.originalPrice());
         product.setShortDescription(request.shortDescription());
         product.setDescription(request.description());
-        product.setSpecifications(entityMapper.writeSpecifications(request.specifications()));
         product.setRating(request.rating());
         product.setReviewCount(request.reviewCount());
         product.setFeatured(request.featured());

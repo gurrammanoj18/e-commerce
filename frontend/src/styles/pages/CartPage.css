@@ -100,6 +100,11 @@
   min-width: 140px;
 }
 
+.cart-saved-section {
+  display: grid;
+  gap: 18px;
+}
+
 @media (max-width: 1080px) {
   .cart-layout {
     grid-template-columns: repeat(2, minmax(0, 1fr));

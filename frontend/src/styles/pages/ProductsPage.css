@@ -35,9 +35,7 @@
 
 .listing-layout .product-card__copy,
 .listing-layout .product-card__meta,
-.listing-layout .product-pill,
-.listing-layout .product-card__specs strong,
-.listing-layout .product-card__specs span {
+.listing-layout .product-pill {
   font-size: 0.68rem;
 }
 

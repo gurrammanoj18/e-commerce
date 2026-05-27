@@ -1,7 +1,10 @@
 package com.voltmart.ecommerce.service.impl;
 
 import com.voltmart.ecommerce.dto.category.CategoryResponse;
+import com.voltmart.ecommerce.dto.category.CategoryRequest;
 import com.voltmart.ecommerce.entity.Category;
+import com.voltmart.ecommerce.exception.BadRequestException;
+import com.voltmart.ecommerce.exception.ResourceNotFoundException;
 import com.voltmart.ecommerce.mapper.EntityMapper;
 import com.voltmart.ecommerce.repository.CategoryRepository;
 import com.voltmart.ecommerce.repository.ProductRepository;
@@ -40,6 +43,50 @@ public class CategoryServiceImpl implements CategoryService {
                 .toList();
     }
 
+    @Override
+    @Transactional
+    public CategoryResponse createCategory(CategoryRequest request) {
+        Category category = Category.builder()
+                .name(request.name().trim())
+                .slug(request.slug().trim())
+                .description(blankToNull(request.description()))
+                .icon(blankToNull(request.icon()))
+                .image(blankToNull(request.image()))
+                .parent(resolveParent(request.parentId(), null))
+                .build();
+        return toCategoryTree(categoryRepository.save(category), buildProductCounts());
+    }
+
+    @Override
+    @Transactional
+    public CategoryResponse updateCategory(Long id, CategoryRequest request) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+        category.setName(request.name().trim());
+        category.setSlug(request.slug().trim());
+        category.setDescription(blankToNull(request.description()));
+        category.setIcon(blankToNull(request.icon()));
+        category.setImage(blankToNull(request.image()));
+        category.setParent(resolveParent(request.parentId(), id));
+        return toCategoryTree(categoryRepository.save(category), buildProductCounts());
+    }
+
+    @Override
+    @Transactional
+    public void deleteCategory(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+        if (!category.getChildren().isEmpty()) {
+            throw new BadRequestException("Delete or reassign subcategories before removing this category");
+        }
+        boolean hasProducts = productRepository.findAll().stream()
+                .anyMatch(product -> product.getCategory().getId().equals(id));
+        if (hasProducts) {
+            throw new BadRequestException("Delete or reassign products before removing this category");
+        }
+        categoryRepository.delete(category);
+    }
+
     private CategoryResponse toCategoryTree(Category category, Map<Long, Long> directProductCounts) {
         List<CategoryResponse> subcategories = category.getChildren().stream()
                 .sorted(Comparator.comparing(Category::getName))
@@ -52,5 +99,28 @@ public class CategoryServiceImpl implements CategoryService {
                 .sum();
 
         return entityMapper.toCategoryResponse(category, ownCount + nestedCount, subcategories);
+    }
+
+    private Map<Long, Long> buildProductCounts() {
+        Map<Long, Long> directProductCounts = new HashMap<>();
+        productRepository.findAll().forEach(product ->
+                directProductCounts.merge(product.getCategory().getId(), 1L, Long::sum)
+        );
+        return directProductCounts;
+    }
+
+    private Category resolveParent(Long parentId, Long currentCategoryId) {
+        if (parentId == null) {
+            return null;
+        }
+        if (currentCategoryId != null && currentCategoryId.equals(parentId)) {
+            throw new BadRequestException("Category cannot be its own parent");
+        }
+        return categoryRepository.findById(parentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Parent category not found"));
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

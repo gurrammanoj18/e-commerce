@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { AxiosError } from "axios";
 import { toast } from "react-toastify";
 import {
@@ -9,6 +9,7 @@ import {
 } from "../services/cartService";
 import { CartItem, Product } from "../types/store";
 import { useAuth } from "./AuthContext";
+import { useProcessing } from "./ProcessingContext";
 
 interface CartContextValue {
   items: CartItem[];
@@ -24,14 +25,26 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 const CART_STORAGE_KEY = "voltmart-cart-local";
 
+const getCartErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof AxiosError) {
+    const responseMessage = error.response?.data?.message;
+    if (typeof responseMessage === "string" && responseMessage.trim()) {
+      return responseMessage;
+    }
+  }
+
+  return fallback;
+};
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { isAuthenticated, logout } = useAuth();
+  const { startProcessing, stopProcessing } = useProcessing();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const loadRemoteCart = async () => {
+  const loadRemoteCart = useCallback(async () => {
     setLoading(true);
     try {
       const cart = await fetchCart();
@@ -67,7 +80,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
             description: "",
             heroTag: "",
             images: item.image ? [item.image] : [],
-            specs: [],
             tags: [],
             featured: false,
             bestSeller: false,
@@ -89,7 +101,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [logout]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -103,7 +115,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setItems([]);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, loadRemoteCart]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -123,7 +135,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
           return;
         }
 
-        toast.error("Couldn't add this item to cart right now.");
+        toast.error(getCartErrorMessage(error, "Couldn't add this item to cart right now."));
       }
       return;
     }
@@ -149,6 +161,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         setItems((currentItems) =>
           currentItems.filter((cartItem) => cartItem.product.id !== productId)
         );
+        const processingId = startProcessing({
+          title: "Updating cart",
+          message: "Removing this item from your cart...",
+        });
         try {
           await removeCartItem(item.id);
         } catch (error) {
@@ -159,8 +175,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
             return;
           }
 
-          toast.error("Couldn't remove this item from cart right now.");
+          toast.error(getCartErrorMessage(error, "Couldn't remove this item from cart right now."));
           return;
+        } finally {
+          stopProcessing(processingId);
         }
 
         await loadRemoteCart();
@@ -182,6 +200,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     if (isAuthenticated) {
       const item = items.find((cartItem) => cartItem.product.id === productId);
       if (item?.id) {
+        const processingId = startProcessing({
+          title: "Updating quantity",
+          message: "Refreshing your cart totals...",
+        });
         try {
           await updateCartItem(item.id, productId, quantity);
           await loadRemoteCart();
@@ -192,7 +214,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
             return;
           }
 
-          toast.error("Couldn't update cart quantity right now.");
+          toast.error(getCartErrorMessage(error, "Couldn't update cart quantity right now."));
+        } finally {
+          stopProcessing(processingId);
         }
       }
       return;

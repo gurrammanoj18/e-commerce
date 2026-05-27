@@ -19,13 +19,12 @@
       "/catalog/pulse-laptop.webp",
       "/catalog/lumen-monitor.webp"
     ],
-    "specs": [
-      { "label": "Processor", "value": "Intel Core Ultra 7" },
-      { "label": "Memory", "value": "16GB DDR5" },
-      { "label": "Storage", "value": "1TB SSD" },
-      { "label": "Display", "value": "14-inch 2.8K" }
+    "tags": [
+      "laptop",
+      "office",
+      "creator",
+      "portable"
     ],
-    "tags": ["laptop", "office", "creator", "portable"],
     "featured": true,
     "bestSeller": true,
     "bulkEligible": true,
@@ -51,13 +50,12 @@
       "/catalog/forge-speaker.webp",
       "/catalog/dock-station.webp"
     ],
-    "specs": [
-      { "label": "Battery", "value": "35 hours" },
-      { "label": "Driver", "value": "40mm" },
-      { "label": "Connectivity", "value": "BT 5.3" },
-      { "label": "Weight", "value": "285g" }
+    "tags": [
+      "audio",
+      "wireless",
+      "anc",
+      "headphones"
     ],
-    "tags": ["audio", "wireless", "anc", "headphones"],
     "featured": true,
     "bestSeller": true,
     "bulkEligible": false,
@@ -83,13 +81,12 @@
       "/catalog/mesh-router.webp",
       "/catalog/orbit-camera.webp"
     ],
-    "specs": [
-      { "label": "Wi-Fi", "value": "AX3000" },
-      { "label": "Coverage", "value": "2,500 sq.ft" },
-      { "label": "Ports", "value": "4 Gigabit" },
-      { "label": "Security", "value": "WPA3" }
+    "tags": [
+      "router",
+      "wifi 6",
+      "mesh",
+      "office"
     ],
-    "tags": ["router", "wifi 6", "mesh", "office"],
     "featured": true,
     "bestSeller": false,
     "bulkEligible": true,
@@ -115,13 +112,12 @@
       "/catalog/dock-station.webp",
       "/catalog/atlas-book.webp"
     ],
-    "specs": [
-      { "label": "Resolution", "value": "2560x1440" },
-      { "label": "Refresh rate", "value": "100Hz" },
-      { "label": "Ports", "value": "USB-C + HDMI" },
-      { "label": "Panel", "value": "IPS" }
+    "tags": [
+      "monitor",
+      "productivity",
+      "display",
+      "usb-c"
     ],
-    "tags": ["monitor", "productivity", "display", "usb-c"],
     "featured": true,
     "bestSeller": false,
     "bulkEligible": true,
@@ -147,13 +143,12 @@
       "/catalog/quantum-gpu.webp",
       "/catalog/pulse-laptop.webp"
     ],
-    "specs": [
-      { "label": "Switches", "value": "Hot-swappable" },
-      { "label": "Layout", "value": "75%" },
-      { "label": "Lighting", "value": "Per-key RGB" },
-      { "label": "Connection", "value": "USB-C" }
+    "tags": [
+      "keyboard",
+      "gaming",
+      "mechanical",
+      "rgb"
     ],
-    "tags": ["keyboard", "gaming", "mechanical", "rgb"],
     "featured": false,
     "bestSeller": true,
     "bulkEligible": false,
@@ -179,13 +174,12 @@
       "/catalog/sonic-headset.webp",
       "/catalog/lumen-monitor.webp"
     ],
-    "specs": [
-      { "label": "Output", "value": "80W" },
-      { "label": "Bluetooth", "value": "5.2" },
-      { "label": "Inputs", "value": "AUX + USB" },
-      { "label": "Voice", "value": "Dual mics" }
+    "tags": [
+      "speaker",
+      "audio",
+      "desktop",
+      "bluetooth"
     ],
-    "tags": ["speaker", "audio", "desktop", "bluetooth"],
     "featured": true,
     "bestSeller": false,
     "bulkEligible": false,
@@ -211,13 +205,12 @@
       "/catalog/mesh-router.webp",
       "/catalog/nova-router.webp"
     ],
-    "specs": [
-      { "label": "Video", "value": "2K HDR" },
-      { "label": "Night vision", "value": "Infrared" },
-      { "label": "Audio", "value": "Two-way talk" },
-      { "label": "Storage", "value": "Cloud + SD" }
+    "tags": [
+      "camera",
+      "smart home",
+      "security",
+      "wifi"
     ],
-    "tags": ["camera", "smart home", "security", "wifi"],
     "featured": false,
     "bestSeller": true,
     "bulkEligible": true,
@@ -243,13 +236,12 @@
       "/catalog/lumen-monitor.webp",
       "/catalog/atlas-book.webp"
     ],
-    "specs": [
-      { "label": "Ports", "value": "9-in-1" },
-      { "label": "Charging", "value": "100W PD" },
-      { "label": "Video", "value": "Dual 4K" },
-      { "label": "Network", "value": "Gigabit LAN" }
+    "tags": [
+      "dock",
+      "usb-c",
+      "hub",
+      "office"
     ],
-    "tags": ["dock", "usb-c", "hub", "office"],
     "featured": false,
     "bestSeller": true,
     "bulkEligible": true,
@@ -275,13 +267,12 @@
       "/catalog/atlas-book.webp",
       "/catalog/dock-station.webp"
     ],
-    "specs": [
-      { "label": "Processor", "value": "Ryzen 7" },
-      { "label": "Battery", "value": "14 hours" },
-      { "label": "Storage", "value": "512GB SSD" },
-      { "label": "Weight", "value": "1.24kg" }
+    "tags": [
+      "ultrabook",
+      "travel",
+      "student",
+      "laptop"
     ],
-    "tags": ["ultrabook", "travel", "student", "laptop"],
     "featured": false,
     "bestSeller": false,
     "bulkEligible": true,
@@ -307,13 +298,12 @@
       "/catalog/nova-router.webp",
       "/catalog/orbit-camera.webp"
     ],
-    "specs": [
-      { "label": "Nodes", "value": "2 pack" },
-      { "label": "Coverage", "value": "4,800 sq.ft" },
-      { "label": "Wi-Fi", "value": "Wi-Fi 6" },
-      { "label": "Setup", "value": "App guided" }
+    "tags": [
+      "mesh",
+      "router",
+      "bundle",
+      "coverage"
     ],
-    "tags": ["mesh", "router", "bundle", "coverage"],
     "featured": false,
     "bestSeller": true,
     "bulkEligible": true,
@@ -339,13 +329,12 @@
       "/catalog/vector-keyboard.webp",
       "/catalog/lumen-monitor.webp"
     ],
-    "specs": [
-      { "label": "VRAM", "value": "16GB GDDR6" },
-      { "label": "Cooling", "value": "Triple fan" },
-      { "label": "Boost clock", "value": "2.4GHz" },
-      { "label": "Use case", "value": "4K + render" }
+    "tags": [
+      "gpu",
+      "graphics",
+      "creator",
+      "gaming"
     ],
-    "tags": ["gpu", "graphics", "creator", "gaming"],
     "featured": true,
     "bestSeller": false,
     "bulkEligible": true,
@@ -371,13 +360,12 @@
       "/catalog/quantum-gpu.webp",
       "/catalog/sonic-headset.webp"
     ],
-    "specs": [
-      { "label": "Sensor", "value": "26K DPI" },
-      { "label": "Weight", "value": "68g" },
-      { "label": "Buttons", "value": "6 programmable" },
-      { "label": "Cable", "value": "Paracord" }
+    "tags": [
+      "mouse",
+      "gaming",
+      "esports",
+      "peripheral"
     ],
-    "tags": ["mouse", "gaming", "esports", "peripheral"],
     "featured": false,
     "bestSeller": true,
     "bulkEligible": false,
