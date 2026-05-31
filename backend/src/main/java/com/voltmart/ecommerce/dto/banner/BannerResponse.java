@@ -7,6 +7,7 @@ public record BannerResponse(
         String imageUrl,
         String ctaLabel,
         String ctaHref,
+        String type,
         Integer displayOrder,
         boolean active
 ) {

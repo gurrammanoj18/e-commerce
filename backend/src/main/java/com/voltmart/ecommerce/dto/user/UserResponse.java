@@ -5,7 +5,9 @@ public record UserResponse(
         String fullName,
         String email,
         String phoneNumber,
+        String profileImageUrl,
         String role,
-        String preferredDeliveryMode
+        String preferredDeliveryMode,
+        java.math.BigDecimal walletBalance
 ) {
 }

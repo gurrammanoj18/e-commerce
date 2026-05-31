@@ -9,6 +9,7 @@ import hardwareProImage from "../../assets/categories/hardware-pro.avif";
 import homeUtilityImage from "../../assets/categories/home-utility.avif";
 import lightingFansImage from "../../assets/categories/lighting-fans.jpg";
 import plumbingImage from "../../assets/categories/plumbing.jpg";
+import servicesImage from "../../assets/categories/services.svg";
 import toolsImage from "../../assets/categories/tools-and-acce.avif";
 
 interface CategoryCardProps {
@@ -24,6 +25,7 @@ const categoryImageMap: Record<string, string> = {
   bathroom: bathroomImage,
   plumbing: plumbingImage,
   kitchen: homeUtilityImage,
+  services: servicesImage,
 };
 
 const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
@@ -32,12 +34,16 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
   const categoryTarget = category.slug ?? category.name;
 
   return (
-    <Link className="category-card" to={`/products?category=${encodeURIComponent(categoryTarget)}`}>
+    <Link
+      className="category-card"
+      to={
+        categoryKey === "services"
+          ? "/services"
+          : `/products?category=${encodeURIComponent(categoryTarget)}`
+      }
+    >
       <div className="category-card__media">
         <img src={categoryImage} alt={category.name} className="category-card__image" />
-        <span className="category-card__icon" aria-hidden="true">
-          {category.icon}
-        </span>
       </div>
       <div className="category-card__content">
         <h3>{category.name}</h3>

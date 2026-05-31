@@ -1,4 +1,22 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "files.exclude": {
+        "**/node_modules": true,
+        "**/build": true,
+        "**/target": true,
+        "**/logs": true
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/build": true,
+        "**/target": true,
+        "**/logs": true
+    },
+    "files.watcherExclude": {
+        "**/node_modules/**": true,
+        "**/build/**": true,
+        "**/target/**": true,
+        "**/logs/**": true
+    }
 }

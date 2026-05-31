@@ -36,15 +36,15 @@ public class BulkOrderServiceImpl implements BulkOrderService {
     @Transactional
     public BulkOrderResponse submitInquiry(BulkOrderRequest request) {
         BulkOrderInquiry inquiry = BulkOrderInquiry.builder()
-                .companyName(request.companyName())
-                .contactPerson(request.contactPerson())
+                .companyName(resolveText(request.companyName(), request.name()))
+                .contactPerson(resolveText(request.contactPerson(), request.name()))
                 .email(request.email())
-                .phone(request.phone())
-                .productCategory(request.productCategory())
-                .estimatedQuantity(request.estimatedQuantity())
-                .deliveryCity(blankToNull(request.deliveryCity()))
-                .budgetAmount(request.budgetAmount())
-                .rfqRequired(request.rfqRequired())
+                .phone(resolveText(request.phone(), request.mobileNumber()))
+                .productCategory(resolveText(request.productCategory(), "General requirement"))
+                .estimatedQuantity(request.estimatedQuantity() == null ? 1 : request.estimatedQuantity())
+                .deliveryCity(resolveText(request.deliveryCity(), request.address()))
+                .budgetAmount(null)
+                .rfqRequired(false)
                 .priorityRequest(request.priorityRequest())
                 .requirements(request.requirements())
                 .quoteStatus(BulkQuoteStatus.NEW)
@@ -52,7 +52,7 @@ public class BulkOrderServiceImpl implements BulkOrderService {
                 .createdAt(LocalDateTime.now())
                 .build();
         BulkOrderInquiry savedInquiry = bulkOrderInquiryRepository.save(inquiry);
-        List<BulkOrderInquiryLineItem> lineItems = buildLineItems(savedInquiry, request.items());
+        List<BulkOrderInquiryLineItem> lineItems = new ArrayList<>();
         savedInquiry.setLineItems(lineItems);
         savedInquiry.setEstimatedTotal(lineItems.stream()
                 .map(BulkOrderInquiryLineItem::getEstimatedLineTotal)
@@ -168,5 +168,9 @@ public class BulkOrderServiceImpl implements BulkOrderService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String resolveText(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback.trim() : value.trim();
     }
 }

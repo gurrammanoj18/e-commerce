@@ -8,13 +8,16 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record BulkOrderRequest(
-        @NotBlank String companyName,
-        @NotBlank String contactPerson,
-        @Email @NotBlank String email,
-        @NotBlank String phone,
-        @NotBlank String productCategory,
-        @NotNull Integer estimatedQuantity,
+        String companyName,
+        String contactPerson,
+        @Email String email,
+        String phone,
+        String productCategory,
+        Integer estimatedQuantity,
         @NotBlank String requirements,
+        @NotBlank String name,
+        @NotBlank String address,
+        @NotBlank String mobileNumber,
         String deliveryCity,
         BigDecimal budgetAmount,
         boolean rfqRequired,

@@ -4,7 +4,7 @@ import "../../styles/pages/InfoPage.css";
 interface InfoPageLayoutProps {
   eyebrow: string;
   title: string;
-  intro: string;
+  intro?: string;
   sections: Array<{
     heading: string;
     paragraphs: string[];
@@ -22,7 +22,7 @@ const InfoPageLayout: React.FC<InfoPageLayoutProps> = ({
       <div className="page-header info-page-header">
         <span className="eyebrow">{eyebrow}</span>
         <h1>{title}</h1>
-        <p>{intro}</p>
+        {intro ? <p>{intro}</p> : null}
       </div>
 
       <div className="info-page-stack">

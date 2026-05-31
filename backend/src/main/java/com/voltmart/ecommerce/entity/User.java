@@ -8,6 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -34,6 +35,9 @@ public class User implements UserDetails {
     @Column(unique = true)
     private String phoneNumber;
 
+    @Column(columnDefinition = "text")
+    private String profileImageUrl;
+
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -42,6 +46,9 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     private DeliveryMode preferredDeliveryMode;
+
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal walletBalance;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

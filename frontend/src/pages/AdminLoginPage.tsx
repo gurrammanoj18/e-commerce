@@ -68,7 +68,7 @@ const AdminLoginPage: React.FC = () => {
           Login to admin
         </button>
         <p>
-          Looking for the storefront? <Link to="/products">Go to website</Link>
+          Looking for the storefront? <Link to="/login">Go to website</Link>
         </p>
       </form>
     </section>

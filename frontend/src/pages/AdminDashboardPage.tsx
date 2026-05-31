@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { AxiosError } from "axios";
 import "../styles/pages/AdminDashboardPage.css";
@@ -31,6 +32,8 @@ import { optimizeImageFile } from "../utils/imageUpload";
 
 type AdminView = "dashboard" | "inventory" | "orders";
 type AdminOrderDeliveryFilter = "HOME_DELIVERY" | "STORE_PICKUP";
+type AdminOrdersMode = "today" | "users";
+type InventorySectionMode = "form" | "list";
 
 interface ProductFormState {
   slug: string;
@@ -51,18 +54,11 @@ interface ProductFormState {
   warrantyAvailable: boolean;
   replacementAvailable: boolean;
   badge: string;
-  heroTag: string;
+  features: string;
+  items: string;
   images: string;
-  tags: string;
   stockQuantity: string;
   lowStockThreshold: string;
-}
-
-interface ActivityItem {
-  id: string;
-  title: string;
-  detail: string;
-  timestamp: string;
 }
 
 const REFRESH_INTERVAL_MS = 15000;
@@ -95,9 +91,9 @@ const createEmptyFormState = (): ProductFormState => ({
   warrantyAvailable: true,
   replacementAvailable: true,
   badge: "New",
-  heroTag: "Operational launch",
+  features: "",
+  items: "",
   images: "",
-  tags: "featured, admin-managed",
   stockQuantity: "0",
   lowStockThreshold: "5",
 });
@@ -109,15 +105,15 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-const parseTagList = (value: string) =>
-  value
-    .split(/[,\n]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
 const parseImageList = (value: string) =>
   value
     .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const parseLineList = (value: string) =>
+  value
+    .split(/\n|,/)
     .map((item) => item.trim())
     .filter(Boolean);
 
@@ -154,9 +150,9 @@ const buildProductPayload = (form: ProductFormState): AdminProductPayload => ({
   warrantyAvailable: form.warrantyAvailable,
   replacementAvailable: form.replacementAvailable,
   badge: form.badge.trim(),
-  heroTag: form.heroTag.trim(),
+  heroTag: parseLineList(form.features)[0] || "Featured product",
   images: parseImageList(form.images),
-  tags: parseTagList(form.tags),
+  tags: [...parseLineList(form.features), ...parseLineList(form.items)],
   stockQuantity: Number(form.stockQuantity),
   lowStockThreshold: Number(form.lowStockThreshold),
 });
@@ -192,9 +188,9 @@ const createFormStateFromProduct = (
     warrantyAvailable: product.warrantyAvailable,
     replacementAvailable: product.replacementAvailable,
     badge: product.badge,
-    heroTag: product.heroTag,
+    features: product.heroTag ? product.heroTag : "",
+    items: product.tags.join("\n"),
     images: product.images.join("\n"),
-    tags: product.tags.join(", "),
     stockQuantity: String(product.stockQuantity),
     lowStockThreshold: String(inventoryItem?.lowStockThreshold ?? 5),
   };
@@ -245,19 +241,12 @@ const AdminDashboardPage: React.FC = () => {
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
-  const [isCustomerLedgerOpen, setIsCustomerLedgerOpen] = useState(false);
   const [activeOrderDeliveryFilter, setActiveOrderDeliveryFilter] =
     useState<AdminOrderDeliveryFilter>("HOME_DELIVERY");
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
-  const [secondsUntilRefresh, setSecondsUntilRefresh] = useState(
-    Math.floor(REFRESH_INTERVAL_MS / 1000),
-  );
-  const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([]);
-  const previousSnapshot = useRef<{
-    overview: DashboardOverview;
-    inventory: InventoryItem[];
-    orders: Order[];
-  } | null>(null);
+  const [ordersMode, setOrdersMode] = useState<AdminOrdersMode>("today");
+  const [inventorySectionMode, setInventorySectionMode] =
+    useState<InventorySectionMode>("form");
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   const handleAdminRequestError = useCallback((error: unknown, fallback: string) => {
     if (error instanceof AxiosError && error.response?.status === 403) {
@@ -301,64 +290,6 @@ const AdminDashboardPage: React.FC = () => {
       setInventory(inventoryData);
       setProducts(productData);
       setCategories(categoryData);
-      setLastUpdatedAt(new Date().toISOString());
-      setSecondsUntilRefresh(Math.floor(REFRESH_INTERVAL_MS / 1000));
-
-      const snapshot = previousSnapshot.current;
-      const liveEvents: ActivityItem[] = [];
-
-      if (snapshot) {
-        if (overviewData.orderCount > snapshot.overview.orderCount) {
-          liveEvents.push({
-            id: `orders-${Date.now()}`,
-            title: "New order activity",
-            detail: `${overviewData.orderCount - snapshot.overview.orderCount} order(s) arrived since the last sync.`,
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        if (overviewData.userCount > snapshot.overview.userCount) {
-          liveEvents.push({
-            id: `users-${Date.now()}`,
-            title: "Customer base grew",
-            detail: `${overviewData.userCount - snapshot.overview.userCount} new user(s) joined the store.`,
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        const previousLowStockIds = new Set(
-          snapshot.inventory.filter((item) => item.lowStock).map((item) => item.inventoryId),
-        );
-
-        inventoryData
-          .filter((item) => item.lowStock && !previousLowStockIds.has(item.inventoryId))
-          .slice(0, 2)
-          .forEach((item) => {
-            liveEvents.push({
-              id: `inventory-${item.inventoryId}-${Date.now()}`,
-              title: "Inventory alert",
-              detail: `${item.productName} slipped into low-stock at ${item.stockQuantity} units.`,
-              timestamp: new Date().toISOString(),
-            });
-          });
-      } else {
-        liveEvents.push({
-          id: `sync-${Date.now()}`,
-          title: "Live dashboard online",
-          detail: "Realtime polling is active for orders, customers, stock levels, and product health.",
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      if (liveEvents.length) {
-        setActivityFeed((current) => [...liveEvents, ...current].slice(0, 8));
-      }
-
-      previousSnapshot.current = {
-        overview: overviewData,
-        inventory: inventoryData,
-        orders: orderData,
-      };
     } catch (error) {
       handleAdminRequestError(error, "Could not load admin workspace.");
     } finally {
@@ -375,13 +306,8 @@ const AdminDashboardPage: React.FC = () => {
       void loadAdminData({ silent: true });
     }, REFRESH_INTERVAL_MS);
 
-    const countdownTimer = window.setInterval(() => {
-      setSecondsUntilRefresh((current) => (current <= 1 ? 0 : current - 1));
-    }, 1000);
-
     return () => {
       window.clearInterval(refreshTimer);
-      window.clearInterval(countdownTimer);
     };
   }, [loadAdminData]);
 
@@ -410,6 +336,7 @@ const AdminDashboardPage: React.FC = () => {
   const handleEditProduct = (product: Product) => {
     setEditingProductId(product.id);
     setProductForm(createFormStateFromProduct(product, categories, inventory));
+    setInventorySectionMode("form");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -551,11 +478,6 @@ const AdminDashboardPage: React.FC = () => {
     }
   };
 
-  const handleAdminLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
-  };
-
   const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
   const pendingOrders = orders.filter((order) =>
     ["PENDING", "CONFIRMED", "PROCESSING"].includes(order.status),
@@ -579,34 +501,31 @@ const AdminDashboardPage: React.FC = () => {
   const filteredOrders = orders.filter(
     (order) => order.deliveryMode === activeOrderDeliveryFilter,
   );
+  const todaysOrders = filteredOrders.filter((order) => {
+    const today = new Date();
+    const orderDate = new Date(order.createdAt);
+    return orderDate.toDateString() === today.toDateString();
+  });
   const homeDeliveryOrderCount = orders.filter(
     (order) => order.deliveryMode === "HOME_DELIVERY",
   ).length;
   const storePickupOrderCount = orders.filter(
     (order) => order.deliveryMode === "STORE_PICKUP",
   ).length;
+  const ordersByUser = users.map((adminUser) => ({
+    user: adminUser,
+    orders: orders.filter((order) => {
+      const contactMatch = adminUser.email
+        ? order.email?.toLowerCase() === adminUser.email.toLowerCase()
+        : adminUser.phoneNumber && order.phone === adminUser.phoneNumber;
+      const nameMatch = order.shippingName === adminUser.fullName;
+      return contactMatch || nameMatch;
+    }),
+  }));
+  const selectedUserOrders = ordersByUser.find((entry) => entry.user.id === selectedUserId) ?? null;
 
   const renderDashboardView = () => (
     <>
-      <section className="admin-hero store-card">
-        <div>
-          <span className="eyebrow">Command center</span>
-          <h1>Realtime admin dashboard for catalog, orders, and inventory.</h1>
-          <p>
-            Track operational health, react to stock risks, and manage the storefront
-            from a dedicated control surface that matches VoltMart’s shopper UI.
-          </p>
-        </div>
-        <div className="admin-hero__meta">
-          <div className="admin-live-pill">
-            <span className="admin-live-pill__dot" />
-            Live sync every 15s
-          </div>
-          <strong>{lastUpdatedAt ? formatDateTime(lastUpdatedAt) : "Syncing..."}</strong>
-          <span>Next refresh in {secondsUntilRefresh}s</span>
-        </div>
-      </section>
-
       <div className="admin-kpi-grid">
         <article className="store-card admin-kpi-card">
           <span>Total sales</span>
@@ -691,24 +610,6 @@ const AdminDashboardPage: React.FC = () => {
         <article className="store-card admin-panel">
           <div className="admin-panel__heading">
             <div>
-              <span className="eyebrow">Realtime feed</span>
-              <h2>Activity since the last syncs</h2>
-            </div>
-          </div>
-          <div className="admin-activity-feed">
-            {activityFeed.map((activity) => (
-              <div key={activity.id} className="admin-activity-feed__item">
-                <strong>{activity.title}</strong>
-                <p>{activity.detail}</p>
-                <span>{formatDateTime(activity.timestamp)}</span>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="store-card admin-panel">
-          <div className="admin-panel__heading">
-            <div>
               <span className="eyebrow">Commercial snapshot</span>
               <h2>Store health summary</h2>
             </div>
@@ -735,22 +636,32 @@ const AdminDashboardPage: React.FC = () => {
   );
 
   const renderInventoryView = () => (
-    <div className="admin-workspace-grid">
-      <section className="store-card admin-panel admin-form-panel">
-        <div className="admin-panel__heading">
-          <div>
-            <span className="eyebrow">Catalog studio</span>
-            <h2>{editingProductId ? "Edit product" : "Add a new product"}</h2>
+    <div className="admin-inventory-stack">
+      {inventorySectionMode === "form" ? (
+        <section className="store-card admin-panel admin-form-panel admin-panel--wide">
+          <div className="admin-panel__heading admin-panel__heading--mobile-action">
+            <div>
+              <span className="eyebrow">Catalog studio</span>
+              <h2>{editingProductId ? "Edit product" : "Add a new product"}</h2>
+            </div>
+            <div className="admin-table-actions">
+              <button
+                className="link-button admin-mode-toggle-button"
+                type="button"
+                onClick={() => setInventorySectionMode("list")}
+              >
+                View products
+              </button>
+              {editingProductId ? (
+                <button className="link-button" type="button" onClick={resetProductForm}>
+                  Reset form
+                </button>
+              ) : null}
+            </div>
           </div>
-          {editingProductId ? (
-            <button className="link-button" type="button" onClick={resetProductForm}>
-              Reset form
-            </button>
-          ) : null}
-        </div>
 
-        <form className="admin-product-form" onSubmit={handleProductSubmit}>
-          <div className="form-grid">
+          <form className="admin-product-form" onSubmit={handleProductSubmit}>
+            <div className="form-grid">
             <label>
               Product name
               <input
@@ -759,24 +670,6 @@ const AdminDashboardPage: React.FC = () => {
                 placeholder="VoltMart Pro Dock"
                 required
               />
-            </label>
-            <label>
-              Slug
-              <div className="admin-inline-field">
-                <input
-                  value={productForm.slug}
-                  onChange={(event) => handleProductFormChange("slug", event.target.value)}
-                  placeholder="voltmart-pro-dock"
-                  required
-                />
-                <button
-                  className="link-button"
-                  type="button"
-                  onClick={() => handleProductFormChange("slug", slugify(productForm.name))}
-                >
-                  Generate
-                </button>
-              </div>
             </label>
             <label>
               Brand
@@ -904,14 +797,6 @@ const AdminDashboardPage: React.FC = () => {
                 required
               />
             </label>
-            <label>
-              Hero tag
-              <input
-                value={productForm.heroTag}
-                onChange={(event) => handleProductFormChange("heroTag", event.target.value)}
-                required
-              />
-            </label>
             <label className="form-grid__wide">
               Short description
               <textarea
@@ -971,169 +856,143 @@ const AdminDashboardPage: React.FC = () => {
               ) : null}
             </label>
             <label className="form-grid__wide">
-              Tags
+              Features
               <textarea
                 rows={3}
-                value={productForm.tags}
-                onChange={(event) => handleProductFormChange("tags", event.target.value)}
-                placeholder="gaming, creator, wireless"
+                value={productForm.features}
+                onChange={(event) => handleProductFormChange("features", event.target.value)}
+                placeholder="One feature per line or comma"
               />
+              <span className="admin-field-hint">Optional. These will render as highlighted feature chips.</span>
             </label>
-          </div>
-
-          <div className="admin-flag-grid">
-            {[
-              ["featured", "Featured"],
-              ["bestSeller", "Best seller"],
-              ["newArrival", "New arrival"],
-              ["bulkEligible", "Bulk eligible"],
-              ["warrantyAvailable", "Warranty available"],
-              ["replacementAvailable", "Replacement available"],
-            ].map(([field, label]) => (
-              <label key={field} className="admin-toggle">
-                <input
-                  type="checkbox"
-                  checked={productForm[field as keyof ProductFormState] as boolean}
-                  onChange={(event) =>
-                    handleProductFormChange(
-                      field as keyof ProductFormState,
-                      event.target.checked,
-                    )
-                  }
-                />
-                <span>{label}</span>
-              </label>
-            ))}
-          </div>
-
-          <div className="admin-form-actions">
-            <button className="button" type="submit" disabled={savingProduct}>
-              {savingProduct
-                ? "Saving..."
-                : editingProductId
-                  ? "Update product"
-                  : "Add product"}
-            </button>
-            <button className="link-button" type="button" onClick={resetProductForm}>
-              Clear
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <section className="admin-side-stack">
-        <article className="store-card admin-panel">
-          <div className="admin-panel__heading">
-            <div>
-              <span className="eyebrow">Inventory radar</span>
-              <h2>Low stock alerts</h2>
+            <label className="form-grid__wide">
+              Items in the box
+              <textarea
+                rows={3}
+                value={productForm.items}
+                onChange={(event) => handleProductFormChange("items", event.target.value)}
+                placeholder="One item per line or comma"
+              />
+              <span className="admin-field-hint">Optional. These are shown in the product details highlight list.</span>
+            </label>
             </div>
-          </div>
-          <div className="admin-alert-list">
-            {lowStockItems.length ? (
-              lowStockItems.map((item) => (
-                <div key={item.inventoryId} className="admin-alert-item">
-                  <strong>{item.productName}</strong>
-                  <p>
-                    {item.stockQuantity} units left, threshold {item.lowStockThreshold}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <div className="admin-empty-note">No low-stock alerts right now.</div>
-            )}
-          </div>
-        </article>
 
-        <article className="store-card admin-panel">
-          <div className="admin-panel__heading">
-            <div>
-              <span className="eyebrow">Catalog value</span>
-              <h2>Inventory snapshot</h2>
-            </div>
-          </div>
-          <div className="admin-summary-stack">
-            <div>
-              <span>Total catalog value</span>
-              <strong>{formatCurrency(catalogValue)}</strong>
-            </div>
-            <div>
-              <span>Tracked products</span>
-              <strong>{products.length}</strong>
-            </div>
-            <div>
-              <span>Realtime stock units</span>
-              <strong>{totalUnits}</strong>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section className="store-card admin-panel admin-panel--full">
-        <div className="admin-panel__heading">
-          <div>
-            <span className="eyebrow">Product management</span>
-            <h2>Manage catalog and inventory</h2>
-          </div>
-        </div>
-        <div className="admin-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Category</th>
-                <th>Subcategory</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product) => (
-                <tr key={product.id}>
-                  <td>
-                    <strong>{product.name}</strong>
-                    <div>{product.brand}</div>
-                  </td>
-                  <td>{product.category}</td>
-                  <td>{product.subcategory}</td>
-                  <td>{formatCurrency(product.price)}</td>
-                  <td>{product.stockQuantity}</td>
-                  <td>
-                    <span
-                      className={`admin-status-pill ${
-                        product.lowStock ? "is-warning" : "is-success"
-                      }`}
-                    >
-                      {product.lowStock ? "Low stock" : "Healthy"}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="admin-table-actions">
-                      <button
-                        className="link-button"
-                        type="button"
-                        onClick={() => handleEditProduct(product)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="link-button admin-danger-button"
-                        type="button"
-                        disabled={deletingProductId === product.id}
-                        onClick={() => void handleDeleteProduct(product.id)}
-                      >
-                        {deletingProductId === product.id ? "Removing..." : "Delete"}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+            <div className="admin-flag-grid">
+              {[
+                ["featured", "Featured"],
+                ["bestSeller", "Best seller"],
+                ["newArrival", "New arrival"],
+                ["bulkEligible", "Bulk eligible"],
+                ["warrantyAvailable", "Warranty available"],
+                ["replacementAvailable", "Replacement available"],
+              ].map(([field, label]) => (
+                <label key={field} className="admin-toggle">
+                  <input
+                    type="checkbox"
+                    checked={productForm[field as keyof ProductFormState] as boolean}
+                    onChange={(event) =>
+                      handleProductFormChange(
+                        field as keyof ProductFormState,
+                        event.target.checked,
+                      )
+                    }
+                  />
+                  <span>{label}</span>
+                </label>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </div>
+
+            <div className="admin-form-actions">
+              <button className="button" type="submit" disabled={savingProduct}>
+                {savingProduct
+                  ? "Saving..."
+                  : editingProductId
+                    ? "Update product"
+                    : "Add product"}
+              </button>
+              <button className="link-button" type="button" onClick={resetProductForm}>
+                Clear
+              </button>
+            </div>
+          </form>
+        </section>
+      ) : (
+        <section className="store-card admin-panel admin-panel--wide">
+          <div className="admin-panel__heading admin-panel__heading--mobile-action">
+            <div>
+              <span className="eyebrow">Product management</span>
+              <h2>Manage catalog and inventory</h2>
+            </div>
+            <button
+              className="link-button admin-mode-toggle-button"
+              type="button"
+              onClick={() => {
+                resetProductForm();
+                setInventorySectionMode("form");
+              }}
+            >
+              Add product
+            </button>
+          </div>
+          <div className="admin-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Subcategory</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product) => (
+                  <tr key={product.id}>
+                    <td>
+                      <strong>{product.name}</strong>
+                      <div>{product.brand}</div>
+                    </td>
+                    <td>{product.category}</td>
+                    <td>{product.subcategory}</td>
+                    <td>{formatCurrency(product.price)}</td>
+                    <td>{product.stockQuantity}</td>
+                    <td>
+                      <span
+                        className={`admin-status-pill ${
+                          product.lowStock ? "is-warning" : "is-success"
+                        }`}
+                      >
+                        {product.lowStock ? "Low stock" : "Healthy"}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="admin-table-actions">
+                        <button
+                          className="link-button"
+                          type="button"
+                          onClick={() => handleEditProduct(product)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="link-button admin-danger-button"
+                          type="button"
+                          disabled={deletingProductId === product.id}
+                          onClick={() => void handleDeleteProduct(product.id)}
+                        >
+                          {deletingProductId === product.id ? "Removing..." : "Delete"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   );
 
@@ -1145,217 +1004,283 @@ const AdminDashboardPage: React.FC = () => {
             <span className="eyebrow">Order operations</span>
             <h2>Realtime order management</h2>
           </div>
-          <div className="admin-order-filter-group" aria-label="Order delivery filters">
+          <div className="admin-order-filter-group" aria-label="Order views">
             <button
               type="button"
-              className={
-                activeOrderDeliveryFilter === "HOME_DELIVERY"
-                  ? "admin-order-filter-button is-active"
-                  : "admin-order-filter-button"
-              }
+              className={ordersMode === "today" ? "admin-order-filter-button is-active" : "admin-order-filter-button"}
               onClick={() => {
-                setActiveOrderDeliveryFilter("HOME_DELIVERY");
+                setOrdersMode("today");
                 setExpandedOrderId(null);
               }}
             >
-              Home delivery ({homeDeliveryOrderCount})
+              Today's orders
             </button>
             <button
               type="button"
-              className={
-                activeOrderDeliveryFilter === "STORE_PICKUP"
-                  ? "admin-order-filter-button is-active"
-                  : "admin-order-filter-button"
-              }
+              className={ordersMode === "users" ? "admin-order-filter-button is-active" : "admin-order-filter-button"}
               onClick={() => {
-                setActiveOrderDeliveryFilter("STORE_PICKUP");
+                setOrdersMode("users");
                 setExpandedOrderId(null);
               }}
             >
-              Store pickup ({storePickupOrderCount})
+              User-wise orders
             </button>
           </div>
         </div>
-        <div className="admin-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Customer</th>
-                <th>Placed</th>
-                <th>Total</th>
-                <th>Status</th>
-                <th>Update</th>
-                <th>Delete</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrders.length ? filteredOrders.map((order) => (
-                <React.Fragment key={order.id}>
+
+        {ordersMode === "today" ? (
+          <>
+            <div className="admin-order-filter-group" aria-label="Order delivery filters" style={{ marginBottom: 16 }}>
+              <button
+                type="button"
+                className={
+                  activeOrderDeliveryFilter === "HOME_DELIVERY"
+                    ? "admin-order-filter-button is-active"
+                    : "admin-order-filter-button"
+                }
+                onClick={() => {
+                  setActiveOrderDeliveryFilter("HOME_DELIVERY");
+                  setExpandedOrderId(null);
+                }}
+              >
+                Home delivery ({homeDeliveryOrderCount})
+              </button>
+              <button
+                type="button"
+                className={
+                  activeOrderDeliveryFilter === "STORE_PICKUP"
+                    ? "admin-order-filter-button is-active"
+                    : "admin-order-filter-button"
+                }
+                onClick={() => {
+                  setActiveOrderDeliveryFilter("STORE_PICKUP");
+                  setExpandedOrderId(null);
+                }}
+              >
+                Store pickup ({storePickupOrderCount})
+              </button>
+            </div>
+            <div className="admin-table">
+              <table>
+                <thead>
                   <tr>
-                    <td>
-                      <button
-                        className="admin-order-toggle"
-                        type="button"
-                        onClick={() =>
-                          setExpandedOrderId((current) =>
-                            current === order.id ? null : order.id,
-                          )
-                        }
-                      >
-                        <strong>{order.orderNumber.slice(0, 8)}</strong>
-                        <span>
-                          {expandedOrderId === order.id ? "Hide details" : "Show details"}
-                        </span>
-                      </button>
-                      <div>{order.items.length} item(s)</div>
-                    </td>
-                    <td>
-                      <strong>{order.shippingName}</strong>
-                      <div>{order.email}</div>
-                    </td>
-                    <td>{formatDateTime(order.createdAt)}</td>
-                    <td>{formatCurrency(order.totalAmount)}</td>
-                    <td>
-                      <span className="admin-status-pill">{order.status}</span>
-                    </td>
-                    <td>
-                      <select
-                        value={order.status}
-                        disabled={statusUpdatingId === order.id}
-                        onChange={(event) =>
-                          void handleStatusChange(order.id, event.target.value)
-                        }
-                      >
-                        {(order.deliveryMode === "STORE_PICKUP"
-                          ? STORE_PICKUP_STATUS_OPTIONS
-                          : ORDER_STATUS_OPTIONS
-                        ).map((status) => (
-                          <option key={status} value={status}>
-                            {status}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <button
-                        className="link-button admin-danger-button"
-                        type="button"
-                        disabled={deletingOrderId === order.id}
-                        onClick={() => void handleDeleteOrder(order.id)}
-                      >
-                        {deletingOrderId === order.id ? "Deleting..." : "Delete"}
-                      </button>
-                    </td>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Placed</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Update</th>
+                    <th>Delete</th>
                   </tr>
-                  {expandedOrderId === order.id ? (
-                    <tr className="admin-order-details-row">
-                      <td colSpan={7}>
-                        <div className="admin-order-details">
-                          <section className="admin-order-details__section">
-                            <span className="eyebrow">User details</span>
-                            <strong>{order.shippingName}</strong>
-                            <p>{order.email}</p>
-                            <p>{order.phone}</p>
-                          </section>
-                          <section className="admin-order-details__section">
-                            <span className="eyebrow">Order details</span>
-                            <p>Order no: {order.orderNumber}</p>
-                            <p>Status: {order.status}</p>
-                            <p>
-                              Delivery:{" "}
-                              {order.deliveryMode === "STORE_PICKUP"
-                                ? "Pick up at store"
-                                : "Home delivery"}
-                            </p>
-                            <p>Placed: {formatDateTime(order.createdAt)}</p>
-                            <p>Subtotal: {formatCurrency(order.subtotal)}</p>
-                            <p>Shipping: {formatCurrency(order.shippingCost)}</p>
-                            <p>Tax: {formatCurrency(order.taxAmount)}</p>
-                            <p>Total: {formatCurrency(order.totalAmount)}</p>
-                          </section>
-                          <section className="admin-order-details__section">
-                            <span className="eyebrow">Delivery details</span>
-                            <p>{order.shippingAddress}</p>
-                            <p>
-                              {order.city}, {order.postalCode}
-                            </p>
-                          </section>
-                          <section className="admin-order-details__section admin-order-details__section--full">
-                            <span className="eyebrow">Items</span>
-                            <div className="admin-order-item-list">
-                              {order.items.map((item) => (
-                                <div
-                                  key={`${order.id}-${item.productSlug}`}
-                                  className="admin-order-item"
-                                >
-                                  <strong>{item.productName}</strong>
-                                  <span>{item.quantity} qty</span>
-                                  <span>{formatCurrency(item.unitPrice)}</span>
+                </thead>
+                <tbody>
+                  {todaysOrders.length ? todaysOrders.map((order) => (
+                    <React.Fragment key={order.id}>
+                      <tr>
+                        <td>
+                          <button
+                            className="admin-order-toggle"
+                            type="button"
+                            onClick={() =>
+                              setExpandedOrderId((current) => (current === order.id ? null : order.id))
+                            }
+                          >
+                            <strong>{order.orderNumber.slice(0, 8)}</strong>
+                            <span>{expandedOrderId === order.id ? "Hide details" : "Show details"}</span>
+                          </button>
+                          <div>{order.items.length} item(s)</div>
+                        </td>
+                        <td>
+                          <strong>{order.shippingName}</strong>
+                          <div>{order.email}</div>
+                        </td>
+                        <td>{formatDateTime(order.createdAt)}</td>
+                        <td>{formatCurrency(order.totalAmount)}</td>
+                        <td>
+                          <span className="admin-status-pill">{order.status}</span>
+                        </td>
+                        <td>
+                          <select
+                            value={order.status}
+                            disabled={statusUpdatingId === order.id}
+                            onChange={(event) => void handleStatusChange(order.id, event.target.value)}
+                          >
+                            {(order.deliveryMode === "STORE_PICKUP"
+                              ? STORE_PICKUP_STATUS_OPTIONS
+                              : ORDER_STATUS_OPTIONS
+                            ).map((status) => (
+                              <option key={status} value={status}>
+                                {status}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <button
+                            className="link-button admin-danger-button"
+                            type="button"
+                            disabled={deletingOrderId === order.id}
+                            onClick={() => void handleDeleteOrder(order.id)}
+                          >
+                            {deletingOrderId === order.id ? "Deleting..." : "Delete"}
+                          </button>
+                        </td>
+                      </tr>
+                      {expandedOrderId === order.id ? (
+                        <tr className="admin-order-details-row">
+                          <td colSpan={7}>
+                            <div className="admin-order-details">
+                              <section className="admin-order-details__section">
+                                <span className="eyebrow">User details</span>
+                                <strong>{order.shippingName}</strong>
+                                <p>{order.email}</p>
+                                <p>{order.phone}</p>
+                              </section>
+                              <section className="admin-order-details__section">
+                                <span className="eyebrow">Order details</span>
+                                <p>Order no: {order.orderNumber}</p>
+                                <p>Status: {order.status}</p>
+                                <p>Placed: {formatDateTime(order.createdAt)}</p>
+                                <p>Total: {formatCurrency(order.totalAmount)}</p>
+                                {order.appliedCouponCode ? (
+                                  <p>Coupon: {order.appliedCouponCode}</p>
+                                ) : null}
+                              </section>
+                              <section className="admin-order-details__section">
+                                <span className="eyebrow">Delivery details</span>
+                                <p>{order.shippingAddress}</p>
+                                <p>{order.city}, {order.postalCode}</p>
+                              </section>
+                              <section className="admin-order-details__section admin-order-details__section--full">
+                                <span className="eyebrow">Items</span>
+                                <div className="admin-order-item-list">
+                                  {order.items.map((item) => (
+                                    <div key={`${order.id}-${item.productSlug}`} className="admin-order-item">
+                                      <strong>{item.productName}</strong>
+                                      <span>{item.quantity} qty</span>
+                                      <span>{formatCurrency(item.unitPrice)}</span>
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
+                              </section>
                             </div>
-                          </section>
+                          </td>
+                        </tr>
+                      ) : null}
+                    </React.Fragment>
+                  )) : (
+                    <tr>
+                      <td colSpan={7}>
+                        <div className="admin-empty-note">
+                          No orders found for today in this delivery mode.
                         </div>
                       </td>
                     </tr>
-                  ) : null}
-                </React.Fragment>
-              )) : (
-                <tr>
-                  <td colSpan={7}>
-                    <div className="admin-empty-note">
-                      No{" "}
-                      {activeOrderDeliveryFilter === "HOME_DELIVERY"
-                        ? "home delivery"
-                        : "store pickup"}{" "}
-                      orders right now.
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <div className="admin-orders-layout">
+            <article className="store-card admin-panel">
+              <div className="admin-panel__heading">
+                <div>
+                  <span className="eyebrow">Customer ledger</span>
+                  <h2>All users</h2>
+                </div>
+              </div>
+              <div className="admin-user-list">
+                {ordersByUser.map(({ user: adminUser, orders: userOrders }) => (
+                  <button
+                    key={adminUser.id}
+                    type="button"
+                    className="admin-user-list__item"
+                    onClick={() => {
+                      setSelectedUserId(adminUser.id);
+                      setExpandedOrderId(null);
+                    }}
+                    style={{ width: "100%", textAlign: "left", background: "transparent", border: "none" }}
+                  >
+                    <div>
+                      <strong>{adminUser.fullName}</strong>
+                      <span>{adminUser.email || adminUser.phoneNumber || "No contact info"}</span>
                     </div>
-                  </td>
-                </tr>
+                    <span>{userOrders.length} orders</span>
+                  </button>
+                ))}
+              </div>
+            </article>
+
+            <article className="store-card admin-panel admin-panel--full">
+              <div className="admin-panel__heading">
+                <div>
+                  <span className="eyebrow">User orders</span>
+                  <h2>{selectedUserOrders?.user.fullName || "Select a user"}</h2>
+                </div>
+              </div>
+              {selectedUserOrders ? (
+                <>
+                  <div className="admin-summary-stack">
+                    <div>
+                      <span>Email</span>
+                      <strong>{selectedUserOrders.user.email || "-"}</strong>
+                    </div>
+                    <div>
+                      <span>Phone</span>
+                      <strong>{selectedUserOrders.user.phoneNumber || "-"}</strong>
+                    </div>
+                    <div>
+                      <span>Total orders</span>
+                      <strong>{selectedUserOrders.orders.length}</strong>
+                    </div>
+                  </div>
+                  <div className="admin-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Order</th>
+                          <th>Placed</th>
+                          <th>Status</th>
+                          <th>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedUserOrders.orders.map((order) => (
+                          <tr key={order.id}>
+                            <td>
+                              <strong>{order.orderNumber.slice(0, 8)}</strong>
+                              <div>{order.shippingAddress}</div>
+                            </td>
+                            <td>{formatDateTime(order.createdAt)}</td>
+                            <td>{order.status}</td>
+                            <td>{formatCurrency(order.totalAmount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <div className="admin-empty-note">Choose a user to view all order details.</div>
               )}
-            </tbody>
-          </table>
-        </div>
+            </article>
+          </div>
+        )}
       </section>
 
       <section className="admin-side-stack">
-        <article className="store-card admin-panel">
-          <button
-            type="button"
-            className="admin-panel__heading admin-panel__heading--toggle"
-            onClick={() => setIsCustomerLedgerOpen((current) => !current)}
-            aria-expanded={isCustomerLedgerOpen}
-          >
-            <div>
-              <span className="eyebrow">Customer ledger</span>
-              <h2>Users and access</h2>
-            </div>
-            <span className="admin-panel__toggle-indicator">
-              {isCustomerLedgerOpen ? "Hide" : "Open"}
-            </span>
-          </button>
-          {isCustomerLedgerOpen ? (
-            <div className="admin-user-list">
-              {users.slice(0, 6).map((user) => (
-                  <div key={user.id} className="admin-user-list__item">
-                    <div>
-                      <strong>{user.fullName}</strong>
-                      <span>{user.email || user.phoneNumber || "No contact info"}</span>
-                    </div>
-                    <span>{user.role.replace("ROLE_", "")}</span>
-                  </div>
-              ))}
-            </div>
-          ) : null}
-        </article>
-
         <article className="store-card admin-panel">
           <div className="admin-panel__heading">
             <div>
               <span className="eyebrow">Ops pulse</span>
               <h2>Fulfilment snapshot</h2>
             </div>
+          </div>
+          <div className="admin-form-actions" style={{ marginBottom: 12 }}>
+            <Link className="button" to="/admin/returns">
+              Open returns
+            </Link>
           </div>
           <div className="admin-summary-stack">
             <div>
@@ -1386,16 +1311,9 @@ const AdminDashboardPage: React.FC = () => {
         <div>
           <span className="eyebrow">Admin workspace</span>
           <h1>VoltMart control center</h1>
-          <p>
-            Use dedicated admin URLs for live dashboards, product creation, inventory
-            monitoring, and order management.
-          </p>
         </div>
         <div className="admin-page-header__actions">
           <span>{user?.fullName || "Admin"}</span>
-          <button className="link-button" type="button" onClick={handleAdminLogout}>
-            Logout
-          </button>
         </div>
       </div>
 

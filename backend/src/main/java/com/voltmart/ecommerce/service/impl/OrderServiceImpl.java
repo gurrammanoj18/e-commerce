@@ -4,8 +4,12 @@ import com.voltmart.ecommerce.dto.order.CheckoutRequest;
 import com.voltmart.ecommerce.dto.order.OrderResponse;
 import com.voltmart.ecommerce.entity.Order;
 import com.voltmart.ecommerce.entity.OrderItem;
+import com.voltmart.ecommerce.entity.WalletTransaction;
+import com.voltmart.ecommerce.entity.WalletCoupon;
 import com.voltmart.ecommerce.entity.enums.DeliveryMode;
 import com.voltmart.ecommerce.entity.enums.OrderStatus;
+import com.voltmart.ecommerce.entity.enums.WalletCouponType;
+import com.voltmart.ecommerce.entity.enums.WalletTransactionType;
 import com.voltmart.ecommerce.exception.BadRequestException;
 import com.voltmart.ecommerce.exception.ResourceNotFoundException;
 import com.voltmart.ecommerce.mapper.EntityMapper;
@@ -13,9 +17,13 @@ import com.voltmart.ecommerce.repository.CartRepository;
 import com.voltmart.ecommerce.repository.InventoryRepository;
 import com.voltmart.ecommerce.repository.OrderRepository;
 import com.voltmart.ecommerce.repository.UserAddressRepository;
+import com.voltmart.ecommerce.repository.WalletCouponRepository;
+import com.voltmart.ecommerce.repository.WalletTransactionRepository;
 import com.voltmart.ecommerce.service.CurrentUserService;
 import com.voltmart.ecommerce.service.EmailNotificationService;
 import com.voltmart.ecommerce.service.OrderService;
+import com.voltmart.ecommerce.service.ServiceablePincodeService;
+import com.voltmart.ecommerce.service.WalletService;
 import com.voltmart.ecommerce.service.WhatsappNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,13 +51,18 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final InventoryRepository inventoryRepository;
     private final UserAddressRepository userAddressRepository;
+    private final WalletCouponRepository walletCouponRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
     private final EntityMapper entityMapper;
     private final WhatsappNotificationService whatsappNotificationService;
     private final EmailNotificationService emailNotificationService;
+    private final WalletService walletService;
+    private final ServiceablePincodeService serviceablePincodeService;
 
     @Override
     @Transactional
     public OrderResponse placeOrder(CheckoutRequest request) {
+        walletService.applyDueWalletCredits();
         var user = currentUserService.getCurrentUser();
         var cart = cartRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
@@ -77,20 +90,31 @@ public class OrderServiceImpl implements OrderService {
                 || !StringUtils.hasText(postalCode))) {
             throw new BadRequestException("Shipping address, city, and postal code are required for home delivery");
         }
+        if (!isStorePickup) {
+            serviceablePincodeService.validateHomeDeliveryPincode(postalCode);
+        }
         BigDecimal shipping = isStorePickup
                 ? BigDecimal.ZERO
                 : subtotal.compareTo(BigDecimal.valueOf(4999)) >= 0 ? BigDecimal.ZERO : BigDecimal.valueOf(499);
         BigDecimal tax = subtotal.multiply(BigDecimal.valueOf(0.18));
-        BigDecimal total = subtotal.add(shipping).add(tax);
+        BigDecimal totalBeforeWallet = subtotal.add(shipping).add(tax);
+        BigDecimal walletDebitAmount = BigDecimal.ZERO;
+        BigDecimal total = totalBeforeWallet;
+        if (request.useWalletBalance() && user.getWalletBalance() != null && user.getWalletBalance().compareTo(BigDecimal.ZERO) > 0) {
+            walletDebitAmount = user.getWalletBalance().min(totalBeforeWallet);
+            total = totalBeforeWallet.subtract(walletDebitAmount);
+            user.setWalletBalance(user.getWalletBalance().subtract(walletDebitAmount));
+        }
+        WalletCoupon cashbackCoupon = resolveCashbackCoupon(request.couponCode());
 
         Order order = Order.builder()
                 .orderNumber(UUID.randomUUID())
                 .user(user)
                 .status(OrderStatus.PENDING)
                 .deliveryMode(deliveryMode)
-                .shippingName(request.shippingName())
-                .email(request.email())
-                .phone(request.phone())
+                .shippingName(resolveShippingName(request.shippingName(), user.getFullName()))
+                .email(resolveEmail(request.email(), user.getEmail()))
+                .phone(resolvePhone(request.phone(), user.getPhoneNumber()))
                 .userAddress(selectedAddress)
                 .shippingAddress(isStorePickup ? "Store pickup" : shippingAddress.trim())
                 .city(isStorePickup ? "Store pickup" : city.trim())
@@ -102,6 +126,13 @@ public class OrderServiceImpl implements OrderService {
                 .shippingCost(shipping)
                 .taxAmount(tax)
                 .totalAmount(total)
+                .walletDebitAmount(walletDebitAmount)
+                .appliedCouponCode(cashbackCoupon == null ? null : cashbackCoupon.getCode())
+                .walletCreditAmount(cashbackCoupon == null ? null : cashbackCoupon.getAmount())
+                .walletCreditEligibleAt(cashbackCoupon == null
+                        ? null
+                        : LocalDateTime.now().plusMinutes(cashbackCoupon.getRewardDelayMinutes()))
+                .walletCreditProcessed(false)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -124,6 +155,19 @@ public class OrderServiceImpl implements OrderService {
 
         order.setItems(orderItems);
         Order savedOrder = orderRepository.save(order);
+        if (cashbackCoupon != null) {
+            walletService.consumeCouponForUser(cashbackCoupon, user);
+        }
+        if (walletDebitAmount.compareTo(BigDecimal.ZERO) > 0) {
+            walletTransactionRepository.save(WalletTransaction.builder()
+                    .user(user)
+                    .type(WalletTransactionType.DEBIT)
+                    .amount(walletDebitAmount)
+                    .description("Wallet used for order " + savedOrder.getOrderNumber())
+                    .referenceCode(savedOrder.getOrderNumber().toString())
+                    .createdAt(LocalDateTime.now())
+                    .build());
+        }
         cart.getItems().clear();
         cartRepository.save(cart);
         whatsappNotificationService.sendOrderPlacedNotification(savedOrder);
@@ -188,5 +232,43 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Unsupported delivery slot selected");
         }
         return normalized;
+    }
+
+    private WalletCoupon resolveCashbackCoupon(String rawCode) {
+        if (!StringUtils.hasText(rawCode)) {
+            return null;
+        }
+        WalletCoupon coupon = walletCouponRepository.findByCodeIgnoreCase(rawCode.trim())
+                .orElseThrow(() -> new BadRequestException("Coupon code is invalid"));
+        if (!coupon.isActive()) {
+            throw new BadRequestException("Coupon code is inactive");
+        }
+        if (coupon.getType() != WalletCouponType.ORDER_CASHBACK) {
+            throw new BadRequestException("This code can only be used in wallet top-up");
+        }
+        String assignedEmails = coupon.getAssignedCustomerEmails();
+        String userEmail = currentUserService.getCurrentUser().getEmail();
+        if (StringUtils.hasText(assignedEmails)
+                && (!StringUtils.hasText(userEmail)
+                || java.util.Arrays.stream(assignedEmails.split(","))
+                    .noneMatch(email -> email.trim().equalsIgnoreCase(userEmail.trim())))) {
+            throw new BadRequestException("Coupon code is not assigned to this customer");
+        }
+        return coupon;
+    }
+
+    private String resolveShippingName(String requestValue, String userValue) {
+        return StringUtils.hasText(requestValue) ? requestValue.trim() : userValue.trim();
+    }
+
+    private String resolveEmail(String requestValue, String userValue) {
+        if (StringUtils.hasText(requestValue)) {
+            return requestValue.trim();
+        }
+        return StringUtils.hasText(userValue) ? userValue.trim() : "";
+    }
+
+    private String resolvePhone(String requestValue, String userValue) {
+        return StringUtils.hasText(requestValue) ? requestValue.trim() : userValue.trim();
     }
 }

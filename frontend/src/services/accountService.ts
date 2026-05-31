@@ -1,5 +1,10 @@
 import api from "./api";
-import { UserAddress } from "../types/store";
+import {
+  PincodeServiceabilityResult,
+  UserAddress,
+  WalletCoupon,
+  WalletSummary,
+} from "../types/store";
 
 export const fetchAddresses = async () => {
   const response = await api.get<UserAddress[]>("/account/addresses");
@@ -18,4 +23,26 @@ export const updateAddress = async (id: number, payload: Omit<UserAddress, "id">
 
 export const deleteAddress = async (id: number) => {
   await api.delete(`/account/addresses/${id}`);
+};
+
+export const fetchWallet = async () => {
+  const response = await api.get<WalletSummary>("/account/wallet");
+  return response.data;
+};
+
+export const redeemWalletCode = async (code: string) => {
+  const response = await api.post<WalletSummary>("/account/wallet/redeem", { code });
+  return response.data;
+};
+
+export const fetchCheckoutCoupons = async () => {
+  const response = await api.get<WalletCoupon[]>("/account/wallet/checkout-coupons");
+  return response.data;
+};
+
+export const checkPincodeServiceability = async (pincode: string) => {
+  const response = await api.get<PincodeServiceabilityResult>("/pincode-serviceability", {
+    params: { pincode },
+  });
+  return response.data;
 };

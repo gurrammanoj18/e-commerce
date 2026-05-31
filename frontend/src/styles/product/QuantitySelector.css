@@ -25,3 +25,22 @@
   font-size: 0.95rem;
   font-weight: 700;
 }
+
+@media (max-width: 560px) {
+  .quantity-selector {
+    gap: 8px;
+    min-height: 34px;
+    padding: 0 8px;
+  }
+
+  .quantity-selector button {
+    width: 20px;
+    height: 20px;
+    font-size: 0.82rem;
+  }
+
+  .quantity-selector span {
+    min-width: 14px;
+    font-size: 0.82rem;
+  }
+}

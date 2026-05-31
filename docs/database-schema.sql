@@ -99,6 +99,15 @@ create table orders (
     created_at timestamp not null
 );
 
+create table serviceable_pincode (
+    id bigserial primary key,
+    pincode varchar(20) not null unique,
+    label varchar(255),
+    active boolean not null default true,
+    created_at timestamp not null,
+    updated_at timestamp not null
+);
+
 create table order_item (
     id bigserial primary key,
     order_id bigint not null references orders(id),

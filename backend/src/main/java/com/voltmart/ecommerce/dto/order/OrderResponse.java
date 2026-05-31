@@ -23,6 +23,11 @@ public record OrderResponse(
         BigDecimal shippingCost,
         BigDecimal taxAmount,
         BigDecimal totalAmount,
+        BigDecimal walletDebitAmount,
+        String appliedCouponCode,
+        BigDecimal walletCreditAmount,
+        LocalDateTime walletCreditEligibleAt,
+        boolean walletCreditProcessed,
         String whatsappTrackingMessage,
         LocalDateTime createdAt,
         List<OrderItemResponse> items

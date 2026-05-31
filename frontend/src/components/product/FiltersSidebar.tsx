@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import "../../styles/product/FiltersSidebar.css";
 import {
   CategorySummary,
@@ -6,6 +6,15 @@ import {
   ProductSort,
 } from "../../types/store";
 import { formatCurrency } from "../../utils/currency";
+
+const availabilityOptions = [
+  { label: "All stock states", value: "all" as ProductAvailabilityFilter },
+  { label: "In stock", value: "in-stock" as ProductAvailabilityFilter },
+  { label: "Low stock", value: "low-stock" as ProductAvailabilityFilter },
+  { label: "Out of stock", value: "out-of-stock" as ProductAvailabilityFilter },
+];
+
+const discountOptions = [0, 10, 20, 30, 40];
 
 interface FiltersSidebarProps {
   brands: string[];
@@ -23,7 +32,9 @@ interface FiltersSidebarProps {
   priceRange: { min: number; max: number };
   maxCatalogPrice: number;
   onPriceRangeChange: (value: { min: number; max: number }) => void;
+  onClose: () => void;
   onReset: () => void;
+  onApply: () => void;
   showCategoryFilter?: boolean;
 }
 
@@ -43,9 +54,15 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   priceRange,
   maxCatalogPrice,
   onPriceRangeChange,
+  onClose,
   onReset,
+  onApply,
   showCategoryFilter = true,
 }) => {
+  const [activeSection, setActiveSection] = useState<"category" | "brand" | "price" | "availability" | "discount">(
+    "category"
+  );
+
   const categoryOptions = categories.flatMap((category) => [
     {
       key: category.slug || category.name,
@@ -61,153 +78,218 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     })),
   ]);
 
+  const renderChoiceList = (
+    heading: string,
+    options: Array<{ key: string; label: string; value: string; count?: number }>,
+    selectedValue: string,
+    onSelect: (value: string) => void,
+  ) => (
+    <div className="filters-sidebar__panel">
+      <h4>{heading}</h4>
+      <div className="filters-sidebar__choice-list" role="list">
+        {options.map((option) => {
+          const isActive = selectedValue === option.value;
+          return (
+            <button
+              key={option.key}
+              className={`filters-sidebar__choice-row ${isActive ? "is-active" : ""}`}
+              type="button"
+              onClick={() => onSelect(option.value)}
+            >
+              <span className="filters-sidebar__choice-label">{option.label}</span>
+              <span className="filters-sidebar__choice-meta">
+                {typeof option.count === "number" ? (
+                  <span className="filters-sidebar__choice-count">({option.count})</span>
+                ) : null}
+                <span className="filters-sidebar__choice-box" aria-hidden="true" />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const currentOptions = useMemo(() => {
+    if (activeSection === "brand") {
+      return renderChoiceList(
+        "Brand",
+        [
+          { key: "all-brands", label: "All brands", value: "All" },
+          ...brands.map((brand) => ({ key: brand, label: brand, value: brand })),
+        ],
+        selectedBrand,
+        onBrandChange,
+      );
+    }
+
+    if (activeSection === "price") {
+      return (
+        <div className="filters-sidebar__panel">
+          <h4>Price Range</h4>
+          <input
+            type="range"
+            min={0}
+            max={maxCatalogPrice || 250000}
+            value={priceRange.max}
+            onChange={(event) =>
+              onPriceRangeChange({
+                ...priceRange,
+                max: Number(event.target.value),
+              })
+            }
+          />
+          <div className="filters-price-row">
+            <label>
+              Min
+              <input
+                type="number"
+                min={0}
+                value={priceRange.min}
+                onChange={(event) =>
+                  onPriceRangeChange({
+                    ...priceRange,
+                    min: Number(event.target.value),
+                  })
+                }
+              />
+            </label>
+            <label>
+              Max
+              <input
+                type="number"
+                min={priceRange.min}
+                value={priceRange.max}
+                onChange={(event) =>
+                  onPriceRangeChange({
+                    ...priceRange,
+                    max: Number(event.target.value),
+                  })
+                }
+              />
+            </label>
+          </div>
+          <p className="filters-caption">
+            Showing items up to {formatCurrency(priceRange.max)}
+          </p>
+        </div>
+      );
+    }
+
+    if (activeSection === "availability") {
+      return renderChoiceList(
+        "Colour",
+        availabilityOptions.map((option) => ({
+          key: option.value,
+          label: option.label,
+          value: option.value,
+        })),
+        availabilityFilter,
+        (value) => onAvailabilityChange(value as ProductAvailabilityFilter),
+      );
+    }
+
+    if (activeSection === "discount") {
+      return renderChoiceList(
+        "Minimum Discount",
+        discountOptions.map((discount) => ({
+          key: `${discount}`,
+          label: discount === 0 ? "Any" : `${discount}%+`,
+          value: `${discount}`,
+        })),
+        `${minimumDiscount}`,
+        (value) => onMinimumDiscountChange(Number(value)),
+      );
+    }
+
+    return renderChoiceList(
+      "Category",
+      [
+        { key: "all-categories", label: "All", value: "All" },
+        ...categoryOptions.map((category) => ({
+          key: category.key,
+          label: category.label,
+          value: category.value,
+        })),
+      ],
+      selectedCategory,
+      onCategoryChange,
+    );
+  }, [
+    activeSection,
+    availabilityFilter,
+    brands,
+    categoryOptions,
+    minimumDiscount,
+    maxCatalogPrice,
+    onAvailabilityChange,
+    onBrandChange,
+    onCategoryChange,
+    onMinimumDiscountChange,
+    onPriceRangeChange,
+    priceRange,
+    selectedBrand,
+    selectedCategory,
+  ]);
+
   return (
-    <aside className="store-card filters-sidebar">
+    <aside className="store-card filters-sidebar filters-sidebar--drawer">
       <div className="filters-sidebar__top">
-        <h3>Refine results</h3>
-        <button type="button" onClick={onReset}>
-          Reset
+        <h3>FILTERS</h3>
+        <button type="button" className="filters-sidebar__close" onClick={onClose}>
+          ×
         </button>
       </div>
 
-      <div className="filters-group">
-        <label htmlFor="sortBy">Sort by</label>
-        <select
-          id="sortBy"
-          value={sortBy}
-          onChange={(event) => onSortChange(event.target.value as ProductSort)}
-        >
-          <option value="featured">Featured</option>
-          <option value="rating">Top rated</option>
-          <option value="price-low">Price: Low to High</option>
-          <option value="price-high">Price: High to Low</option>
-          <option value="discount-high">Highest discount</option>
-          <option value="name-asc">Name: A to Z</option>
-          <option value="name-desc">Name: Z to A</option>
-          <option value="newest">New arrivals</option>
-        </select>
-      </div>
-
-      <div className="filters-group">
-        <label htmlFor="brandFilter">Brand</label>
-        <select
-          id="brandFilter"
-          value={selectedBrand}
-          onChange={(event) => onBrandChange(event.target.value)}
-        >
-          <option value="All">All brands</option>
-          {brands.map((brand) => (
-            <option key={brand} value={brand}>
-              {brand}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {showCategoryFilter ? (
-        <div className="filters-group">
-          <span>Category</span>
-          <div className="filter-chip-list">
+      <div className="filters-sidebar__body">
+        <div className="filters-sidebar__nav">
+          {[
+            { key: "category", label: "Category" },
+            { key: "brand", label: "Brand" },
+            { key: "price", label: "Price Range" },
+            { key: "availability", label: "Colour" },
+            { key: "discount", label: "Minimum Discount" },
+          ].map((item) => (
             <button
-              className={selectedCategory === "All" ? "is-active" : ""}
+              key={item.key}
               type="button"
-              onClick={() => onCategoryChange("All")}
+              className={activeSection === item.key ? "is-active" : ""}
+              onClick={() => setActiveSection(item.key as typeof activeSection)}
             >
-              All
+              {item.label}
             </button>
-            {categoryOptions.map((category) => (
-              <button
-                key={category.key}
-                className={selectedCategory === category.value ? "is-active" : ""}
-                type="button"
-                onClick={() => onCategoryChange(category.value)}
-              >
-                {category.isSubcategory ? `${category.label}` : category.label}
-              </button>
-            ))}
+          ))}
+        </div>
+
+        <div className="filters-sidebar__content">
+          {currentOptions}
+          <div className="filters-group">
+            <label htmlFor="sortBy">Sort by</label>
+            <select
+              id="sortBy"
+              value={sortBy}
+              onChange={(event) => onSortChange(event.target.value as ProductSort)}
+            >
+              <option value="featured">Featured</option>
+              <option value="rating">Top rated</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="discount-high">Highest discount</option>
+              <option value="name-asc">Name: A to Z</option>
+              <option value="name-desc">Name: Z to A</option>
+              <option value="newest">New arrivals</option>
+            </select>
           </div>
         </div>
-      ) : null}
-
-      <div className="filters-group">
-        <label htmlFor="availabilityFilter">Availability</label>
-        <select
-          id="availabilityFilter"
-          value={availabilityFilter}
-          onChange={(event) =>
-            onAvailabilityChange(event.target.value as ProductAvailabilityFilter)
-          }
-        >
-          <option value="all">All stock states</option>
-          <option value="in-stock">In stock</option>
-          <option value="low-stock">Low stock</option>
-          <option value="out-of-stock">Out of stock</option>
-        </select>
       </div>
 
-      <div className="filters-group">
-        <span>Price range</span>
-        <input
-          type="range"
-          min={0}
-          max={maxCatalogPrice || 250000}
-          value={priceRange.max}
-          onChange={(event) =>
-            onPriceRangeChange({
-              ...priceRange,
-              max: Number(event.target.value),
-            })
-          }
-        />
-        <div className="filters-price-row">
-          <label>
-            Min
-            <input
-              type="number"
-              min={0}
-              value={priceRange.min}
-              onChange={(event) =>
-                onPriceRangeChange({
-                  ...priceRange,
-                  min: Number(event.target.value),
-                })
-              }
-            />
-          </label>
-          <label>
-            Max
-            <input
-              type="number"
-              min={priceRange.min}
-              value={priceRange.max}
-              onChange={(event) =>
-                onPriceRangeChange({
-                  ...priceRange,
-                  max: Number(event.target.value),
-                })
-              }
-            />
-          </label>
-        </div>
-        <p className="filters-caption">
-          Showing items up to {formatCurrency(priceRange.max)}
-        </p>
-      </div>
-
-      <div className="filters-group">
-        <span>Minimum discount</span>
-        <div className="filter-chip-list">
-          {[0, 10, 20, 30, 40].map((discount) => (
-            <button
-              key={discount}
-              className={minimumDiscount === discount ? "is-active" : ""}
-              type="button"
-              onClick={() => onMinimumDiscountChange(discount)}
-            >
-              {discount === 0 ? "Any" : `${discount}%+`}
-            </button>
-          ))}
-        </div>
+      <div className="filters-sidebar__actions">
+        <button type="button" className="link-button" onClick={onReset}>
+          Clean
+        </button>
+        <button type="button" className="button" onClick={onApply}>
+          Apply
+        </button>
       </div>
     </aside>
   );

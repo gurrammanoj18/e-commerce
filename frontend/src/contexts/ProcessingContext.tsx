@@ -1,5 +1,4 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
-import "../styles/shared/ProcessingOverlay.css";
 
 interface ProcessingState {
   title: string;
@@ -60,17 +59,6 @@ export const ProcessingProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <ProcessingContext.Provider value={value}>
       {children}
-      {currentEntry ? (
-        <div className="processing-overlay" role="status" aria-live="polite" aria-busy="true">
-          <div className="processing-overlay__content">
-            <h2 className="processing-overlay__title">{currentEntry.title}</h2>
-            <p className="processing-overlay__message">{currentEntry.message}</p>
-            <div className="processing-overlay__line" aria-hidden="true">
-              <span />
-            </div>
-          </div>
-        </div>
-      ) : null}
     </ProcessingContext.Provider>
   );
 };

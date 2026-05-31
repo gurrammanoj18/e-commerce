@@ -2,6 +2,8 @@ package com.voltmart.ecommerce.controller;
 
 import com.voltmart.ecommerce.dto.account.UserAddressRequest;
 import com.voltmart.ecommerce.dto.account.UserAddressResponse;
+import com.voltmart.ecommerce.dto.pincode.PincodeServiceabilityResponse;
+import com.voltmart.ecommerce.service.ServiceablePincodeService;
 import com.voltmart.ecommerce.service.UserAddressService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import java.util.List;
 public class AccountController {
 
     private final UserAddressService userAddressService;
+    private final ServiceablePincodeService serviceablePincodeService;
 
     @GetMapping("/addresses")
     public List<UserAddressResponse> getAddresses() {
@@ -37,5 +40,10 @@ public class AccountController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteAddress(@PathVariable Long id) {
         userAddressService.deleteAddress(id);
+    }
+
+    @GetMapping("/pincode-serviceability")
+    public PincodeServiceabilityResponse getPincodeServiceability(@RequestParam String pincode) {
+        return serviceablePincodeService.checkServiceability(pincode);
     }
 }

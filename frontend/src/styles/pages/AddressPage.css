@@ -1,0 +1,153 @@
+@import "../shared/PageChrome.css";
+@import "../shared/FormStyles.css";
+
+.address-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.address-list-card,
+.address-detail-card {
+  padding: 24px;
+}
+
+.address-list-card {
+  align-self: start;
+}
+
+.address-list-card__top,
+.address-detail-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.address-list-card__top {
+  margin-bottom: 18px;
+}
+
+.address-list-card__top h2,
+.address-detail-card__content h2,
+.address-form-card h2 {
+  margin: 0;
+}
+
+.address-list {
+  display: grid;
+  gap: 12px;
+}
+
+.address-list__item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #fff;
+  text-align: left;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.address-list__item span,
+.address-list-card__empty {
+  color: var(--muted);
+}
+
+.address-list__item small {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.address-list__item.is-active,
+.address-list__item:hover {
+  border-color: var(--accent);
+  background: #fff8f3;
+  transform: translateY(-1px);
+}
+
+.address-detail-card__content {
+  display: grid;
+  gap: 18px;
+}
+
+.address-detail-card__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.address-detail-card__grid div,
+.address-form-card__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.address-detail-card__grid div {
+  flex-direction: column;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface-alt);
+}
+
+.address-detail-card__grid span {
+  color: var(--muted);
+}
+
+.address-pincode-status {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.address-pincode-status.is-serviceable {
+  color: #166534;
+}
+
+.address-pincode-status.is-unserviceable {
+  color: #b42318;
+  font-weight: 600;
+}
+
+.address-detail-card__wide {
+  grid-column: 1 / -1;
+}
+
+.address-form-card {
+  padding: 0;
+}
+
+.address-form-card textarea {
+  resize: vertical;
+}
+
+.address-form-card__actions {
+  margin-top: 20px;
+  align-items: center;
+}
+
+@media (max-width: 980px) {
+  .address-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .address-list-card,
+  .address-detail-card {
+    padding: 18px;
+  }
+
+  .address-list-card__top,
+  .address-detail-card__top,
+  .address-form-card__actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .address-detail-card__grid {
+    grid-template-columns: 1fr;
+  }
+}

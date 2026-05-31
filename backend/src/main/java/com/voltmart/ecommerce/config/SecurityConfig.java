@@ -40,14 +40,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/auth/delivery-preference").authenticated()
                         .requestMatchers(
                                 "/api/auth", "/api/auth/**",
-                                "/api/products", "/api/products/**",
-                                "/api/categories", "/api/categories/**",
-                                "/api/banners", "/api/banners/**",
-                                "/api/support", "/api/support/**",
-                                "/api/orders/checkout"
-                        ).permitAll()
+                        "/api/products", "/api/products/**",
+                        "/api/categories", "/api/categories/**",
+                        "/api/banners", "/api/banners/**",
+                        "/api/pincode-serviceability", "/api/pincode-serviceability/**",
+                        "/api/support", "/api/support/**",
+                        "/api/orders/checkout"
+                ).permitAll()
+                        .requestMatchers("/api/account/wallet/checkout-coupons").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/orders/track/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/returns/requests", "/api/return-requests/requests").hasAnyRole("CUSTOMER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/returns/requests", "/api/return-requests/requests").hasAnyRole("CUSTOMER", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

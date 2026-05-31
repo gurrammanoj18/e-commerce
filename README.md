@@ -69,7 +69,7 @@ Set `REACT_APP_API_BASE_URL` from `frontend/.env.example`.
 
 ## Seed credentials
 
-    - Admin: `admin@voltmart.in` / `Admin@123`
+    - Admin: ` admin@voltmart.in ` / `Admin@123`
 - Customer: `customer@voltmart.in` / `Customer@123`
 
 ## Verification

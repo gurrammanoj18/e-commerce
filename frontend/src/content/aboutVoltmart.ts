@@ -6,12 +6,3 @@ export const aboutVoltmartParagraphs = [
   "Our goal is to become a trusted destination for households, businesses, contractors, and professionals by offering reliable products, transparent pricing, and dependable delivery services.",
   "With a future-ready and scalable architecture, our platform is continuously evolving to support new categories, smarter services, and enhanced customer experiences.",
 ];
-
-export const aboutVoltmartHighlights = [
-  "Wide range of electrical, hardware, and utility products",
-  "Quick and reliable delivery support",
-  "Secure and user-friendly platform",
-  "Customer-focused services and support",
-  "Quality products from trusted brands",
-  "Future-ready shopping experience",
-];

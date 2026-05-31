@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
-import "../../styles/components/LegacyNavbar.css";
+// @ts-ignore: side-effect CSS import without type declarations
+import "../../components/navbar/Navbar.css";
 
 const Navbar: React.FC = () => {
   useEffect(() => {

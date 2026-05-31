@@ -7,15 +7,17 @@ import {
   fetchAdminBanners,
   updateAdminBanner,
 } from "../services/adminService";
-import { Banner } from "../types/store";
+import { Banner, BannerPayload } from "../types/store";
+import { optimizeImageFile } from "../utils/imageUpload";
 import "../styles/pages/AdminDashboardPage.css";
 
-const emptyBanner = {
+const emptyBanner: BannerPayload = {
   title: "",
   subtitle: "",
   imageUrl: "",
   ctaLabel: "",
   ctaHref: "",
+  type: "INFO",
   displayOrder: 1,
   active: true,
 };
@@ -23,7 +25,8 @@ const emptyBanner = {
 const AdminBannersPage: React.FC = () => {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formState, setFormState] = useState(emptyBanner);
+  const [formState, setFormState] = useState<BannerPayload>(emptyBanner);
+  const [uploading, setUploading] = useState(false);
 
   const loadBanners = async () => {
     const response = await fetchAdminBanners();
@@ -40,7 +43,6 @@ const AdminBannersPage: React.FC = () => {
         <div>
           <span className="eyebrow">Admin workspace</span>
           <h1>Banner management</h1>
-          <p>Control homepage banner copy, images, call-to-actions, and order.</p>
         </div>
       </div>
       <AdminWorkspaceNav />
@@ -49,7 +51,7 @@ const AdminBannersPage: React.FC = () => {
         <div className="admin-panel__heading">
           <div>
             <span className="eyebrow">Banner form</span>
-            <h2>{editingId ? "Edit banner" : "Create banner"}</h2>
+            <h2>{editingId ? "Edit banner" : "Create small banner"}</h2>
           </div>
         </div>
         <form
@@ -69,10 +71,26 @@ const AdminBannersPage: React.FC = () => {
           }}
         >
           <label>
-            Title
+            Upload image
             <input
-              value={formState.title}
-              onChange={(event) => setFormState((current) => ({ ...current, title: event.target.value }))}
+              type="file"
+              accept="image/*"
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) {
+                  return;
+                }
+                setUploading(true);
+                try {
+                  const imageUrl = await optimizeImageFile(file);
+                  setFormState((current) => ({ ...current, imageUrl }));
+                } catch {
+                  toast.error("Unable to prepare selected banner image.");
+                } finally {
+                  setUploading(false);
+                  event.target.value = "";
+                }
+              }}
               required
             />
           </label>
@@ -87,36 +105,6 @@ const AdminBannersPage: React.FC = () => {
               }
             />
           </label>
-          <label className="form-grid__wide">
-            Subtitle
-            <textarea
-              rows={3}
-              value={formState.subtitle}
-              onChange={(event) => setFormState((current) => ({ ...current, subtitle: event.target.value }))}
-            />
-          </label>
-          <label className="form-grid__wide">
-            Image URL
-            <input
-              value={formState.imageUrl}
-              onChange={(event) => setFormState((current) => ({ ...current, imageUrl: event.target.value }))}
-              required
-            />
-          </label>
-          <label>
-            CTA label
-            <input
-              value={formState.ctaLabel}
-              onChange={(event) => setFormState((current) => ({ ...current, ctaLabel: event.target.value }))}
-            />
-          </label>
-          <label>
-            CTA link
-            <input
-              value={formState.ctaHref}
-              onChange={(event) => setFormState((current) => ({ ...current, ctaHref: event.target.value }))}
-            />
-          </label>
           <label className="checkout-inline-check">
             <input
               type="checkbox"
@@ -126,7 +114,7 @@ const AdminBannersPage: React.FC = () => {
             <span>Banner is active</span>
           </label>
           <div className="admin-form-actions">
-            <button className="button" type="submit">
+            <button className="button" type="submit" disabled={uploading}>
               {editingId ? "Update banner" : "Create banner"}
             </button>
           </div>
@@ -145,6 +133,7 @@ const AdminBannersPage: React.FC = () => {
             <thead>
               <tr>
                 <th>Banner</th>
+                <th>Type</th>
                 <th>Order</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -157,6 +146,7 @@ const AdminBannersPage: React.FC = () => {
                     <strong>{banner.title}</strong>
                     <div>{banner.subtitle}</div>
                   </td>
+                  <td>{banner.type}</td>
                   <td>{banner.displayOrder}</td>
                   <td>{banner.active ? "Active" : "Hidden"}</td>
                   <td>
@@ -167,11 +157,12 @@ const AdminBannersPage: React.FC = () => {
                         onClick={() => {
                           setEditingId(banner.id);
                           setFormState({
-                            title: banner.title,
+                            title: banner.title || "",
                             subtitle: banner.subtitle || "",
-                            imageUrl: banner.imageUrl,
+                            imageUrl: banner.imageUrl || "",
                             ctaLabel: banner.ctaLabel || "",
                             ctaHref: banner.ctaHref || "",
+                            type: "INFO",
                             displayOrder: banner.displayOrder,
                             active: banner.active,
                           });

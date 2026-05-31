@@ -133,8 +133,6 @@ const DiscoverySection: React.FC = () => {
           </div>
         </div>
       </section>
-
-
     </div>
   );
 };

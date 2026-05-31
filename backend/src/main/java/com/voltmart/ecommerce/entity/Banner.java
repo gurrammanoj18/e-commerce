@@ -1,5 +1,6 @@
 package com.voltmart.ecommerce.entity;
 
+import com.voltmart.ecommerce.entity.enums.BannerType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,18 +19,21 @@ public class Banner {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String title;
 
     @Column(length = 1000)
     private String subtitle;
 
-    @Column(nullable = false, length = 2000)
+    @Column(length = 2000)
     private String imageUrl;
 
     private String ctaLabel;
 
     private String ctaHref;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private BannerType type;
 
     @Column(nullable = false)
     private Integer displayOrder;

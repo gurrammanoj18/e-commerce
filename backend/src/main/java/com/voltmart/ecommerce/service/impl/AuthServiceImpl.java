@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -54,10 +55,11 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse adminLogin(AuthRequest request) {
+        String normalizedEmail = request.email().trim().toLowerCase();
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
+                new UsernamePasswordAuthenticationToken(normalizedEmail, request.password())
         );
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
                 .orElseThrow(() -> new BadRequestException("Invalid login credentials"));
         if (user.getRole() != Role.ROLE_ADMIN) {
             throw new BadRequestException("Admin access is required");
@@ -115,6 +117,7 @@ public class AuthServiceImpl implements AuthService {
                         .fullName("")
                         .email(email)
                         .role(Role.ROLE_CUSTOMER)
+                        .walletBalance(BigDecimal.ZERO)
                         .createdAt(LocalDateTime.now())
                         .build()));
 
@@ -134,6 +137,14 @@ public class AuthServiceImpl implements AuthService {
         userRepository.findByEmail(email).ifPresent(user -> {
             if (user.getRole() == Role.ROLE_ADMIN) {
                 throw new BadRequestException("Use admin login for administrator access");
+            }
+        });
+
+        loginOtpRepository.findTopByEmailOrderByCreatedAtDesc(email).ifPresent(existingOtp -> {
+            if (existingOtp.getConsumedAt() == null
+                    && existingOtp.getExpiresAt().isAfter(LocalDateTime.now())
+                    && existingOtp.getCreatedAt().isAfter(LocalDateTime.now().minusSeconds(60))) {
+                throw new BadRequestException("An OTP was just sent. Please wait before requesting another code.");
             }
         });
 
@@ -186,6 +197,7 @@ public class AuthServiceImpl implements AuthService {
                         .fullName("")
                         .email(email)
                         .role(Role.ROLE_CUSTOMER)
+                        .walletBalance(BigDecimal.ZERO)
                         .createdAt(LocalDateTime.now())
                         .build()));
 
@@ -206,11 +218,29 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse completeProfile(ProfileCompletionRequest request) {
         User user = userRepository.findById(currentUserService.getCurrentUser().getId())
                 .orElseThrow(() -> new BadRequestException("User not found"));
-        if (user.getRole() != Role.ROLE_CUSTOMER) {
-            throw new BadRequestException("Profile completion is only available for customer accounts");
+
+        String email = trimToNull(request.email());
+        if (!StringUtils.hasText(email)) {
+            email = user.getEmail();
+        }
+        String phoneNumber = request.phoneNumber().trim();
+        userRepository.findByPhoneNumber(phoneNumber)
+                .filter(existingUser -> !existingUser.getId().equals(user.getId()))
+                .ifPresent(existingUser -> {
+                    throw new BadRequestException("This mobile number is already linked to another account");
+                });
+        if (StringUtils.hasText(email)) {
+            userRepository.findByEmail(email)
+                    .filter(existingUser -> !existingUser.getId().equals(user.getId()))
+                    .ifPresent(existingUser -> {
+                        throw new BadRequestException("This email is already linked to another account");
+                    });
         }
 
         user.setFullName(request.fullName().trim());
+        user.setPhoneNumber(phoneNumber);
+        user.setEmail(email);
+        user.setProfileImageUrl(trimToNull(request.profileImageUrl()));
         User savedUser = userRepository.save(user);
         String token = jwtService.generateToken(savedUser, Map.of("role", savedUser.getRole().name()));
         return buildAuthResponse(savedUser, token, false);
@@ -243,6 +273,11 @@ public class AuthServiceImpl implements AuthService {
     private boolean requiresProfileCompletion(User user) {
         return user.getRole() == Role.ROLE_CUSTOMER
                 && (!StringUtils.hasText(user.getFullName())
-                || "customer".equalsIgnoreCase(user.getFullName().trim()));
+                || "customer".equalsIgnoreCase(user.getFullName().trim())
+                || !StringUtils.hasText(user.getPhoneNumber()));
+    }
+
+    private String trimToNull(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 }

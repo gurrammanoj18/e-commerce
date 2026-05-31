@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import "../../styles/product/ProductCard.css";
 import "../../styles/shared/LoadingState.css";
-import { useAuth } from "../../contexts/AuthContext";
 import { useCart } from "../../contexts/CartContext";
 import { useCollectionAnimation } from "../../contexts/CollectionAnimationContext";
 import { useWishlist } from "../../contexts/WishlistContext";
@@ -14,7 +13,6 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { user } = useAuth();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { animateProductToTarget } = useCollectionAnimation();
@@ -56,22 +54,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       : product.availability === "low-stock"
       ? "Low stock"
       : "In stock";
-  const mobileDeliveryLabel =
-    product.availability === "out-of-stock"
-      ? "Currently unavailable"
-      : product.availability === "low-stock"
-      ? "Delivery soon, limited stock"
-      : "Delivery available";
-  const estimatedShipping =
-    product.price > 4999 ? "Free shipping" : `${formatCurrency(499)} shipping`;
-  const deliveryPreferenceLabel =
-    product.availability === "out-of-stock"
-      ? "Currently unavailable"
-      : user?.preferredDeliveryMode === "HOME_DELIVERY"
-      ? `Home delivery • ${estimatedShipping}`
-      : user?.preferredDeliveryMode === "STORE_PICKUP"
-      ? "Store pickup available"
-      : mobileDeliveryLabel;
   const savedToWishlist = isInWishlist(product.id);
 
   const animateProduct = async (target: "cart" | "wishlist") => {
@@ -171,15 +153,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div>
             <strong>{formatCurrency(product.price)}</strong>
             <span>{formatCurrency(product.originalPrice)}</span>
-            <em>{product.discountPercentage}% OFF</em>
+            <em>Save {product.discountPercentage}%</em>
           </div>
         </div>
-
-        <div className="product-card__delivery">
-          <span aria-hidden="true">🚚</span>
-          <span>{deliveryPreferenceLabel}</span>
-        </div>
-
         <div className="product-card__highlights">
           <span className={`product-pill product-pill--${product.availability}`}>
             {stockLabel}

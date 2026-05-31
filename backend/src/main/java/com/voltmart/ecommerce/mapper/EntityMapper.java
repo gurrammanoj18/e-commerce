@@ -33,8 +33,10 @@ public class EntityMapper {
                 user.getFullName(),
                 user.getEmail(),
                 user.getPhoneNumber(),
+                user.getProfileImageUrl(),
                 user.getRole().name(),
-                user.getPreferredDeliveryMode() == null ? null : user.getPreferredDeliveryMode().name()
+                user.getPreferredDeliveryMode() == null ? null : user.getPreferredDeliveryMode().name(),
+                user.getWalletBalance()
         );
     }
 
@@ -168,6 +170,11 @@ public class EntityMapper {
                 order.getShippingCost(),
                 order.getTaxAmount(),
                 order.getTotalAmount(),
+                order.getWalletDebitAmount() == null ? BigDecimal.ZERO : order.getWalletDebitAmount(),
+                order.getAppliedCouponCode(),
+                order.getWalletCreditAmount(),
+                order.getWalletCreditEligibleAt(),
+                order.isWalletCreditProcessed(),
                 buildWhatsappMessage(order),
                 order.getCreatedAt(),
                 items

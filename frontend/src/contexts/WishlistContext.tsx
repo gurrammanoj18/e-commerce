@@ -30,15 +30,26 @@ interface WishlistContextValue {
 const WishlistContext = createContext<WishlistContextValue | undefined>(undefined);
 const WISHLIST_STORAGE_KEY = "voltmart-wishlist-local";
 
+const isAuthorizationError = (error: unknown) =>
+  error instanceof AxiosError &&
+  (error.response?.status === 401 || error.response?.status === 403);
+
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const { startProcessing, stopProcessing } = useProcessing();
   const [items, setItems] = useState<WishlistEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const useRemoteWishlist = isAuthenticated && user?.role === "ROLE_CUSTOMER";
 
   const loadRemoteWishlist = useCallback(async () => {
+    if (!useRemoteWishlist) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const wishlist = await fetchWishlist();
@@ -51,7 +62,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
         })),
       );
     } catch (error) {
-      if (error instanceof AxiosError && error.response?.status === 401) {
+      if (isAuthorizationError(error)) {
         setItems([]);
         logout();
         return;
@@ -61,10 +72,10 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
-  }, [logout]);
+  }, [logout, useRemoteWishlist]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (useRemoteWishlist) {
       void loadRemoteWishlist();
       return;
     }
@@ -75,24 +86,24 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setItems([]);
     }
-  }, [isAuthenticated, loadRemoteWishlist]);
+  }, [loadRemoteWishlist, useRemoteWishlist]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!useRemoteWishlist) {
       window.localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(items));
     }
-  }, [isAuthenticated, items]);
+  }, [items, useRemoteWishlist]);
 
   const isInWishlist = (productId: number) =>
     items.some((item) => item.product.id === productId);
 
   const addToWishlist = async (product: Product) => {
-    if (isAuthenticated) {
+    if (useRemoteWishlist) {
       try {
         await addWishlistItem(product.id);
         await loadRemoteWishlist();
       } catch (error) {
-        if (error instanceof AxiosError && error.response?.status === 401) {
+        if (isAuthorizationError(error)) {
           setItems([]);
           logout();
           return;
@@ -111,7 +122,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const removeFromWishlist = async (productId: number) => {
-    if (isAuthenticated) {
+    if (useRemoteWishlist) {
       const item = items.find((wishlistItem) => wishlistItem.product.id === productId);
       if (item?.id) {
         const previousItems = items;
@@ -126,7 +137,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
           await removeWishlistItem(item.id);
         } catch (error) {
           setItems(previousItems);
-          if (error instanceof AxiosError && error.response?.status === 401) {
+          if (isAuthorizationError(error)) {
             setItems([]);
             logout();
             return;

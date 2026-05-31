@@ -24,4 +24,13 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export const setApiAuthToken = (token: string | null) => {
+  if (token) {
+    api.defaults.headers.common.Authorization = `Bearer ${token}`;
+    return;
+  }
+
+  delete api.defaults.headers.common.Authorization;
+};
+
 export default api;

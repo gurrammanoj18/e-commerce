@@ -1,6 +1,6 @@
 package com.voltmart.ecommerce.controller.admin;
 
-import com.voltmart.ecommerce.dto.banner.BannerRequest;
+import com.voltmart.ecommerce.dto.banner.AdminBannerRequest;
 import com.voltmart.ecommerce.dto.banner.BannerResponse;
 import com.voltmart.ecommerce.dto.bulk.BulkInquiryUpdateRequest;
 import com.voltmart.ecommerce.dto.bulk.BulkOrderResponse;
@@ -10,13 +10,26 @@ import com.voltmart.ecommerce.dto.order.OrderResponse;
 import com.voltmart.ecommerce.dto.product.InventoryResponse;
 import com.voltmart.ecommerce.dto.product.ProductRequest;
 import com.voltmart.ecommerce.dto.product.ProductResponse;
+import com.voltmart.ecommerce.dto.pincode.ServiceablePincodeRequest;
+import com.voltmart.ecommerce.dto.pincode.ServiceablePincodeResponse;
+import com.voltmart.ecommerce.dto.returnrequest.ReturnRequestResponse;
+import com.voltmart.ecommerce.dto.returnrequest.ReturnRequestUpdateRequest;
+import com.voltmart.ecommerce.dto.service.ServiceRequestResponse;
 import com.voltmart.ecommerce.dto.user.AdminUserResponse;
+import com.voltmart.ecommerce.dto.wallet.WalletCouponRequest;
+import com.voltmart.ecommerce.dto.wallet.WalletCouponGrantRequest;
+import com.voltmart.ecommerce.dto.wallet.WalletCouponResponse;
+import com.voltmart.ecommerce.dto.wallet.WalletCouponRedemptionResponse;
 import com.voltmart.ecommerce.service.AdminService;
 import com.voltmart.ecommerce.service.BannerService;
 import com.voltmart.ecommerce.service.BulkOrderService;
 import com.voltmart.ecommerce.service.CategoryService;
 import com.voltmart.ecommerce.service.OrderService;
 import com.voltmart.ecommerce.service.ProductService;
+import com.voltmart.ecommerce.service.ReturnRequestService;
+import com.voltmart.ecommerce.service.ServiceablePincodeService;
+import com.voltmart.ecommerce.service.ServiceRequestService;
+import com.voltmart.ecommerce.service.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -36,6 +49,10 @@ public class AdminDashboardController {
     private final CategoryService categoryService;
     private final BannerService bannerService;
     private final BulkOrderService bulkOrderService;
+    private final ServiceRequestService serviceRequestService;
+    private final ReturnRequestService returnRequestService;
+    private final WalletService walletService;
+    private final ServiceablePincodeService serviceablePincodeService;
 
     @GetMapping("/dashboard")
     public Map<String, Object> getOverview() {
@@ -119,12 +136,12 @@ public class AdminDashboardController {
 
     @PostMapping("/banners")
     @ResponseStatus(HttpStatus.CREATED)
-    public BannerResponse createBanner(@Valid @RequestBody BannerRequest request) {
+    public BannerResponse createBanner(@Valid @RequestBody AdminBannerRequest request) {
         return bannerService.createBanner(request);
     }
 
     @PutMapping("/banners/{id}")
-    public BannerResponse updateBanner(@PathVariable Long id, @Valid @RequestBody BannerRequest request) {
+    public BannerResponse updateBanner(@PathVariable Long id, @Valid @RequestBody AdminBannerRequest request) {
         return bannerService.updateBanner(id, request);
     }
 
@@ -142,5 +159,85 @@ public class AdminDashboardController {
     @PatchMapping("/bulk-inquiries/{id}")
     public BulkOrderResponse updateBulkInquiry(@PathVariable Long id, @RequestBody BulkInquiryUpdateRequest request) {
         return bulkOrderService.updateInquiry(id, request);
+    }
+
+    @GetMapping("/service-requests")
+    public List<ServiceRequestResponse> getServiceRequests() {
+        return serviceRequestService.getAllRequests();
+    }
+
+    @GetMapping({"/returns", "/return-requests"})
+    public List<ReturnRequestResponse> getReturnRequests() {
+        return returnRequestService.getAllReturnRequests();
+    }
+
+    @PatchMapping({"/return-actions/{id}", "/returns/{id}", "/return-requests/{id}"})
+    public ReturnRequestResponse updateReturnRequest(
+            @PathVariable Long id,
+            @Valid @RequestBody ReturnRequestUpdateRequest request
+    ) {
+        return returnRequestService.updateReturnRequest(id, request);
+    }
+
+    @GetMapping("/wallet-coupons")
+    public List<WalletCouponResponse> getWalletCoupons() {
+        return walletService.getAllCoupons();
+    }
+
+    @PostMapping("/wallet-coupons")
+    @ResponseStatus(HttpStatus.CREATED)
+    public WalletCouponResponse createWalletCoupon(@Valid @RequestBody WalletCouponRequest request) {
+        return walletService.createCoupon(request);
+    }
+
+    @PutMapping("/wallet-coupons/{id}")
+    public WalletCouponResponse updateWalletCoupon(@PathVariable Long id, @Valid @RequestBody WalletCouponRequest request) {
+        return walletService.updateCoupon(id, request);
+    }
+
+    @DeleteMapping("/wallet-coupons/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteWalletCoupon(@PathVariable Long id) {
+        walletService.deleteCoupon(id);
+    }
+
+    @GetMapping("/wallet-coupons/{id}/redemptions")
+    public List<WalletCouponRedemptionResponse> getWalletCouponRedemptions(@PathVariable Long id) {
+        return walletService.getCouponRedemptions(id);
+    }
+
+    @PostMapping("/wallet-coupons/{id}/grant")
+    public WalletCouponRedemptionResponse grantWalletCouponRedemptions(
+            @PathVariable Long id,
+            @Valid @RequestBody WalletCouponGrantRequest request
+    ) {
+        return walletService.grantCouponRedemptions(id, request);
+    }
+
+    @GetMapping("/serviceable-pincodes")
+    public List<ServiceablePincodeResponse> getServiceablePincodes() {
+        return serviceablePincodeService.getAllPincodes();
+    }
+
+    @PostMapping("/serviceable-pincodes")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ServiceablePincodeResponse createServiceablePincode(
+            @Valid @RequestBody ServiceablePincodeRequest request
+    ) {
+        return serviceablePincodeService.createPincode(request);
+    }
+
+    @PutMapping("/serviceable-pincodes/{id}")
+    public ServiceablePincodeResponse updateServiceablePincode(
+            @PathVariable Long id,
+            @Valid @RequestBody ServiceablePincodeRequest request
+    ) {
+        return serviceablePincodeService.updatePincode(id, request);
+    }
+
+    @DeleteMapping("/serviceable-pincodes/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteServiceablePincode(@PathVariable Long id) {
+        serviceablePincodeService.deletePincode(id);
     }
 }

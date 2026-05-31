@@ -11,6 +11,13 @@ import {
   InventoryItem,
   Order,
   ProductApiShape,
+  ServiceRequest,
+  ServiceablePincode,
+  ServiceablePincodePayload,
+  WalletCoupon,
+  WalletCouponGrantPayload,
+  WalletCouponPayload,
+  WalletCouponRedemption,
 } from "../types/store";
 import { transformProduct } from "./productService";
 
@@ -116,6 +123,65 @@ export const updateAdminBanner = async (id: number, payload: BannerPayload) => {
 
 export const deleteAdminBanner = async (id: number) => {
   await api.delete(`/admin/banners/${id}`);
+};
+
+export const fetchAdminServiceRequests = async () => {
+  const response = await api.get<ServiceRequest[]>("/admin/service-requests");
+  return response.data;
+};
+
+export const fetchAdminWalletCoupons = async () => {
+  const response = await api.get<WalletCoupon[]>("/admin/wallet-coupons");
+  return response.data;
+};
+
+export const createAdminWalletCoupon = async (payload: WalletCouponPayload) => {
+  const response = await api.post<WalletCoupon>("/admin/wallet-coupons", payload);
+  return response.data;
+};
+
+export const updateAdminWalletCoupon = async (id: number, payload: WalletCouponPayload) => {
+  const response = await api.put<WalletCoupon>(`/admin/wallet-coupons/${id}`, payload);
+  return response.data;
+};
+
+export const deleteAdminWalletCoupon = async (id: number) => {
+  await api.delete(`/admin/wallet-coupons/${id}`);
+};
+
+export const fetchAdminWalletCouponRedemptions = async (couponId: number) => {
+  const response = await api.get<WalletCouponRedemption[]>(`/admin/wallet-coupons/${couponId}/redemptions`);
+  return response.data;
+};
+
+export const grantAdminWalletCouponRedemptions = async (
+  couponId: number,
+  payload: WalletCouponGrantPayload,
+) => {
+  const response = await api.post<WalletCouponRedemption>(`/admin/wallet-coupons/${couponId}/grant`, payload);
+  return response.data;
+};
+
+export const fetchAdminServiceablePincodes = async () => {
+  const response = await api.get<ServiceablePincode[]>("/admin/serviceable-pincodes");
+  return response.data;
+};
+
+export const createAdminServiceablePincode = async (payload: ServiceablePincodePayload) => {
+  const response = await api.post<ServiceablePincode>("/admin/serviceable-pincodes", payload);
+  return response.data;
+};
+
+export const updateAdminServiceablePincode = async (
+  id: number,
+  payload: ServiceablePincodePayload,
+) => {
+  const response = await api.put<ServiceablePincode>(`/admin/serviceable-pincodes/${id}`, payload);
+  return response.data;
+};
+
+export const deleteAdminServiceablePincode = async (id: number) => {
+  await api.delete(`/admin/serviceable-pincodes/${id}`);
 };
 
 export const fetchAdminBulkInquiries = async () => {

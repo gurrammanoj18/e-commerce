@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { AxiosError } from "axios";
 import "../styles/pages/CheckoutPage.css";
 import "../styles/shared/LoadingState.css";
 import { toast } from "react-toastify";
@@ -6,8 +7,20 @@ import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { useProcessing } from "../contexts/ProcessingContext";
 import { checkout } from "../services/orderService";
-import { createAddress, fetchAddresses } from "../services/accountService";
-import { Order, UserAddress } from "../types/store";
+import {
+  checkPincodeServiceability,
+  createAddress,
+  fetchAddresses,
+  fetchCheckoutCoupons,
+  fetchWallet,
+} from "../services/accountService";
+import {
+  Order,
+  PincodeServiceabilityResult,
+  UserAddress,
+  WalletCoupon,
+  WalletSummary,
+} from "../types/store";
 import { formatCurrency } from "../utils/currency";
 
 const DELIVERY_SLOTS = [
@@ -19,13 +32,12 @@ const DELIVERY_SLOTS = [
 ];
 
 interface CheckoutFormState {
-  fullName: string;
-  email: string;
-  phone: string;
   address: string;
   city: string;
   postalCode: string;
   deliverySlot: string;
+  couponCode: string;
+  useWalletBalance: boolean;
   priorityOrder: boolean;
   priorityNotes: string;
 }
@@ -35,13 +47,12 @@ const CheckoutPage: React.FC = () => {
   const { clearCart, items, subtotal } = useCart();
   const { startProcessing, stopProcessing } = useProcessing();
   const [formState, setFormState] = useState<CheckoutFormState>({
-    fullName: "",
-    email: "",
-    phone: "",
     address: "",
     city: "",
     postalCode: "",
     deliverySlot: DELIVERY_SLOTS[0],
+    couponCode: "",
+    useWalletBalance: false,
     priorityOrder: false,
     priorityNotes: "",
   });
@@ -52,6 +63,11 @@ const CheckoutPage: React.FC = () => {
   const [saveAddress, setSaveAddress] = useState(false);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [submittingOrder, setSubmittingOrder] = useState(false);
+  const [wallet, setWallet] = useState<WalletSummary | null>(null);
+  const [checkoutCoupons, setCheckoutCoupons] = useState<WalletCoupon[]>([]);
+  const [isCouponPickerOpen, setIsCouponPickerOpen] = useState(false);
+  const [pincodeStatus, setPincodeStatus] = useState<PincodeServiceabilityResult | null>(null);
+  const [checkingPincode, setCheckingPincode] = useState(false);
   const deliveryMode = user?.preferredDeliveryMode ?? "HOME_DELIVERY";
   const isStorePickup = deliveryMode === "STORE_PICKUP";
 
@@ -69,8 +85,6 @@ const CheckoutPage: React.FC = () => {
           setSelectedAddressId(defaultAddress.id);
           setFormState((current) => ({
             ...current,
-            fullName: defaultAddress.recipientName,
-            phone: defaultAddress.phone,
             address: defaultAddress.streetAddress,
             city: defaultAddress.city,
             postalCode: defaultAddress.postalCode,
@@ -93,6 +107,18 @@ const CheckoutPage: React.FC = () => {
     setLoadingAddresses(false);
   }, [isStorePickup, startProcessing, stopProcessing]);
 
+  useEffect(() => {
+    const loadWallet = async () => {
+      try {
+        setWallet(await fetchWallet());
+      } catch {
+        setWallet(null);
+      }
+    };
+
+    void loadWallet();
+  }, []);
+
   const selectedAddress = useMemo(
     () =>
       typeof selectedAddressId === "number"
@@ -100,10 +126,88 @@ const CheckoutPage: React.FC = () => {
         : null,
     [addresses, selectedAddressId],
   );
+  const selectedCoupon = useMemo(
+    () =>
+      checkoutCoupons.find(
+        (coupon) => coupon.code.toUpperCase() === formState.couponCode.trim().toUpperCase(),
+      ) ?? null,
+    [checkoutCoupons, formState.couponCode],
+  );
+  const hasSavedAddress = Boolean(selectedAddress);
+  const activePostalCode = (selectedAddress?.postalCode ?? formState.postalCode).trim();
+
+  useEffect(() => {
+    const loadCoupons = async () => {
+      try {
+        setCheckoutCoupons(await fetchCheckoutCoupons());
+      } catch {
+        setCheckoutCoupons([]);
+      }
+    };
+
+    void loadCoupons();
+  }, []);
+
+  useEffect(() => {
+    if (isStorePickup) {
+      setPincodeStatus(null);
+      setCheckingPincode(false);
+      return;
+    }
+
+    if (!/^\d{6}$/.test(activePostalCode)) {
+      setPincodeStatus(null);
+      setCheckingPincode(false);
+      return;
+    }
+
+    let cancelled = false;
+    setCheckingPincode(true);
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await checkPincodeServiceability(activePostalCode);
+        if (!cancelled) {
+          setPincodeStatus(response);
+        }
+      } catch {
+        if (!cancelled) {
+          setPincodeStatus(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setCheckingPincode(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [activePostalCode, isStorePickup]);
 
   const shipping = isStorePickup ? 0 : subtotal > 4999 ? 0 : 499;
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
+
+  const extractCheckoutError = (error: unknown) => {
+    if (error instanceof AxiosError) {
+      const message = error.response?.data?.message;
+      if (typeof message === "string" && message.trim()) {
+        return message;
+      }
+      const fieldErrors = error.response?.data?.errors;
+      if (fieldErrors && typeof fieldErrors === "object") {
+        const firstMessage = Object.values(fieldErrors).find(
+          (value) => typeof value === "string" && value.trim(),
+        );
+        if (typeof firstMessage === "string") {
+          return firstMessage;
+        }
+      }
+    }
+    return "Couldn't place your order right now. Please try again.";
+  };
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -136,8 +240,6 @@ const CheckoutPage: React.FC = () => {
     setSelectedAddressId(nextAddress.id);
     setFormState((current) => ({
       ...current,
-      fullName: nextAddress.recipientName,
-      phone: nextAddress.phone,
       address: nextAddress.streetAddress,
       city: nextAddress.city,
       postalCode: nextAddress.postalCode,
@@ -150,12 +252,34 @@ const CheckoutPage: React.FC = () => {
       return;
     }
     const requiredValues = isStorePickup
-      ? [formState.fullName, formState.email, formState.phone]
-      : [formState.fullName, formState.email, formState.phone, formState.deliverySlot];
+      ? [user?.fullName, user?.phoneNumber]
+      : [
+          user?.fullName,
+          user?.phoneNumber,
+          formState.deliverySlot,
+          selectedAddress ? selectedAddress.streetAddress : formState.address,
+          selectedAddress ? selectedAddress.city : formState.city,
+          selectedAddress ? selectedAddress.postalCode : formState.postalCode,
+        ];
     const isValid = requiredValues.every((value) => String(value).trim());
     if (!isValid) {
-      toast.error("Please complete the required checkout details.");
+      toast.error(
+        isStorePickup
+          ? "Please complete your profile name and mobile number before checkout."
+          : "Please complete address, city, postal code, profile name, and mobile number.",
+      );
       return;
+    }
+
+    if (!isStorePickup) {
+      const serviceability = await checkPincodeServiceability(activePostalCode).catch(() => null);
+      if (!serviceability?.serviceable) {
+        toast.error(
+          serviceability?.message || "Home delivery is not available for this pincode yet.",
+        );
+        return;
+      }
+      setPincodeStatus(serviceability);
     }
 
     let nextAddressId = typeof selectedAddressId === "number" ? selectedAddressId : null;
@@ -168,8 +292,8 @@ const CheckoutPage: React.FC = () => {
       if (!isStorePickup && selectedAddressId === "new" && saveAddress) {
         const savedAddress = await createAddress({
           label: `Address ${addresses.length + 1}`,
-          recipientName: formState.fullName,
-          phone: formState.phone,
+          recipientName: user?.fullName || "Customer",
+          phone: user?.phoneNumber || "",
           streetAddress: formState.address,
           city: formState.city,
           postalCode: formState.postalCode,
@@ -181,14 +305,16 @@ const CheckoutPage: React.FC = () => {
 
       const order = await checkout({
         deliveryMode,
-        shippingName: formState.fullName,
-        email: formState.email,
-        phone: formState.phone,
+        shippingName: user?.fullName || "",
+        email: user?.email || "",
+        phone: user?.phoneNumber || "",
         addressId: nextAddressId,
         shippingAddress: selectedAddress?.streetAddress ?? formState.address,
         city: selectedAddress?.city ?? formState.city,
         postalCode: selectedAddress?.postalCode ?? formState.postalCode,
         deliverySlot: isStorePickup ? "STORE_PICKUP_WINDOW" : formState.deliverySlot,
+        couponCode: formState.couponCode,
+        useWalletBalance: formState.useWalletBalance,
         priorityOrder: formState.priorityOrder,
         priorityNotes: formState.priorityNotes,
       });
@@ -196,8 +322,8 @@ const CheckoutPage: React.FC = () => {
       clearCart();
       setSubmitted(true);
       toast.success("Order placed successfully");
-    } catch {
-      toast.error("Couldn't place your order right now. Please try again.");
+    } catch (error) {
+      toast.error(extractCheckoutError(error));
     } finally {
       setSubmittingOrder(false);
       stopProcessing(processingId);
@@ -224,6 +350,11 @@ const CheckoutPage: React.FC = () => {
             Slot: {placedOrder?.deliverySlot || "Store pickup window"} | Fulfilment:{" "}
             {placedOrder?.deliveryMode === "STORE_PICKUP" ? "Pick up at store" : "Home delivery"}
           </p>
+          {placedOrder?.walletCreditAmount ? (
+            <p>
+              Coupon {placedOrder.appliedCouponCode} will credit {formatCurrency(placedOrder.walletCreditAmount)} to wallet within one hour.
+            </p>
+          ) : null}
         </div>
       ) : (
         <div className="checkout-layout">
@@ -233,19 +364,11 @@ const CheckoutPage: React.FC = () => {
               <span>Selected fulfilment</span>
               <strong>{isStorePickup ? "Pick up at store" : "Home delivery"}</strong>
             </div>
+            <div className="checkout-delivery-mode">
+              <span>Order contact</span>
+              <strong>{user?.fullName || "Profile name missing"} | {user?.phoneNumber || "Mobile missing"}</strong>
+            </div>
             <div className="form-grid">
-              <label>
-                Full name
-                <input name="fullName" value={formState.fullName} onChange={handleChange} />
-              </label>
-              <label>
-                Email
-                <input name="email" type="email" value={formState.email} onChange={handleChange} />
-              </label>
-              <label>
-                Phone
-                <input name="phone" value={formState.phone} onChange={handleChange} />
-              </label>
               {!isStorePickup ? (
                 <>
                   {loadingAddresses ? (
@@ -268,60 +391,111 @@ const CheckoutPage: React.FC = () => {
                       <option value="new">Use a new address</option>
                     </select>
                   </label>
-                  <label>
-                    Delivery slot
-                    <select
-                      name="deliverySlot"
-                      value={formState.deliverySlot}
-                      onChange={handleChange}
-                      disabled={submittingOrder}
-                    >
-                      {DELIVERY_SLOTS.map((slot) => (
-                        <option key={slot} value={slot}>
-                          {slot}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    City
-                    <input
-                      name="city"
-                      value={selectedAddress?.city ?? formState.city}
-                      onChange={handleChange}
-                      disabled={Boolean(selectedAddress) || submittingOrder}
-                    />
-                  </label>
-                  <label>
-                    Postal code
-                    <input
-                      name="postalCode"
-                      value={selectedAddress?.postalCode ?? formState.postalCode}
-                      onChange={handleChange}
-                      disabled={Boolean(selectedAddress) || submittingOrder}
-                    />
-                  </label>
-                  <label className="form-grid__wide">
-                    Address
-                    <textarea
-                      name="address"
-                      rows={4}
-                      value={selectedAddress?.streetAddress ?? formState.address}
-                      onChange={handleChange}
-                      disabled={Boolean(selectedAddress) || submittingOrder}
-                    />
-                  </label>
-                  {selectedAddressId === "new" ? (
-                    <label className="form-grid__wide checkout-inline-check">
-                      <input
-                        type="checkbox"
-                        checked={saveAddress}
-                        onChange={(event) => setSaveAddress(event.target.checked)}
-                        disabled={submittingOrder}
-                      />
-                      <span>Save this address to my address book</span>
-                    </label>
-                  ) : null}
+                  {hasSavedAddress && selectedAddressId !== "new" ? (
+                    <div className="checkout-saved-address form-grid__wide">
+                      <div>
+                        <span>Selected address</span>
+                        <strong>{selectedAddress?.streetAddress}</strong>
+                        <p>
+                          {selectedAddress?.city}, {selectedAddress?.postalCode}
+                        </p>
+                        {checkingPincode ? (
+                          <small className="checkout-pincode-status">
+                            Checking pincode serviceability...
+                          </small>
+                        ) : pincodeStatus ? (
+                          <small
+                            className={`checkout-pincode-status ${
+                              pincodeStatus.serviceable ? "is-serviceable" : "is-unserviceable"
+                            }`}
+                          >
+                            {pincodeStatus.message}
+                          </small>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        className="link-button"
+                        onClick={() => setSelectedAddressId("new")}
+                      >
+                        Add address
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <label>
+                        Delivery slot
+                        <select
+                          name="deliverySlot"
+                          value={formState.deliverySlot}
+                          onChange={handleChange}
+                          disabled={submittingOrder}
+                        >
+                          {DELIVERY_SLOTS.map((slot) => (
+                            <option key={slot} value={slot}>
+                              {slot}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        City
+                        <input
+                          name="city"
+                          value={selectedAddress?.city ?? formState.city}
+                          onChange={handleChange}
+                          disabled={Boolean(selectedAddress) || submittingOrder}
+                        />
+                      </label>
+                      <label>
+                        Postal code
+                        <input
+                          name="postalCode"
+                          value={selectedAddress?.postalCode ?? formState.postalCode}
+                          onChange={handleChange}
+                          disabled={Boolean(selectedAddress) || submittingOrder}
+                        />
+                        {checkingPincode ? (
+                          <small className="checkout-pincode-status">
+                            Checking pincode serviceability...
+                          </small>
+                        ) : pincodeStatus ? (
+                          <small
+                            className={`checkout-pincode-status ${
+                              pincodeStatus.serviceable ? "is-serviceable" : "is-unserviceable"
+                            }`}
+                          >
+                            {pincodeStatus.message}
+                          </small>
+                        ) : (
+                          <small className="checkout-pincode-status">
+                            Home delivery is currently available for pincode 500074 only.
+                          </small>
+                        )}
+                      </label>
+                      <label className="form-grid__wide">
+                        Address
+                        <textarea
+                          name="address"
+                          rows={4}
+                          value={selectedAddress?.streetAddress ?? formState.address}
+                          onChange={handleChange}
+                          disabled={Boolean(selectedAddress) || submittingOrder}
+                        />
+                      </label>
+                      {selectedAddressId === "new" ? (
+                        <label className="form-grid__wide checkout-inline-check">
+                          <input
+                            type="checkbox"
+                            checked={saveAddress}
+                            onChange={(event) => setSaveAddress(event.target.checked)}
+                            disabled={submittingOrder}
+                          />
+                          <span>Save this address to my address book</span>
+                        </label>
+                      ) : null}
+                    </>
+                  )}
                 </>
               ) : (
                 <div className="checkout-pickup-note form-grid__wide">
@@ -352,6 +526,89 @@ const CheckoutPage: React.FC = () => {
                   />
                 </label>
               ) : null}
+              <div className="form-grid__wide checkout-coupon-picker">
+                <button
+                  type="button"
+                  className="checkout-coupon-picker__trigger"
+                  onClick={() => setIsCouponPickerOpen((open) => !open)}
+                  disabled={submittingOrder || !checkoutCoupons.length}
+                  aria-expanded={isCouponPickerOpen}
+                >
+                  <span className="checkout-coupon-picker__trigger-left">
+                    <span className="checkout-coupon-picker__icon" aria-hidden="true">
+                      ⚙
+                    </span>
+                    <span className="checkout-coupon-picker__copy">
+                      <strong>Apply Coupon</strong>
+                      {selectedCoupon ? (
+                        <small>
+                          {selectedCoupon.code} · {formatCurrency(selectedCoupon.amount)} cashback
+                        </small>
+                      ) : checkoutCoupons.length ? (
+                        <small>Select a coupon for wallet cashback</small>
+                      ) : (
+                        <small>No coupons available right now</small>
+                      )}
+                    </span>
+                  </span>
+                  <span className="checkout-coupon-picker__action">
+                    {selectedCoupon ? "Change" : "Select"}
+                  </span>
+                </button>
+
+                {isCouponPickerOpen && checkoutCoupons.length ? (
+                  <div className="checkout-coupon-picker__panel">
+                    {checkoutCoupons.map((coupon) => {
+                      const isActive =
+                        formState.couponCode.trim().toUpperCase() === coupon.code.toUpperCase();
+
+                      return (
+                        <button
+                          key={coupon.id}
+                          type="button"
+                          className={`checkout-coupon-picker__option ${
+                            isActive ? "is-active" : ""
+                          }`}
+                          onClick={() => {
+                            setFormState((current) => ({ ...current, couponCode: coupon.code }));
+                            setIsCouponPickerOpen(false);
+                          }}
+                        >
+                          <span>
+                            <strong>{coupon.code}</strong>
+                            <small>
+                              {coupon.description?.trim() || "Wallet cashback after order placement"}
+                            </small>
+                          </span>
+                          <em>{formatCurrency(coupon.amount)} cashback</em>
+                        </button>
+                      );
+                    })}
+                    {selectedCoupon ? (
+                      <button
+                        type="button"
+                        className="checkout-coupon-picker__clear"
+                        onClick={() => {
+                          setFormState((current) => ({ ...current, couponCode: "" }));
+                          setIsCouponPickerOpen(false);
+                        }}
+                      >
+                        Remove coupon
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+              <label className="form-grid__wide checkout-inline-check">
+                <input
+                  type="checkbox"
+                  name="useWalletBalance"
+                  checked={formState.useWalletBalance}
+                  onChange={handleChange}
+                  disabled={submittingOrder || !wallet?.balance}
+                />
+                <span>Use wallet balance {wallet?.balance ? `(${formatCurrency(wallet.balance)} available)` : ""}</span>
+              </label>
             </div>
             <div className="payment-placeholder">
               <h3>Payment section</h3>
@@ -400,10 +657,21 @@ const CheckoutPage: React.FC = () => {
               <span>Tax</span>
               <strong>{formatCurrency(tax)}</strong>
             </div>
+            {formState.useWalletBalance && wallet?.balance ? (
+              <div>
+                <span>Wallet used</span>
+                <strong>-{formatCurrency(Math.min(wallet.balance, total))}</strong>
+              </div>
+            ) : null}
             <div className="summary-total">
               <span>Payable now</span>
-              <strong>{formatCurrency(total)}</strong>
+              <strong>
+                {formatCurrency(formState.useWalletBalance && wallet?.balance ? Math.max(total - wallet.balance, 0) : total)}
+              </strong>
             </div>
+            <p className="admin-field-hint">
+              Checkout coupon codes add wallet cashback after order placement.
+            </p>
           </aside>
         </div>
       )}

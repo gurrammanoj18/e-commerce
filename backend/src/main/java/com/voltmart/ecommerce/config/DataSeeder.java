@@ -37,11 +37,13 @@ public class DataSeeder implements CommandLineRunner {
     private final InventoryRepository inventoryRepository;
     private final OrderItemRepository orderItemRepository;
     private final WishlistItemRepository wishlistItemRepository;
+    private final ServiceablePincodeRepository serviceablePincodeRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     @Override
     public void run(String... args) {
         seedUsers();
+        seedServiceablePincodes();
         removeLegacyCatalog();
         Map<String, Category> categories = seedCategories();
         if (productRepository.count() > 0) {
@@ -84,6 +86,7 @@ public class DataSeeder implements CommandLineRunner {
         categories.put("bathroom", upsertCategory("Bathroom", "bathroom", "Bathroom care, fittings, and everyday utility products.", "🚿", null));
         categories.put("plumbing", upsertCategory("Plumbing", "plumbing", "Pipes, valves, fittings, and flow-control solutions.", "🚰", null));
         categories.put("kitchen", upsertCategory("Kitchen", "kitchen", "Kitchen appliances, storage, and prep essentials.", "🍽️", null));
+        categories.put("services", upsertCategory("Services", "services", "Book trusted home and site services from verified professionals.", "🧰", null));
 
         return categories;
     }
@@ -119,13 +122,29 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        User admin = userRepository.findByEmail("admin@voltmart.in")
-                .orElseGet(() -> userRepository.save(User.builder()
-                        .fullName("VoltMart Admin")
-                        .email("admin@voltmart.in")
-                        .password(passwordEncoder.encode("Admin@123"))
-                        .role(Role.ROLE_ADMIN)
+        User admin = userRepository.findByEmailIgnoreCase("admin@voltmart.in")
+                .orElseGet(() -> User.builder()
                         .createdAt(LocalDateTime.now())
+                        .build());
+        admin.setFullName("VoltMart Admin");
+        admin.setEmail("admin@voltmart.in");
+        admin.setPassword(passwordEncoder.encode("Admin@123"));
+        admin.setRole(Role.ROLE_ADMIN);
+        admin.setWalletBalance(BigDecimal.ZERO);
+        if (admin.getCreatedAt() == null) {
+            admin.setCreatedAt(LocalDateTime.now());
+        }
+        userRepository.save(admin);
+    }
+
+    private void seedServiceablePincodes() {
+        serviceablePincodeRepository.findByPincode("500074")
+                .orElseGet(() -> serviceablePincodeRepository.save(ServiceablePincode.builder()
+                        .pincode("500074")
+                        .label("Default home delivery zone")
+                        .active(true)
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
                         .build()));
     }
 

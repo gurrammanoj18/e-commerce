@@ -80,6 +80,19 @@ public class Order {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(precision = 12, scale = 2)
+    private BigDecimal walletDebitAmount;
+
+    private String appliedCouponCode;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal walletCreditAmount;
+
+    private LocalDateTime walletCreditEligibleAt;
+
+    @Column(nullable = false)
+    private boolean walletCreditProcessed;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 

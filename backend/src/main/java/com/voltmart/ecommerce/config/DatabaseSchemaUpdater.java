@@ -21,6 +21,14 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 """);
         jdbcTemplate.execute("""
                 alter table if exists users
+                add column if not exists profile_image_url text
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists users
+                alter column profile_image_url type text
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists users
                 alter column email drop not null
                 """);
         jdbcTemplate.execute("""
@@ -32,10 +40,13 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 add column if not exists preferred_delivery_mode varchar(50)
                 """);
         jdbcTemplate.execute("""
+                alter table if exists users
+                add column if not exists wallet_balance numeric(12,2) not null default 0
+                """);
+        jdbcTemplate.execute("""
                 update users
-                set email = null,
-                    password = null
-                where role = 'ROLE_CUSTOMER'
+                set wallet_balance = 0
+                where wallet_balance is null
                 """);
         jdbcTemplate.execute("""
                 update users
@@ -83,6 +94,40 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
         jdbcTemplate.execute("""
                 alter table if exists orders
                 add column if not exists priority_notes varchar(1000)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists orders
+                add column if not exists applied_coupon_code varchar(100)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists orders
+                add column if not exists wallet_credit_amount numeric(12,2)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists orders
+                add column if not exists wallet_credit_eligible_at timestamp
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists orders
+                add column if not exists wallet_credit_processed boolean not null default false
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists orders
+                add column if not exists wallet_debit_amount numeric(12,2) default 0
+                """);
+        jdbcTemplate.execute("""
+                update orders
+                set wallet_debit_amount = 0
+                where wallet_debit_amount is null
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists orders
+                alter column wallet_debit_amount set not null
+                """);
+        jdbcTemplate.execute("""
+                update orders
+                set wallet_credit_processed = false
+                where wallet_credit_processed is null
                 """);
         jdbcTemplate.execute("""
                 alter table if exists product
@@ -161,10 +206,98 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                     id bigserial primary key,
                     title varchar(255) not null,
                     subtitle varchar(1000),
-                    image_url varchar(2000) not null,
+                    image_url varchar(2000),
                     cta_label varchar(255),
                     cta_href varchar(255),
+                    type varchar(50) not null default 'HERO',
                     display_order integer not null,
+                    active boolean not null default true,
+                    created_at timestamp not null,
+                    updated_at timestamp not null
+                )
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists banner
+                add column if not exists type varchar(50) not null default 'HERO'
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists banner
+                alter column title drop not null
+                """);
+        jdbcTemplate.execute("""
+                update banner
+                set type = 'HERO'
+                where type is null
+                """);
+        jdbcTemplate.execute("""
+                create table if not exists wallet_coupon (
+                    id bigserial primary key,
+                    code varchar(255) not null unique,
+                    type varchar(50) not null,
+                    amount numeric(12,2) not null,
+                    description varchar(500),
+                    assigned_customer_emails varchar(2000),
+                    active boolean not null default true,
+                    reward_delay_minutes integer not null default 60,
+                    created_at timestamp not null,
+                    updated_at timestamp not null
+                )
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists wallet_coupon
+                add column if not exists assigned_customer_emails varchar(2000)
+                """);
+        jdbcTemplate.execute("""
+                create table if not exists wallet_transaction (
+                    id bigserial primary key,
+                    user_id bigint not null references users(id),
+                    type varchar(50) not null,
+                    amount numeric(12,2) not null,
+                    description varchar(500) not null,
+                    reference_code varchar(100),
+                    created_at timestamp not null
+                )
+                """);
+        jdbcTemplate.execute("""
+                create table if not exists wallet_coupon_redemption (
+                    id bigserial primary key,
+                    wallet_coupon_id bigint not null references wallet_coupon(id),
+                    user_id bigint not null references users(id),
+                    allowed_redemptions integer not null default 1,
+                    redeemed_count integer not null default 0,
+                    created_at timestamp not null,
+                    updated_at timestamp not null,
+                    unique(wallet_coupon_id, user_id)
+                )
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists wallet_coupon_redemption
+                add column if not exists allowed_redemptions integer not null default 1
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists wallet_coupon_redemption
+                add column if not exists redeemed_count integer not null default 0
+                """);
+        jdbcTemplate.execute("""
+                create table if not exists service_request (
+                    id bigserial primary key,
+                    user_id bigint references users(id),
+                    service_key varchar(255) not null,
+                    service_name varchar(255) not null,
+                    customer_name varchar(255) not null,
+                    phone_number varchar(50) not null,
+                    address varchar(1000) not null,
+                    postal_code varchar(100) not null,
+                    description varchar(2000) not null,
+                    problem_images text,
+                    created_at timestamp not null
+                )
+                """);
+        jdbcTemplate.execute("""
+                create table if not exists serviceable_pincode (
+                    id bigserial primary key,
+                    pincode varchar(20) not null unique,
+                    label varchar(255),
                     active boolean not null default true,
                     created_at timestamp not null,
                     updated_at timestamp not null
@@ -209,6 +342,56 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                     discount_percentage integer not null,
                     estimated_line_total numeric(12,2) not null
                 )
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists return_requests
+                add column if not exists request_type varchar(50)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists return_requests
+                add column if not exists initiated_by_admin boolean not null default false
+                """);
+        jdbcTemplate.execute("""
+                update return_requests
+                set request_type = coalesce(request_type, 'RETURN')
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists return_requests
+                alter column request_type set not null
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists return_requests
+                add column if not exists refunded_at timestamp
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists return_requests
+                add column if not exists refund_processed boolean not null default false
+                """);
+        jdbcTemplate.execute("""
+                update return_requests
+                set refund_processed = false
+                where refund_processed is null
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists return_requests
+                drop constraint if exists return_requests_status_check
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists return_requests
+                add constraint return_requests_status_check
+                check (status in (
+                    'REQUESTED',
+                    'UNDER_REVIEW',
+                    'APPROVED',
+                    'READY_TO_PICKUP',
+                    'PICKUP_SCHEDULED',
+                    'SHIPPED',
+                    'PICKED_UP',
+                    'DELIVERED',
+                    'REFUNDED',
+                    'REJECTED',
+                    'CLOSED'
+                ))
                 """);
     }
 }

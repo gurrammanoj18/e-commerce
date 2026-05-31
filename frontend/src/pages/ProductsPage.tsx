@@ -1,16 +1,15 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import "../styles/pages/ProductsPage.css";
 import FiltersSidebar from "../components/product/FiltersSidebar";
 import ProductCard from "../components/product/ProductCard";
 import LoadingState from "../components/shared/LoadingState";
 import Pagination from "../components/shared/Pagination";
-import SearchBar from "../components/shared/SearchBar";
 import { useProducts } from "../contexts/ProductContext";
+import { ProductAvailabilityFilter, ProductSort } from "../types/store";
 
 const ProductsPage: React.FC = () => {
   const {
-    availabilityFilter,
     availableBrands,
     bestSellerProducts,
     categories,
@@ -18,26 +17,29 @@ const ProductsPage: React.FC = () => {
     filteredProducts,
     loading,
     maxCatalogPrice,
-    minimumDiscount,
     paginatedProducts,
-    priceRange,
     resetFilters,
-    searchTerm,
-    selectedBrand,
-    selectedCategory,
     setAvailabilityFilter,
     setCurrentPage,
     setMinimumDiscount,
     setPriceRange,
     setSelectedBrand,
-    setSearchTerm,
     setSelectedCategory,
+    setSearchTerm,
     setSortBy,
-    sortBy,
     totalPages,
   } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
   const appliedQuerySignature = useRef("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [draftFilters, setDraftFilters] = useState({
+    category: "All",
+    brand: "All",
+    availability: "all" as ProductAvailabilityFilter,
+    minimumDiscount: 0,
+    sortBy: "featured" as ProductSort,
+    priceRange: { min: 0, max: 250000 },
+  });
 
   const isDiscoverMode = useMemo(
     () =>
@@ -58,13 +60,33 @@ const ProductsPage: React.FC = () => {
 
     if (isDiscoverMode) {
       setSearchTerm(nextSearch);
-      setSelectedCategory(nextCategory);
+      setDraftFilters((current) => ({
+        ...current,
+        category: nextCategory,
+      }));
     } else {
       resetFilters();
     }
 
     appliedQuerySignature.current = signature;
-  }, [isDiscoverMode, resetFilters, searchParams, setSearchTerm, setSelectedCategory]);
+  }, [isDiscoverMode, resetFilters, searchParams, setSearchTerm]);
+
+  useEffect(() => {
+    if (!isFilterOpen) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const previousTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.touchAction = previousTouchAction;
+    };
+  }, [isFilterOpen]);
 
   const updateDiscoverParams = (updates: Record<string, string | null>) => {
     const nextParams = new URLSearchParams(searchParams);
@@ -79,6 +101,16 @@ const ProductsPage: React.FC = () => {
     });
 
     setSearchParams(nextParams);
+  };
+
+  const applyDraftFilters = () => {
+    setSelectedCategory(draftFilters.category);
+    setSelectedBrand(draftFilters.brand);
+    setAvailabilityFilter(draftFilters.availability);
+    setMinimumDiscount(draftFilters.minimumDiscount);
+    setSortBy(draftFilters.sortBy);
+    setPriceRange(draftFilters.priceRange);
+    setIsFilterOpen(false);
   };
 
   return (
@@ -125,29 +157,87 @@ const ProductsPage: React.FC = () => {
       ) : null}
 
       <section className="shell section page-section">
-        <div className="page-header">
-          <span className="eyebrow">Product listing</span>
-          <h1>Category-driven product catalog</h1>
-          <p>
-            {isDiscoverMode
-              ? "Search products, filter by category, and narrow the catalog by price and ranking."
-              : "Browse the full VoltMart catalog in one place."}
-          </p>
-        </div>
+        {!isDiscoverMode ? (
+          <div className="page-header">
+            <span className="eyebrow">Product listing</span>
+            <h1>Category-driven product catalog</h1>
+            <p>Browse the full VoltMart catalog in one place.</p>
+          </div>
+        ) : null}
 
         {isDiscoverMode ? (
-          <div className="listing-toolbar">
-            <SearchBar
-              value={searchTerm}
-              onChange={(value) => {
-                setSearchTerm(value);
-                updateDiscoverParams({ search: value });
+          <div className="products-filter-toggle-row">
+            {draftFilters.category !== "All" ? (
+              <div className="products-mobile-category-summary">
+                <strong>{draftFilters.category}</strong>
+                <span>{filteredProducts.length} products available</span>
+              </div>
+            ) : null}
+            <button
+              type="button"
+              className="products-filter-toggle"
+              onClick={() => setIsFilterOpen((open) => !open)}
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M4 6h16M7 12h10M10 18h4"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span>Filters</span>
+            </button>
+          </div>
+        ) : null}
+
+        {isDiscoverMode ? (
+          <div className={`products-filter-panel ${isFilterOpen ? "is-open" : ""}`}>
+            <FiltersSidebar
+              brands={availableBrands}
+              selectedBrand={draftFilters.brand}
+              onBrandChange={(value) =>
+                setDraftFilters((current) => ({ ...current, brand: value }))
+              }
+              categories={categories}
+              selectedCategory={draftFilters.category}
+              onCategoryChange={(value) => {
+                setDraftFilters((current) => ({ ...current, category: value }));
+                updateDiscoverParams({ category: value });
               }}
+              availabilityFilter={draftFilters.availability}
+              onAvailabilityChange={(value) =>
+                setDraftFilters((current) => ({ ...current, availability: value }))
+              }
+              minimumDiscount={draftFilters.minimumDiscount}
+              onMinimumDiscountChange={(value) =>
+                setDraftFilters((current) => ({ ...current, minimumDiscount: value }))
+              }
+              sortBy={draftFilters.sortBy}
+              onSortChange={(value) =>
+                setDraftFilters((current) => ({ ...current, sortBy: value }))
+              }
+              priceRange={draftFilters.priceRange}
+              maxCatalogPrice={maxCatalogPrice}
+              onPriceRangeChange={(value) =>
+                setDraftFilters((current) => ({ ...current, priceRange: value }))
+              }
+              onClose={() => setIsFilterOpen(false)}
+              onReset={() => {
+                setDraftFilters({
+                  category: "All",
+                  brand: "All",
+                  availability: "all" as ProductAvailabilityFilter,
+                  minimumDiscount: 0,
+                  sortBy: "featured" as ProductSort,
+                  priceRange: { min: 0, max: maxCatalogPrice || 250000 },
+                });
+                resetFilters();
+                setSearchParams(new URLSearchParams({ discover: "1" }));
+              }}
+              onApply={applyDraftFilters}
+              showCategoryFilter
             />
-            <div className="listing-summary">
-              <strong>{filteredProducts.length}</strong>
-              <span>products matched</span>
-            </div>
           </div>
         ) : null}
 
@@ -155,33 +245,54 @@ const ProductsPage: React.FC = () => {
           <LoadingState cardCount={8} />
         ) : isDiscoverMode ? (
           <div className="listing-layout">
-            <FiltersSidebar
-              brands={availableBrands}
-              selectedBrand={selectedBrand}
-              onBrandChange={setSelectedBrand}
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryChange={(value) => {
-                setSelectedCategory(value);
-                updateDiscoverParams({ category: value });
-              }}
-              availabilityFilter={availabilityFilter}
-              onAvailabilityChange={setAvailabilityFilter}
-              minimumDiscount={minimumDiscount}
-              onMinimumDiscountChange={setMinimumDiscount}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-              priceRange={priceRange}
-              maxCatalogPrice={maxCatalogPrice}
-              onPriceRangeChange={setPriceRange}
-              onReset={() => {
-                resetFilters();
-                setSearchParams(new URLSearchParams({ discover: "1" }));
-              }}
-              showCategoryFilter
-            />
-
-            <div>
+            <div className="listing-layout__sidebar">
+              <FiltersSidebar
+                brands={availableBrands}
+                selectedBrand={draftFilters.brand}
+                onBrandChange={(value) =>
+                  setDraftFilters((current) => ({ ...current, brand: value }))
+                }
+                categories={categories}
+                selectedCategory={draftFilters.category}
+                onCategoryChange={(value) => {
+                  setDraftFilters((current) => ({ ...current, category: value }));
+                  updateDiscoverParams({ category: value });
+                }}
+                availabilityFilter={draftFilters.availability}
+                onAvailabilityChange={(value) =>
+                  setDraftFilters((current) => ({ ...current, availability: value }))
+                }
+                minimumDiscount={draftFilters.minimumDiscount}
+                onMinimumDiscountChange={(value) =>
+                  setDraftFilters((current) => ({ ...current, minimumDiscount: value }))
+                }
+                sortBy={draftFilters.sortBy}
+                onSortChange={(value) =>
+                  setDraftFilters((current) => ({ ...current, sortBy: value }))
+                }
+                priceRange={draftFilters.priceRange}
+                maxCatalogPrice={maxCatalogPrice}
+                onPriceRangeChange={(value) =>
+                  setDraftFilters((current) => ({ ...current, priceRange: value }))
+                }
+                onClose={() => setIsFilterOpen(false)}
+                onReset={() => {
+                  setDraftFilters({
+                    category: "All",
+                    brand: "All",
+                    availability: "all" as ProductAvailabilityFilter,
+                    minimumDiscount: 0,
+                    sortBy: "featured" as ProductSort,
+                    priceRange: { min: 0, max: maxCatalogPrice || 250000 },
+                  });
+                  resetFilters();
+                  setSearchParams(new URLSearchParams({ discover: "1" }));
+                }}
+                onApply={applyDraftFilters}
+                showCategoryFilter
+              />
+            </div>
+            <div className="listing-layout__products">
               <div className="product-grid">
                 {paginatedProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
