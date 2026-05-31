@@ -6,11 +6,13 @@ import PageLoader from "../shared/PageLoader";
 interface ProtectedRouteProps {
   children: React.ReactElement;
   adminOnly?: boolean;
+  customerOnly?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   adminOnly = false,
+  customerOnly = false,
 }) => {
   const location = useLocation();
   const { isAuthenticated, isAdmin, loading } = useAuth();
@@ -31,6 +33,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (adminOnly && !isAdmin) {
     return <Navigate to="/admin/login" replace state={{ from: location, adminOnly: true }} />;
+  }
+
+  if (customerOnly && isAdmin) {
+    return <Navigate to="/admin/dashboard" replace />;
   }
 
   return children;

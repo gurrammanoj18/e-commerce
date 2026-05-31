@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">Services category</title>
+  <desc id="desc">Illustration representing home repair and utility services.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#f3ede2" />
+      <stop offset="100%" stop-color="#d9e7e1" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)" rx="32" />
+  <circle cx="180" cy="160" r="92" fill="#d1793b" opacity=".18" />
+  <circle cx="650" cy="120" r="70" fill="#255f5a" opacity=".14" />
+  <circle cx="610" cy="440" r="120" fill="#6f7c45" opacity=".14" />
+  <g fill="none" stroke="#17343a" stroke-linecap="round" stroke-linejoin="round" stroke-width="20">
+    <path d="M220 360l92-92 62 62-92 92-96 34z" />
+    <path d="M454 208l74-74c17-17 45-17 62 0l18 18c17 17 17 45 0 62l-74 74" />
+    <path d="M466 392h112" />
+    <path d="M522 336v112" />
+  </g>
+</svg>

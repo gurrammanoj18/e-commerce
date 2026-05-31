@@ -36,15 +36,26 @@ const getCartErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+const isAuthorizationError = (error: unknown) =>
+  error instanceof AxiosError &&
+  (error.response?.status === 401 || error.response?.status === 403);
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const { startProcessing, stopProcessing } = useProcessing();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const useRemoteCart = isAuthenticated && user?.role === "ROLE_CUSTOMER";
 
   const loadRemoteCart = useCallback(async () => {
+    if (!useRemoteCart) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const cart = await fetchCart();
@@ -91,7 +102,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         }))
       );
     } catch (error) {
-      if (error instanceof AxiosError && error.response?.status === 401) {
+      if (isAuthorizationError(error)) {
         setItems([]);
         logout();
         return;
@@ -101,10 +112,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
-  }, [logout]);
+  }, [logout, useRemoteCart]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (useRemoteCart) {
       void loadRemoteCart();
       return;
     }
@@ -115,21 +126,21 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setItems([]);
     }
-  }, [isAuthenticated, loadRemoteCart]);
+  }, [loadRemoteCart, useRemoteCart]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!useRemoteCart) {
       window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
     }
-  }, [isAuthenticated, items]);
+  }, [items, useRemoteCart]);
 
   const addToCart = async (product: Product, quantity = 1) => {
-    if (isAuthenticated) {
+    if (useRemoteCart) {
       try {
         await addCartItem(product.id, quantity);
         await loadRemoteCart();
       } catch (error) {
-        if (error instanceof AxiosError && error.response?.status === 401) {
+        if (isAuthorizationError(error)) {
           setItems([]);
           logout();
           return;
@@ -154,7 +165,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const removeFromCart = async (productId: number) => {
-    if (isAuthenticated) {
+    if (useRemoteCart) {
       const item = items.find((cartItem) => cartItem.product.id === productId);
       if (item?.id) {
         const previousItems = items;
@@ -169,7 +180,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
           await removeCartItem(item.id);
         } catch (error) {
           setItems(previousItems);
-          if (error instanceof AxiosError && error.response?.status === 401) {
+          if (isAuthorizationError(error)) {
             setItems([]);
             logout();
             return;
@@ -197,7 +208,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    if (isAuthenticated) {
+    if (useRemoteCart) {
       const item = items.find((cartItem) => cartItem.product.id === productId);
       if (item?.id) {
         const processingId = startProcessing({
@@ -208,7 +219,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
           await updateCartItem(item.id, productId, quantity);
           await loadRemoteCart();
         } catch (error) {
-          if (error instanceof AxiosError && error.response?.status === 401) {
+          if (isAuthorizationError(error)) {
             setItems([]);
             logout();
             return;

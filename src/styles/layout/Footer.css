@@ -88,15 +88,47 @@
 
 @media (max-width: 820px) {
   .footer-grid {
-    grid-template-columns: 1fr;
-    gap: 28px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
   }
 
   .site-footer {
     padding-top: 40px;
   }
 
+  .footer-column h3 {
+    font-size: 0.94rem;
+  }
+
+  .footer-column a,
+  .footer-column span,
+  .footer-column p {
+    font-size: 0.94rem;
+  }
+
   .footer-bottom {
     margin-top: 28px;
+  }
+}
+
+@media (max-width: 560px) {
+  .footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .footer-column h3 {
+    font-size: 0.76rem;
+  }
+
+  .footer-column a,
+  .footer-column span,
+  .footer-column p,
+  .footer-bottom p {
+    font-size: 0.76rem;
+  }
+
+  .footer-column--about {
+    grid-column: 1 / -1;
   }
 }

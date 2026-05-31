@@ -67,7 +67,7 @@ const CartPage: React.FC = () => {
         <div className="store-card empty-state">
           <h1>Your cart is empty</h1>
           <p>Add products from the catalog to review quantities and pricing.</p>
-          <Link className="button" to="/products">
+          <Link className="button" to="/">
             Continue shopping
           </Link>
         </div>

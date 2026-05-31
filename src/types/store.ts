@@ -32,6 +32,20 @@ export interface ProductApiShape {
 
 export type ProductAvailability = "in-stock" | "low-stock" | "out-of-stock";
 export type DeliveryMode = "STORE_PICKUP" | "HOME_DELIVERY";
+export type ReturnResolution = "WALLET_CREDIT" | "REPLACEMENT" | "MANUAL_REFUND";
+export type ReturnRequestStatus =
+  | "REQUESTED"
+  | "UNDER_REVIEW"
+  | "APPROVED"
+  | "READY_TO_PICKUP"
+  | "PICKUP_SCHEDULED"
+  | "SHIPPED"
+  | "PICKED_UP"
+  | "DELIVERED"
+  | "REFUNDED"
+  | "REJECTED"
+  | "CLOSED";
+export type ReturnRequestType = "RETURN" | "REPLACEMENT";
 export type BulkQuoteStatus =
   | "NEW"
   | "REVIEWING"
@@ -83,8 +97,10 @@ export interface AuthUser {
   fullName: string;
   email?: string | null;
   phoneNumber?: string | null;
+  profileImageUrl?: string | null;
   role: string;
   preferredDeliveryMode?: DeliveryMode | null;
+  walletBalance?: number;
 }
 
 export interface UserAddress {
@@ -207,6 +223,11 @@ export interface Order {
   shippingCost: number;
   taxAmount: number;
   totalAmount: number;
+  walletDebitAmount?: number;
+  appliedCouponCode?: string | null;
+  walletCreditAmount?: number | null;
+  walletCreditEligibleAt?: string | null;
+  walletCreditProcessed: boolean;
   whatsappTrackingMessage: string;
   createdAt: string;
   items: OrderItem[];
@@ -277,9 +298,10 @@ export interface Banner {
   id: number;
   title: string;
   subtitle?: string | null;
-  imageUrl: string;
+  imageUrl?: string | null;
   ctaLabel?: string | null;
   ctaHref?: string | null;
+  type: "HERO" | "INFO";
   displayOrder: number;
   active: boolean;
 }
@@ -287,11 +309,145 @@ export interface Banner {
 export interface BannerPayload {
   title: string;
   subtitle?: string;
-  imageUrl: string;
+  imageUrl?: string;
   ctaLabel?: string;
   ctaHref?: string;
+  type: "HERO" | "INFO";
   displayOrder: number;
   active: boolean;
+}
+
+export interface WalletTransaction {
+  id: number;
+  type: "CREDIT" | "DEBIT";
+  amount: number;
+  description: string;
+  referenceCode?: string | null;
+  createdAt: string;
+}
+
+export interface WalletSummary {
+  balance: number;
+  transactions: WalletTransaction[];
+}
+
+export interface WalletCoupon {
+  id: number;
+  code: string;
+  type: "WALLET_TOPUP" | "ORDER_CASHBACK";
+  amount: number;
+  description?: string | null;
+  assignedCustomerEmails?: string | null;
+  active: boolean;
+  rewardDelayMinutes: number;
+}
+
+export interface WalletCouponRedemption {
+  id: number;
+  couponId: number;
+  userId: number;
+  userName: string;
+  userEmail: string;
+  redeemedCount: number;
+  allowedRedemptions: number;
+  remainingRedemptions: number;
+}
+
+export interface WalletCouponPayload {
+  code: string;
+  type: "WALLET_TOPUP" | "ORDER_CASHBACK";
+  amount: number;
+  description?: string;
+  assignedCustomerEmails?: string;
+  active: boolean;
+  rewardDelayMinutes: number;
+}
+
+export interface WalletCouponGrantPayload {
+  userId: number;
+  additionalRedemptions: number;
+}
+
+export interface PincodeServiceabilityResult {
+  pincode: string;
+  serviceable: boolean;
+  message: string;
+}
+
+export interface ServiceablePincode {
+  id: number;
+  pincode: string;
+  label?: string | null;
+  active: boolean;
+}
+
+export interface ServiceablePincodePayload {
+  pincode: string;
+  label?: string;
+  active: boolean;
+}
+
+export interface ServiceRequestPayload {
+  serviceKey: string;
+  serviceName: string;
+  customerName: string;
+  phoneNumber: string;
+  address: string;
+  postalCode: string;
+  description: string;
+  problemImages: string[];
+}
+
+export interface ServiceRequest {
+  id: number;
+  userId?: number | null;
+  userName?: string | null;
+  serviceKey: string;
+  serviceName: string;
+  customerName: string;
+  phoneNumber: string;
+  address: string;
+  postalCode: string;
+  description: string;
+  problemImages: string[];
+  createdAt: string;
+}
+
+export interface ReturnRequestPayload {
+  orderId: number;
+  requestType: ReturnRequestType;
+  reason: string;
+  description: string;
+  preferredResolution: ReturnResolution;
+}
+
+export interface ReturnRequestUpdatePayload {
+  status: ReturnRequestStatus;
+  adminNote?: string;
+}
+
+export interface ReturnRequest {
+  id: number;
+  orderId: number;
+  orderNumber: string;
+  orderStatus: string;
+  customerName: string;
+  phoneNumber: string;
+  shippingAddress: string;
+  city: string;
+  postalCode: string;
+  reason: string;
+  description: string;
+  requestType: ReturnRequestType;
+  preferredResolution: ReturnResolution;
+  status: ReturnRequestStatus;
+  adminNote?: string | null;
+  initiatedByAdmin: boolean;
+  orderTotal: number;
+  createdAt: string;
+  reviewedAt?: string | null;
+  refundedAt?: string | null;
+  refundProcessed: boolean;
 }
 
 export interface SaveForLaterItem {

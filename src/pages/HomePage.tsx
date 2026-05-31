@@ -7,10 +7,9 @@ import LoadingState from "../components/shared/LoadingState";
 import { useProducts } from "../contexts/ProductContext";
 import { Banner, Product } from "../types/store";
 import { fetchActiveBanners } from "../services/bannerService";
-import banner1 from "../assets/banners/ban1.jpeg";
-import banner2 from "../assets/banners/ban2.jpeg";
-
-import banner4 from "../assets/banners/ban4.jpeg";
+import bannerOne from "../assets/banners/ban1.png";
+import bannerTwo from "../assets/banners/ban2.png";
+import bannerThree from "../assets/banners/ban4.png";
 
 const WhyShopIconBoxes = () => (
   <svg viewBox="0 0 64 64" aria-hidden="true">
@@ -76,10 +75,13 @@ const whyShopItems = [
 ];
 
 const getItemsPerPage = () => {
+  if (window.innerWidth <= 560) {
+    return 5;
+  }
   if (window.innerWidth <= 820) {
     return 1;
   }
-  if (window.innerWidth <= 1080) {
+  if (window.innerWidth <= 980) {
     return 2;
   }
   return 3;
@@ -95,142 +97,112 @@ const chunkProducts = (products: Product[], size: number) => {
   return pages;
 };
 
-const fallbackBanners = [
-  {
-    id: 1,
-    title: "Quality essentials",
-    image: banner1,
-    subtitle: "Reliable tools, appliances, and home basics for everyday work.",
-  },
-  {
-    id: 2,
-    title: "Everyday savings",
-    image: banner2,
-    subtitle: "Practical pricing on fast-moving products for homes and teams.",
-  },
-  {
-    id: 3,
-    title: "Big deals",
-    image: banner4,
-    subtitle: "Spotlight offers across electrical, hardware, and cleaning lines.",
-  },
-];
-
-const BannerCarousel: React.FC = () => {
-  const [slides, setSlides] = useState<Banner[]>([]);
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    const loadBanners = async () => {
-      try {
-        const banners = await fetchActiveBanners();
-        setSlides(banners);
-      } catch {
-        setSlides([]);
-      }
-    };
-    void loadBanners();
-  }, []);
-
-  const homepageBanners = slides.length
-    ? slides.map((banner) => ({
-        key: banner.id,
-        image: banner.imageUrl,
-        alt: banner.title,
-        title: banner.title,
-        subtitle: banner.subtitle,
-        ctaLabel: banner.ctaLabel,
-        ctaHref: banner.ctaHref,
-      }))
-    : fallbackBanners.map((banner) => ({
-        key: banner.id,
-        image: banner.image,
-        alt: banner.title,
-        title: banner.title,
-        subtitle: banner.subtitle,
-        ctaLabel: "Shop now",
-        ctaHref: "/products?discover=1",
-      }));
-  const bannerCount = homepageBanners.length;
-
-  useEffect(() => {
-    if (bannerCount <= 1) {
-      setActiveIndex(0);
-      return undefined;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setActiveIndex((currentIndex) => (currentIndex + 1) % bannerCount);
-    }, 4500);
-
-    return () => window.clearInterval(intervalId);
-  }, [bannerCount]);
-
-  return (
-    <section className="banner-carousel" aria-label="Homepage banners">
-      <div className="banner-carousel__viewport">
-        <div
-          className="banner-carousel__track"
-          style={{ transform: `translateX(-${activeIndex * 100}%)` }}
-        >
-          {homepageBanners.map((slide) => (
-            <div className="banner-carousel__slide" key={slide.key}>
-              <a
-                className="banner-carousel__link"
-                href={slide.ctaHref || "/products?discover=1"}
-                aria-label={slide.alt}
-              >
-                <img src={slide.image} alt={slide.alt} />
-              </a>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <button
-        type="button"
-        className="banner-carousel__arrow banner-carousel__arrow--prev"
-        onClick={() =>
-          setActiveIndex((currentIndex) =>
-            currentIndex === 0 ? homepageBanners.length - 1 : currentIndex - 1
-          )
-        }
-        aria-label="Show previous banner"
-      >
-        ←
-      </button>
-      <button
-        type="button"
-        className="banner-carousel__arrow banner-carousel__arrow--next"
-        onClick={() =>
-          setActiveIndex((currentIndex) => (currentIndex + 1) % homepageBanners.length)
-        }
-        aria-label="Show next banner"
-      >
-        →
-      </button>
-
-      <div className="banner-carousel__dots" aria-label="Banner slide selector">
-        {homepageBanners.map((slide, index) => (
-          <button
-            key={slide.key}
-            type="button"
-            className={index === activeIndex ? "is-active" : ""}
-            onClick={() => setActiveIndex(index)}
-            aria-label={`Show banner ${index + 1}`}
-          />
-        ))}
-      </div>
-    </section>
-  );
-};
-
 interface ProductCarouselSectionProps {
   title: string;
   eyebrow: string;
   products: Product[];
   loading: boolean;
 }
+
+const promoBanners = [bannerOne, bannerTwo, bannerThree];
+
+const MidPageBannerCarousel: React.FC = () => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setActiveIndex((currentIndex) => (currentIndex + 1) % promoBanners.length);
+    }, 3500);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    setTouchStartX(event.touches[0]?.clientX ?? null);
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartX === null) {
+      return;
+    }
+
+    const touchEndX = event.changedTouches[0]?.clientX ?? touchStartX;
+    const deltaX = touchEndX - touchStartX;
+
+    if (Math.abs(deltaX) < 45) {
+      setTouchStartX(null);
+      return;
+    }
+
+    setActiveIndex((currentIndex) =>
+      deltaX < 0
+        ? (currentIndex + 1) % promoBanners.length
+        : currentIndex === 0
+          ? promoBanners.length - 1
+          : currentIndex - 1
+    );
+    setTouchStartX(null);
+  };
+
+  return (
+    <section className="section">
+      <div className="banner-carousel">
+        <div
+          className="banner-carousel__viewport"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div
+            className="banner-carousel__track"
+            style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+          >
+            {promoBanners.map((bannerImage, index) => (
+              <div key={bannerImage} className="banner-carousel__slide">
+                <img src={bannerImage} alt={`VoltMart banner ${index + 1}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="banner-carousel__arrow banner-carousel__arrow--prev"
+          onClick={() =>
+            setActiveIndex((currentIndex) =>
+              currentIndex === 0 ? promoBanners.length - 1 : currentIndex - 1
+            )
+          }
+          aria-label="Show previous banner"
+        >
+          ←
+        </button>
+        <button
+          type="button"
+          className="banner-carousel__arrow banner-carousel__arrow--next"
+          onClick={() =>
+            setActiveIndex((currentIndex) => (currentIndex + 1) % promoBanners.length)
+          }
+          aria-label="Show next banner"
+        >
+          →
+        </button>
+
+        <div className="banner-carousel__dots" aria-label="Banner slides">
+          {promoBanners.map((bannerImage, index) => (
+            <button
+              key={`${bannerImage}-dot`}
+              type="button"
+              className={index === activeIndex ? "is-active" : ""}
+              onClick={() => setActiveIndex(index)}
+              aria-label={`Show banner ${index + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
 
 const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
   title,
@@ -242,6 +214,7 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
     typeof window === "undefined" ? 4 : getItemsPerPage()
   );
   const [activePage, setActivePage] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   useEffect(() => {
     const handleResize = () => setItemsPerPage(getItemsPerPage());
@@ -249,6 +222,34 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    setTouchStartX(event.touches[0]?.clientX ?? null);
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartX === null || productPages.length <= 1) {
+      return;
+    }
+
+    const touchEndX = event.changedTouches[0]?.clientX ?? touchStartX;
+    const deltaX = touchEndX - touchStartX;
+
+    if (Math.abs(deltaX) < 45) {
+      setTouchStartX(null);
+      return;
+    }
+
+    setActivePage((currentPage) => {
+      if (deltaX < 0) {
+        return Math.min(currentPage + 1, productPages.length - 1);
+      }
+
+      return Math.max(currentPage - 1, 0);
+    });
+
+    setTouchStartX(null);
+  };
 
   const productPages = useMemo(
     () => chunkProducts(products, itemsPerPage),
@@ -300,7 +301,11 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
         <LoadingState />
       ) : (
         <div className="home-carousel">
-          <div className="home-carousel__viewport">
+          <div
+            className="home-carousel__viewport"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <div
               className="home-carousel__track"
               style={{ transform: `translateX(-${activePage * 100}%)` }}
@@ -324,6 +329,20 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
 
 const HomePage: React.FC = () => {
   const { bestSellerProducts, categories, loading, products } = useProducts();
+  const [infoBanner, setInfoBanner] = useState<Banner | null>(null);
+
+  useEffect(() => {
+    const loadInfoBanner = async () => {
+      try {
+        const banners = await fetchActiveBanners();
+        setInfoBanner(banners.find((banner) => banner.type === "INFO") ?? null);
+      } catch {
+        setInfoBanner(null);
+      }
+    };
+
+    void loadInfoBanner();
+  }, []);
 
   const trendingProducts = useMemo(
     () =>
@@ -343,8 +362,6 @@ const HomePage: React.FC = () => {
 
   return (
     <>
-      <BannerCarousel />
-
       <section className="shell section">
         <div className="section-heading">
           <div>
@@ -360,18 +377,30 @@ const HomePage: React.FC = () => {
       </section>
 
       <ProductCarouselSection
+        eyebrow="Recently added products"
+        title="Fresh arrivals ready for discovery"
+        products={recentlyAddedProducts}
+        loading={loading}
+      />
+
+      <MidPageBannerCarousel />
+
+      <ProductCarouselSection
         eyebrow="Trending products"
         title="High-interest picks shoppers are engaging with now"
         products={trendingProducts}
         loading={loading}
       />
 
-      <ProductCarouselSection
-        eyebrow="Recently added products"
-        title="Fresh arrivals ready for discovery"
-        products={recentlyAddedProducts}
-        loading={loading}
-      />
+      {infoBanner ? (
+        <section className="shell section home-info-banner-section">
+          <article className="home-info-banner">
+            <span className="eyebrow">Store update</span>
+            <h2>{infoBanner.title}</h2>
+            <p>{infoBanner.subtitle}</p>
+          </article>
+        </section>
+      ) : null}
 
       <ProductCarouselSection
         eyebrow="Best-selling products"

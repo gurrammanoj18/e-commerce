@@ -34,7 +34,7 @@ const ProductDetailsPage: React.FC = () => {
 
   if (loading || !resolved) {
     return (
-      <section className="shell section page-section">
+      <section className="shell section page-section details-page">
         <LoadingState cardCount={2} />
       </section>
     );
@@ -42,7 +42,7 @@ const ProductDetailsPage: React.FC = () => {
 
   if (!product) {
     return (
-      <section className="shell section page-section">
+      <section className="shell section page-section details-page">
         <div className="store-card empty-state">
           <h2>Product not found</h2>
           <p>The item you were looking for is no longer available in the catalog.</p>
@@ -56,7 +56,7 @@ const ProductDetailsPage: React.FC = () => {
 
   const relatedProducts = getRelatedProducts(product);
   const savedToWishlist = isInWishlist(product.id);
-
+  const discountLabel = `${product.discountPercentage}% OFF`;
   const animateProduct = async (target: "cart" | "wishlist") => {
     if (!product.images[0] || !heroImageRef.current) {
       return;
@@ -70,27 +70,62 @@ const ProductDetailsPage: React.FC = () => {
   };
 
   return (
-    <section className="shell section page-section">
+    <section className="shell section page-section details-page">
       <div className="details-layout">
-        <ProductGallery images={product.images} alt={product.name} heroImageRef={heroImageRef} />
+        <div className="details-gallery-wrap">
+          <span className="details-badge">{discountLabel}</span>
+          <ProductGallery images={product.images} alt={product.name} heroImageRef={heroImageRef} />
+          <div className="details-gallery-actions">
+            <button
+              type="button"
+              className="details-gallery-action"
+              onClick={() => {
+                const shareUrl = window.location.href;
+                void navigator.share?.({
+                  title: product.name,
+                  text: `Check out ${product.name} on VoltMart`,
+                  url: shareUrl,
+                });
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14M12 5l-5 5M12 5l5 5M6 19h12" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className={`details-gallery-action details-gallery-action--wishlist ${
+                savedToWishlist ? "is-active" : ""
+              }`}
+              onClick={() =>
+                void (async () => {
+                  if (!savedToWishlist) {
+                    await animateProduct("wishlist");
+                  }
+                  await toggleWishlist(product);
+                })()
+              }
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 21s-7-4.4-7-10.2C5 7.4 6.9 6 9.1 6c1.4 0 2.5.7 2.9 1.5.4-.8 1.5-1.5 2.9-1.5 2.2 0 4.1 1.4 4.1 4.8C19 16.6 12 21 12 21Z" />
+              </svg>
+            </button>
+          </div>
+        </div>
 
         <div className="store-card details-panel">
+          <div className="details-brand">Brand: {product.brand}</div>
           <h1>{product.name}</h1>
-          <div className="details-rating">
-            <span>⭐ {product.rating}</span>
-            <span>{product.reviewCount} verified reviews</span>
-            <span>
-              {product.availability === "out-of-stock"
-                ? "Out of stock"
-                : product.availability === "low-stock"
-                ? "Low stock"
-                : "In stock"}
-            </span>
+          <div className="details-price-stack">
+            <div className="details-price">
+              <strong>{formatCurrency(product.price)}</strong>
+              <span>{formatCurrency(product.originalPrice)}</span>
+            </div>
+            <div className="details-offer-line">{discountLabel}</div>
           </div>
 
-          <div className="details-price">
-            <strong>{formatCurrency(product.price)}</strong>
-            <span>{formatCurrency(product.originalPrice)}</span>
+          <div className="details-hero-tag">
+            <span>{product.heroTag}</span>
           </div>
 
           <div className="details-purchase">
@@ -108,38 +143,48 @@ const ProductDetailsPage: React.FC = () => {
               <span aria-hidden="true">🛒</span>
               <span>Add to cart</span>
             </button>
-            <button
-              type="button"
-              className="details-action-button details-action-button--secondary"
-              onClick={() =>
-                void (async () => {
-                  if (!savedToWishlist) {
-                    await animateProduct("wishlist");
-                  }
-                  await toggleWishlist(product);
-                })()
-              }
-            >
-              <span aria-hidden="true">{savedToWishlist ? "♥" : "♡"}</span>
-              <span>{savedToWishlist ? "Wishlisted" : "Wishlist"}</span>
-            </button>
           </div>
 
-          <div className="details-support">
-            <div>
-              <span>Warranty</span>
-              <strong>{product.warrantyAvailable ? "Available" : "Not listed"}</strong>
+          <div className="details-trust-grid" aria-label="Secure purchase highlights">
+            <div className="details-trust-item">
+              <span className="details-trust-item__icon" aria-hidden="true">
+                ✓
+              </span>
+              <div>
+                <strong>Secure payments</strong>
+                <span>Encrypted checkout</span>
+              </div>
             </div>
-            <div>
-              <span>Replacement</span>
-              <strong>{product.replacementAvailable ? "Available" : "Unavailable"}</strong>
+            <div className="details-trust-item">
+              <span className="details-trust-item__icon" aria-hidden="true">
+                ⟲
+              </span>
+              <div>
+                <strong>Warranty support</strong>
+                <span>{product.warrantyAvailable ? "Available" : "Not listed"}</span>
+              </div>
+            </div>
+            <div className="details-trust-item">
+              <span className="details-trust-item__icon" aria-hidden="true">
+                ❤
+              </span>
+              <div>
+                <strong>Genuine products</strong>
+                <span>Verified inventory</span>
+              </div>
+            </div>
+            <div className="details-trust-item">
+              <span className="details-trust-item__icon" aria-hidden="true">
+                ☎
+              </span>
+              <div>
+                <strong>Support available</strong>
+                <span>Call or chat anytime</span>
+              </div>
             </div>
           </div>
 
-          <div className="details-description">
-            <span className="eyebrow">Description</span>
-            <p>{product.description}</p>
-          </div>
+          <div className="details-meta-note">{product.shortDescription}</div>
         </div>
       </div>
 

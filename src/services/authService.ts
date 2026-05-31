@@ -21,7 +21,12 @@ export const googleLogin = async (payload: { credential: string }) => {
   return response.data;
 };
 
-export const completeProfile = async (payload: { fullName: string }) => {
+export const completeProfile = async (payload: {
+  fullName: string;
+  phoneNumber: string;
+  email?: string;
+  profileImageUrl?: string;
+}) => {
   const response = await api.patch<AuthResponse>("/auth/profile", payload);
   return response.data;
 };

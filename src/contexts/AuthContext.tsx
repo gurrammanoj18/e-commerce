@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { AxiosError } from "axios";
+import "../styles/shared/DeliveryPreferenceModal.css";
+import { setApiAuthToken } from "../services/api";
 import {
   adminLogin as adminLoginRequest,
   completeProfile as completeProfileRequest,
@@ -11,6 +13,7 @@ import {
 
 import { useProcessing } from "./ProcessingContext";
 import { AuthUser, DeliveryMode, OtpChallengeResponse } from "../types/store";
+import { optimizeImageFile } from "../utils/imageUpload";
 
 interface AuthActionResult<T = void> {
   data?: T;
@@ -27,7 +30,7 @@ interface AuthContextValue {
   verifyOtp: (email: string, otpCode: string) => Promise<AuthActionResult>;
   googleLogin: (credential: string) => Promise<AuthActionResult>;
   adminLogin: (email: string, password: string) => Promise<AuthActionResult>;
-  completeProfile: (fullName: string) => Promise<AuthActionResult>;
+  completeProfile: (payload: ProfileCompletionPayload) => Promise<AuthActionResult>;
   updateDeliveryPreference: (mode: DeliveryMode) => Promise<AuthActionResult>;
   logout: () => void;
 }
@@ -36,6 +39,32 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = "voltmart-auth-user";
 const TOKEN_STORAGE_KEY = "voltmart-token";
+
+const decodeJwtPayload = (token: string) => {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) {
+      return null;
+    }
+
+    const normalizedPayload = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decodedPayload = window.atob(
+      normalizedPayload.padEnd(Math.ceil(normalizedPayload.length / 4) * 4, "="),
+    );
+    return JSON.parse(decodedPayload) as { role?: string; exp?: number };
+  } catch {
+    return null;
+  }
+};
+
+const isTokenValidForUser = (token: string, user: AuthUser) => {
+  const payload = decodeJwtPayload(token);
+  if (!payload?.role || payload.role !== user.role) {
+    return false;
+  }
+
+  return !payload.exp || payload.exp * 1000 > Date.now();
+};
 
 const getDisplayName = (user: AuthUser | null) => {
   const fullName = user?.fullName?.trim();
@@ -47,7 +76,18 @@ const getDisplayName = (user: AuthUser | null) => {
 };
 
 const shouldRequireCustomerName = (user: AuthUser | null) =>
-  Boolean(user?.role === "ROLE_CUSTOMER" && !getDisplayName(user));
+  Boolean(user?.role === "ROLE_CUSTOMER" && (!getDisplayName(user) || !user.phoneNumber?.trim()));
+
+const restrictLettersOnly = (value: string) => value.replace(/[^A-Za-z\s.'-]/g, "");
+const restrictDigitsOnly = (value: string, maxLength = 10) =>
+  value.replace(/\D/g, "").slice(0, maxLength);
+
+interface ProfileCompletionPayload {
+  fullName: string;
+  phoneNumber: string;
+  email?: string;
+  profileImageUrl?: string;
+}
 
 const extractErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof AxiosError) {
@@ -70,6 +110,10 @@ const extractErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+const isAuthorizationError = (error: unknown) =>
+  error instanceof AxiosError &&
+  (error.response?.status === 401 || error.response?.status === 403);
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -79,8 +123,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [showDeliveryPreferenceModal, setShowDeliveryPreferenceModal] = useState(false);
   const [showProfileCompletionModal, setShowProfileCompletionModal] = useState(false);
   const [pendingDeliveryPreferencePrompt, setPendingDeliveryPreferencePrompt] = useState(false);
-  const [welcomeUser, setWelcomeUser] = useState<string | null>(null);
+  const [deliveryPreferenceError, setDeliveryPreferenceError] = useState("");
   const { startProcessing, stopProcessing } = useProcessing();
+  const isAdminSession = user?.role === "ROLE_ADMIN";
+  const isCustomerOnboardingBlocked = Boolean(
+    user?.role === "ROLE_CUSTOMER" &&
+      (showProfileCompletionModal || showDeliveryPreferenceModal),
+  );
 
   useEffect(() => {
     const storedUser = window.localStorage.getItem(AUTH_STORAGE_KEY);
@@ -95,16 +144,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const parsedUser = JSON.parse(storedUser) as AuthUser;
+      if (!isTokenValidForUser(storedToken, parsedUser)) {
+        window.localStorage.removeItem(AUTH_STORAGE_KEY);
+        window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+        setApiAuthToken(null);
+        setUser(null);
+        setToken(null);
+        setLoading(false);
+        return;
+      }
+
+      const isAdminArea = window.location.pathname.startsWith("/admin");
+      if (parsedUser.role === "ROLE_ADMIN" && !isAdminArea) {
+        window.localStorage.removeItem(AUTH_STORAGE_KEY);
+        window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+        setApiAuthToken(null);
+        setUser(null);
+        setToken(null);
+        setLoading(false);
+        return;
+      }
+
+      const requireProfile = shouldRequireCustomerName(parsedUser);
       setUser(parsedUser);
       setToken(storedToken);
+      setApiAuthToken(storedToken);
+      setShowProfileCompletionModal(requireProfile);
+      setShowDeliveryPreferenceModal(
+        parsedUser.role === "ROLE_CUSTOMER" && !requireProfile && !isAdminArea,
+      );
     } catch {
       window.localStorage.removeItem(AUTH_STORAGE_KEY);
       window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+      setApiAuthToken(null);
       setUser(null);
       setToken(null);
     }
 
-    setWelcomeUser(null);
     setLoading(false);
   }, []);
 
@@ -114,9 +190,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     options?: {
       promptDeliveryPreference?: boolean;
       requireProfileCompletion?: boolean;
-      showWelcomeGreeting?: boolean;
     },
   ) => {
+    if (nextUser && nextToken && !isTokenValidForUser(nextToken, nextUser)) {
+      nextUser = null;
+      nextToken = null;
+    }
+
     setUser(nextUser);
     setToken(nextToken);
     const shouldRequireProfileCompletion = Boolean(
@@ -130,52 +210,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         nextUser &&
         nextToken &&
         nextUser.role === "ROLE_CUSTOMER" &&
-        !nextUser.preferredDeliveryMode,
+        !window.location.pathname.startsWith("/admin"),
     );
-    const shouldDelayDeliveryPreference = Boolean(
-      shouldPromptDeliveryPreference && options?.showWelcomeGreeting,
-    );
+    const shouldDelayDeliveryPreference = false;
 
     setShowProfileCompletionModal(shouldRequireProfileCompletion);
     setShowDeliveryPreferenceModal(shouldPromptDeliveryPreference && !shouldDelayDeliveryPreference);
     setPendingDeliveryPreferencePrompt(shouldDelayDeliveryPreference);
+    setDeliveryPreferenceError("");
+    setApiAuthToken(nextToken);
 
     if (nextUser && nextToken) {
       window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextUser));
       window.localStorage.setItem(TOKEN_STORAGE_KEY, nextToken);
 
-      const displayName = getDisplayName(nextUser);
-      if (options?.showWelcomeGreeting && displayName) {
-        setWelcomeUser(displayName);
-      }
       return;
     }
 
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
     window.localStorage.removeItem(TOKEN_STORAGE_KEY);
-    setWelcomeUser(null);
+    setApiAuthToken(null);
   };
 
   useEffect(() => {
-    if (!pendingDeliveryPreferencePrompt) {
+    if (!pendingDeliveryPreferencePrompt || isAdminSession) {
       return;
     }
 
     setShowDeliveryPreferenceModal(true);
     setPendingDeliveryPreferencePrompt(false);
-  }, [pendingDeliveryPreferencePrompt]);
+    setDeliveryPreferenceError("");
+  }, [isAdminSession, pendingDeliveryPreferencePrompt]);
 
   useEffect(() => {
-    if (!welcomeUser) {
+    if (!isAdminSession) {
       return;
     }
 
-    const timeoutId = window.setTimeout(() => {
-      setWelcomeUser(null);
-    }, 5000);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [welcomeUser]);
+    setShowDeliveryPreferenceModal(false);
+    setPendingDeliveryPreferencePrompt(false);
+    setDeliveryPreferenceError("");
+  }, [isAdminSession]);
 
   const requestOtp = async (email: string) => {
     const processingId = startProcessing({
@@ -203,7 +278,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       persistAuth(response.user, response.token, {
         promptDeliveryPreference: true,
         requireProfileCompletion: response.requiresProfileCompletion,
-        showWelcomeGreeting: !response.requiresProfileCompletion,
       });
 
       return {};
@@ -226,7 +300,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       persistAuth(response.user, response.token, {
         promptDeliveryPreference: true,
         requireProfileCompletion: response.requiresProfileCompletion,
-        showWelcomeGreeting: !response.requiresProfileCompletion,
       });
 
       return {};
@@ -248,7 +321,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const response = await adminLoginRequest({ email, password });
       persistAuth(response.user, response.token, {
         requireProfileCompletion: response.requiresProfileCompletion,
-        showWelcomeGreeting: true,
       });
 
       return {};
@@ -261,19 +333,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const completeProfile = async (fullName: string) => {
+  const completeProfile = async (payload: ProfileCompletionPayload) => {
     const processingId = startProcessing({
       title: "Saving profile",
       message: "Updating your account details...",
     });
     try {
-      const response = await completeProfileRequest({ fullName });
+      const response = await completeProfileRequest(payload);
       persistAuth(response.user, response.token, {
-        promptDeliveryPreference: true,
+        promptDeliveryPreference: false,
         requireProfileCompletion: response.requiresProfileCompletion,
-        showWelcomeGreeting: true,
       });
       setShowProfileCompletionModal(false);
+      setShowDeliveryPreferenceModal(
+        response.user.role === "ROLE_CUSTOMER" && !response.requiresProfileCompletion,
+      );
       return {};
     } catch (error) {
       return {
@@ -285,6 +359,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const updateDeliveryPreference = async (mode: DeliveryMode) => {
+    setDeliveryPreferenceError("");
+
+    if (user?.role !== "ROLE_CUSTOMER") {
+      return {
+        error: "Delivery preference is only available for customer accounts.",
+      };
+    }
+
     const processingId = startProcessing({
       title: "Saving preference",
       message: "Updating your default fulfilment option...",
@@ -298,8 +380,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setPendingDeliveryPreferencePrompt(false);
       return {};
     } catch (error) {
+      if (isAuthorizationError(error)) {
+        const message = "Your session expired. Please log in again to choose delivery.";
+        setDeliveryPreferenceError(message);
+        window.setTimeout(() => {
+          persistAuth(null, null);
+          setShowDeliveryPreferenceModal(false);
+          setPendingDeliveryPreferencePrompt(false);
+        }, 900);
+        return { error: message };
+      }
+
+      const message = extractErrorMessage(error, "Unable to save delivery preference right now.");
+      setDeliveryPreferenceError(message);
       return {
-        error: extractErrorMessage(error, "Unable to save delivery preference right now."),
+        error: message,
       };
     } finally {
       stopProcessing(processingId);
@@ -311,7 +406,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setShowDeliveryPreferenceModal(false);
     setShowProfileCompletionModal(false);
     setPendingDeliveryPreferencePrompt(false);
-    setWelcomeUser(null);
+    setDeliveryPreferenceError("");
   };
 
   return (
@@ -331,11 +426,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         logout,
       }}
     >
-      {children}
+      <div
+        className={isCustomerOnboardingBlocked ? "auth-onboarding-page-blocked" : undefined}
+        aria-hidden={isCustomerOnboardingBlocked}
+      >
+        {children}
+      </div>
       {showProfileCompletionModal && user?.role === "ROLE_CUSTOMER" ? (
         <ProfileCompletionModal onSubmit={completeProfile} />
       ) : null}
-      {showDeliveryPreferenceModal && user?.role === "ROLE_CUSTOMER" ? (
+      {showDeliveryPreferenceModal && !showProfileCompletionModal && user?.role === "ROLE_CUSTOMER" ? (
         <div className="delivery-preference-modal" role="dialog" aria-modal="true">
           <div className="delivery-preference-modal__card">
             <span className="eyebrow">Delivery preference</span>
@@ -360,59 +460,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 Home delivery
               </button>
             </div>
-          </div>
-        </div>
-      ) : null}
-      {welcomeUser ? (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          background: "radial-gradient(circle at center, #ffffff 0%, #fdfdfd 40%, #f0f4f8 100%)",
-          color: "#1a1a1a",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 9999,
-          animation: "fadeOutWelcome 5s forwards"
-        }}>
-          <style>
-            {`
-              @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
-              
-              @keyframes fadeOutWelcome {
-                0% { opacity: 1; }
-                80% { opacity: 1; }
-                100% { opacity: 0; visibility: hidden; }
-              }
-              
-              @keyframes writeText {
-                0% { clip-path: inset(0 100% 0 0); opacity: 0.4; transform: scale(0.95); }
-                30% { opacity: 1; }
-                100% { clip-path: inset(0 -10% 0 0); opacity: 1; transform: scale(1); }
-              }
-              
-              @keyframes gentleFloat {
-                0%, 100% { transform: translateY(0); }
-                50% { transform: translateY(-8px); }
-              }
-              
-              .welcome-float-wrapper {
-                animation: gentleFloat 4s ease-in-out infinite;
-                padding: 20px 40px;
-              }
-
-              .pen-writing {
-                font-family: 'Great Vibes', cursive;
-                font-size: 7.5rem;
-                display: inline-block;
-                white-space: nowrap;
-                text-shadow: 2px 8px 16px rgba(0,0,0,0.12);
-                animation: writeText 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-              }
-            `}
-          </style>
-          <div className="welcome-float-wrapper">
-            <span className="pen-writing">Welcome {welcomeUser}</span>
+            {deliveryPreferenceError ? (
+              <p className="form-error">{deliveryPreferenceError}</p>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -421,52 +471,127 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 };
 
 const ProfileCompletionModal: React.FC<{
-  onSubmit: (fullName: string) => Promise<AuthActionResult>;
+  onSubmit: (payload: ProfileCompletionPayload) => Promise<AuthActionResult>;
 }> = ({ onSubmit }) => {
-  const [fullName, setFullName] = useState("");
+  const { user } = useAuth();
+  const [fullName, setFullName] = useState(user?.fullName || "");
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [profileImageUrl, setProfileImageUrl] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleProfileImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
     setError("");
-    if (!fullName.trim()) {
-      setError("Please enter your name to continue.");
+    setUploadingImage(true);
+    try {
+      setProfileImageUrl(await optimizeImageFile(file));
+    } catch {
+      setError("Unable to process selected profile photo.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const submitProfile = async (skipOptional = false) => {
+    setError("");
+    if (!fullName.trim() || !phoneNumber.trim()) {
+      setError("Please enter your full name and mobile number to continue.");
       return;
     }
 
     setSaving(true);
-    const result = await onSubmit(fullName.trim());
+    const result = await onSubmit({
+      fullName: fullName.trim(),
+      phoneNumber: phoneNumber.trim(),
+      email: skipOptional ? undefined : email.trim() || undefined,
+      profileImageUrl: skipOptional ? undefined : profileImageUrl.trim() || undefined,
+    });
     setSaving(false);
     if (result.error) {
       setError(result.error);
     }
   };
 
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await submitProfile(false);
+  };
+
   return (
     <div className="delivery-preference-modal" role="dialog" aria-modal="true">
       <div className="delivery-preference-modal__card">
-        <span className="eyebrow">Welcome to VoltMart</span>
-        <h2>Tell us your name</h2>
-        <p>We only need this once so your account and future orders feel personal.</p>
+        <span className="eyebrow">Account details</span>
+        <h2>Complete your profile</h2>
+        <p>These details will be used automatically for orders and support requests.</p>
         <form className="form-grid" onSubmit={handleSubmit}>
-          <label className="form-grid__wide">
+          <label>
             Full name
-            <input
+          <input
               value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
+              onChange={(event) => setFullName(restrictLettersOnly(event.target.value))}
               placeholder="Enter your full name"
               autoFocus
             />
           </label>
+          <label>
+            Mobile number
+          <input
+              value={phoneNumber}
+              onChange={(event) => setPhoneNumber(restrictDigitsOnly(event.target.value))}
+              placeholder="Enter mobile number"
+            />
+          </label>
+          <label>
+            Email optional
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@example.com"
+            />
+          </label>
+          <label>
+            Profile photo optional
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleProfileImageChange}
+              disabled={saving || uploadingImage}
+            />
+          </label>
+          {profileImageUrl ? (
+            <div className="profile-photo-preview form-grid__wide">
+              <img src={profileImageUrl} alt="Selected profile" />
+              <button type="button" className="link-button" onClick={() => setProfileImageUrl("")}>
+                Remove photo
+              </button>
+            </div>
+          ) : null}
           {error ? <p className="form-error">{error}</p> : null}
           <div className="delivery-preference-modal__actions">
             <button
+              type="button"
+              className="delivery-preference-modal__button delivery-preference-modal__button--icon"
+              disabled={saving || uploadingImage}
+              onClick={() => void submitProfile(true)}
+            >
+              <span>Skip optional</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </button>
+            <button
               type="submit"
               className="delivery-preference-modal__button delivery-preference-modal__button--primary"
-              disabled={saving}
+              disabled={saving || uploadingImage}
             >
-              {saving ? "Saving..." : "Continue"}
+              {saving ? "Saving..." : uploadingImage ? "Preparing photo..." : "Continue"}
             </button>
           </div>
         </form>

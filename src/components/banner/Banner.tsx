@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "../../styles/components/Banner.css";
 
 const Banner: React.FC = () => {
@@ -18,7 +19,9 @@ const Banner: React.FC = () => {
                                 <path d="M8 .5l6.5 6.5V15a1 1 0 0 1-1 1h-4v-4H6v4H2a1 1 0 0 1-1-1V7L8 .5z" />
                             </svg>
                         </span>
-                        <a className="banner-option option-home" href="#">Collections</a>
+                        <Link className="banner-option option-home" to="/products">
+                            Collections
+                        </Link>
                         <p className="banner-option">All products</p>
                     </div>
                     <h1 className="banner-title">All products</h1>

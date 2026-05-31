@@ -1,5 +1,5 @@
 import React from "react";
-import { aboutVoltmartHighlights, aboutVoltmartParagraphs } from "../../content/aboutVoltmart";
+import { aboutVoltmartParagraphs } from "../../content/aboutVoltmart";
 import "../../styles/layout/AboutVoltmartSection.css";
 
 const AboutVoltmartSection: React.FC = () => {
@@ -15,15 +15,6 @@ const AboutVoltmartSection: React.FC = () => {
           {aboutVoltmartParagraphs.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}
-        </div>
-
-        <div className="about-voltmart-band__highlights">
-          <h3>Why Choose Us?</h3>
-          <ul>
-            {aboutVoltmartHighlights.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
         </div>
       </div>
     </section>

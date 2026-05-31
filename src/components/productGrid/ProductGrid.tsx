@@ -1,15 +1,17 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import "../../styles/components/ProductGrid.css";
 import { getBestSellerProducts } from "../../services/productService";
 import { Product } from "../../types/store";
 import { formatCurrency } from "../../utils/currency";
 
+const MOBILE_PAGE_SIZE = 5;
+
 const ProductGrid: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [slideIndices, setSlideIndices] = useState<{ [key: number]: number }>({});
   const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 12;
-  const totalPages = Math.max(1, Math.ceil(products.length / productsPerPage));
+  const [isMobile, setIsMobile] = useState(false);
+  const touchStartX = useRef<number | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,10 +28,23 @@ const ProductGrid: React.FC = () => {
     void loadProducts();
   }, []);
 
-  const currentProducts = products.slice(
-    (currentPage - 1) * productsPerPage,
-    currentPage * productsPerPage,
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 820);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const productsPerPage = isMobile ? MOBILE_PAGE_SIZE : 12;
+  const totalPages = Math.max(1, Math.ceil(products.length / productsPerPage));
+  const currentProducts = useMemo(
+    () => products.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage),
+    [currentPage, products, productsPerPage],
   );
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   const handleMouseMove = (e: React.MouseEvent, id: number, imageCount: number) => {
     if (imageCount <= 1) {
@@ -41,7 +56,8 @@ const ProductGrid: React.FC = () => {
 
     setSlideIndices((prev) => ({
       ...prev,
-      [id]: x < width / 3 ? 0 : x > (2 * width) / 3 ? Math.min(2, imageCount - 1) : Math.min(1, imageCount - 1),
+      [id]:
+        x < width / 3 ? 0 : x > (2 * width) / 3 ? Math.min(2, imageCount - 1) : Math.min(1, imageCount - 1),
     }));
   };
 
@@ -49,19 +65,45 @@ const ProductGrid: React.FC = () => {
     setSlideIndices((prev) => ({ ...prev, [id]: 0 }));
   };
 
-  const handlePrev = () => {
+  const goPrev = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
     gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const handleNext = () => {
+  const goNext = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
     gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const handleTouchStart = (event: React.TouchEvent<HTMLElement>) => {
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
+    if (touchStartX.current === null || !isMobile) {
+      return;
+    }
+
+    const touchEndX = event.changedTouches[0]?.clientX ?? touchStartX.current;
+    const deltaX = touchEndX - touchStartX.current;
+    if (Math.abs(deltaX) > 40) {
+      if (deltaX < 0) {
+        goNext();
+      } else {
+        goPrev();
+      }
+    }
+    touchStartX.current = null;
+  };
+
   return (
     <div>
-      <section className="product-grid" ref={gridRef}>
+      <section
+        className={`product-grid ${isMobile ? "product-grid--mobile-swipe" : ""}`}
+        ref={gridRef}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {currentProducts.map((product) => (
           <div
             key={product.id}
@@ -96,13 +138,13 @@ const ProductGrid: React.FC = () => {
       </section>
 
       <div className="pagination">
-        <button onClick={handlePrev} disabled={currentPage === 1}>
+        <button onClick={goPrev} disabled={currentPage === 1}>
           ⬅ Prev
         </button>
         <span>
           Page {currentPage} of {totalPages}
         </span>
-        <button onClick={handleNext} disabled={currentPage === totalPages}>
+        <button onClick={goNext} disabled={currentPage === totalPages}>
           Next ➡
         </button>
       </div>

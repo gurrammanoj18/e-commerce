@@ -13,7 +13,7 @@
   margin: 22px 0;
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 980px) {
   .bulk-layout {
     grid-template-columns: 1fr;
   }

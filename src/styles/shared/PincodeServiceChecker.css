@@ -1,0 +1,71 @@
+.pincode-checker {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid #ead9ca;
+  background: linear-gradient(135deg, #fff8ef 0%, #ffffff 55%, #fff3e3 100%);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+.pincode-checker__copy {
+  display: grid;
+  gap: 8px;
+}
+
+.pincode-checker__copy h2,
+.pincode-checker__copy p,
+.pincode-checker__result strong,
+.pincode-checker__result span,
+.pincode-checker__hint {
+  margin: 0;
+}
+
+.pincode-checker__copy p,
+.pincode-checker__hint {
+  color: var(--muted);
+}
+
+.pincode-checker__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.pincode-checker__controls input {
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+
+.pincode-checker__result {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 16px;
+}
+
+.pincode-checker__result.is-serviceable {
+  background: #ecfdf3;
+  color: #166534;
+}
+
+.pincode-checker__result.is-unserviceable {
+  background: #fef3f2;
+  color: #b42318;
+}
+
+@media (max-width: 560px) {
+  .pincode-checker {
+    padding: 18px 16px;
+  }
+
+  .pincode-checker__controls {
+    grid-template-columns: 1fr;
+  }
+
+  .pincode-checker__controls .button {
+    width: 100%;
+  }
+}

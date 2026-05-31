@@ -106,7 +106,6 @@ const AdminCategoriesPage: React.FC = () => {
         <div>
           <span className="eyebrow">Admin workspace</span>
           <h1>Category management</h1>
-          <p>Add categories with a name and cover image. New categories will be available while adding products.</p>
         </div>
       </div>
       <AdminWorkspaceNav />

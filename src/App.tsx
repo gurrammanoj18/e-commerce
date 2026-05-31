@@ -16,25 +16,30 @@ import AdminBannersPage from "./pages/AdminBannersPage";
 import AdminBulkInquiriesPage from "./pages/AdminBulkInquiriesPage";
 import AdminCategoriesPage from "./pages/AdminCategoriesPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
+import AdminReturnsPage from "./pages/AdminReturnsPage";
+import AddressPage from "./pages/AddressPage";
 import AboutPage from "./pages/AboutPage";
 import BulkOrderPage from "./pages/BulkOrderPage";
 import BuyingGuidesPage from "./pages/BuyingGuidesPage";
 import CartPage from "./pages/CartPage";
-import CategoriesPage from "./pages/CategoriesPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import ContactPage from "./pages/ContactPage";
-import CouponsPage from "./pages/CouponsPage";
 import HelpCenterPage from "./pages/HelpCenterPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import OrdersPage from "./pages/OrdersPage";
+import ProfilePage from "./pages/ProfilePage";
 import PrivacyPage from "./pages/PrivacyPage";
 import ProductDetailsPage from "./pages/ProductDetailsPage";
 import ProductsPage from "./pages/ProductsPage";
 import ReturnsPage from "./pages/ReturnsPage";
+import ServicesPage from "./pages/ServicesPage";
 import TermsPage from "./pages/TermsPage";
+import WalletPage from "./pages/WalletPage";
 import WishlistPage from "./pages/WishlistPage";
+import AdminServicesPage from "./pages/AdminServicesPage";
+import AdminWalletPage from "./pages/AdminWalletPage";
 
 const App: React.FC = () => {
   return (
@@ -49,7 +54,7 @@ const App: React.FC = () => {
                     <Route path="login" element={<LoginPage />} />
                     <Route
                       element={
-                        <ProtectedRoute>
+                        <ProtectedRoute customerOnly>
                           <Layout />
                         </ProtectedRoute>
                       }
@@ -57,13 +62,15 @@ const App: React.FC = () => {
                       <Route index element={<HomePage />} />
                       <Route path="about" element={<AboutPage />} />
                       <Route path="products" element={<ProductsPage />} />
-                      <Route path="categories" element={<CategoriesPage />} />
                       <Route path="products/:slug" element={<ProductDetailsPage />} />
                       <Route path="wishlist" element={<WishlistPage />} />
                       <Route path="cart" element={<CartPage />} />
                       <Route path="checkout" element={<CheckoutPage />} />
                       <Route path="orders" element={<OrdersPage />} />
-                      <Route path="coupons" element={<CouponsPage />} />
+                      <Route path="profile" element={<ProfilePage />} />
+                      <Route path="address" element={<AddressPage />} />
+                      <Route path="wallet" element={<WalletPage />} />
+                      <Route path="services" element={<ServicesPage />} />
                       <Route path="help-center" element={<HelpCenterPage />} />
                       <Route path="terms" element={<TermsPage />} />
                       <Route path="privacy" element={<PrivacyPage />} />
@@ -104,6 +111,14 @@ const App: React.FC = () => {
                         }
                       />
                       <Route
+                        path="returns"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <AdminReturnsPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
                         path="categories"
                         element={
                           <ProtectedRoute adminOnly>
@@ -124,6 +139,22 @@ const App: React.FC = () => {
                         element={
                           <ProtectedRoute adminOnly>
                             <AdminBulkInquiriesPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="services"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <AdminServicesPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="wallet"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <AdminWalletPage />
                           </ProtectedRoute>
                         }
                       />

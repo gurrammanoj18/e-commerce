@@ -11,6 +11,8 @@ export const checkout = async (payload: {
   city: string;
   postalCode: string;
   deliverySlot?: string;
+  couponCode?: string;
+  useWalletBalance?: boolean;
   priorityOrder: boolean;
   priorityNotes?: string;
 }) => {
