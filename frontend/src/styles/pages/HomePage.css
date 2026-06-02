@@ -140,30 +140,6 @@
   margin: 0 auto;
 }
 
-.home-info-banner-section {
-  margin-top: -8px;
-}
-
-.home-info-banner {
-  padding: 24px 28px;
-  border: 1px solid #ead9ca;
-  border-radius: 24px;
-  background: linear-gradient(120deg, #fff7ef 0%, #f6fbf8 100%);
-  box-shadow: 0 14px 32px rgba(30, 41, 59, 0.08);
-}
-
-.home-info-banner h2 {
-  margin: 8px 0 10px;
-  color: #132127;
-  font-size: clamp(1.5rem, 2vw, 2rem);
-}
-
-.home-info-banner p {
-  margin: 0;
-  max-width: 720px;
-  color: #46535c;
-}
-
 .home-why-shop-section {
   width: min(1200px, calc(100% - 32px));
   margin: 0 auto 30px;
@@ -424,10 +400,6 @@
 
   .product-grid--carousel .product-card__content {
     padding: 10px 12px 12px;
-  }
-
-  .home-info-banner {
-    display: none;
   }
 
   .discovery-hero__content {

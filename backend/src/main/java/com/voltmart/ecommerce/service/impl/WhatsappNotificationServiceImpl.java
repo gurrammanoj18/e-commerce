@@ -146,7 +146,6 @@ public class WhatsappNotificationServiceImpl implements WhatsappNotificationServ
 
     private String buildStatusDetail(OrderStatus status) {
         return switch (status) {
-            case PENDING -> "We're validating your order and will confirm it shortly.";
             case CONFIRMED -> "Your order is confirmed and scheduled for delivery by 10:00 PM today.";
             case PROCESSING -> "Our team is packing your items and getting them ready for dispatch.";
             case SHIPPED -> "Your order is on the way and is expected to arrive by 10:00 PM today.";

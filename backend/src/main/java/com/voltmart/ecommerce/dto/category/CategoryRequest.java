@@ -8,6 +8,7 @@ public record CategoryRequest(
         String description,
         String icon,
         Long parentId,
-        String image
+        String image,
+        Boolean showInNavbar
 ) {
 }

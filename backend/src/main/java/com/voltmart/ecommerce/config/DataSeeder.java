@@ -40,6 +40,7 @@ public class DataSeeder implements CommandLineRunner {
     private final ServiceablePincodeRepository serviceablePincodeRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AppProperties appProperties;
     @Override
     public void run(String... args) {
         seedUsers();
@@ -87,6 +88,22 @@ public class DataSeeder implements CommandLineRunner {
         categories.put("plumbing", upsertCategory("Plumbing", "plumbing", "Pipes, valves, fittings, and flow-control solutions.", "🚰", null));
         categories.put("kitchen", upsertCategory("Kitchen", "kitchen", "Kitchen appliances, storage, and prep essentials.", "🍽️", null));
         categories.put("services", upsertCategory("Services", "services", "Book trusted home and site services from verified professionals.", "🧰", null));
+        categories.put("diwali-offer", upsertCategory(
+                "Diwali Offer",
+                "diwali-offer",
+                "Festival deals and seasonal savings curated for quick browsing.",
+                "🎆",
+                null,
+                true
+        ));
+        categories.put("50-off-diwali-season", upsertCategory(
+                "50% Off Diwali Season",
+                "50-off-diwali-season",
+                "Seasonal promotion spot for limited-time festival savings.",
+                "🏷️",
+                null,
+                true
+        ));
 
         return categories;
     }
@@ -111,24 +128,31 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private Category upsertCategory(String name, String slug, String description, String icon, Category parent) {
+        return upsertCategory(name, slug, description, icon, parent, false);
+    }
+
+    private Category upsertCategory(String name, String slug, String description, String icon, Category parent, boolean showInNavbar) {
         Category category = categoryRepository.findBySlug(slug)
                 .orElseGet(() -> Category.builder().slug(slug).build());
         category.setName(name);
         category.setSlug(slug);
         category.setDescription(description);
         category.setIcon(icon);
+        category.setShowInNavbar(showInNavbar);
         category.setParent(parent);
         return categoryRepository.save(category);
     }
 
     private void seedUsers() {
-        User admin = userRepository.findByEmailIgnoreCase("admin@voltmart.in")
+        String adminEmail = appProperties.getSeed().getAdminEmail();
+        String adminPassword = appProperties.getSeed().getAdminPassword();
+        User admin = userRepository.findByEmailIgnoreCase(adminEmail)
                 .orElseGet(() -> User.builder()
                         .createdAt(LocalDateTime.now())
                         .build());
         admin.setFullName("VoltMart Admin");
-        admin.setEmail("admin@voltmart.in");
-        admin.setPassword(passwordEncoder.encode("Admin@123"));
+        admin.setEmail(adminEmail);
+        admin.setPassword(passwordEncoder.encode(adminPassword));
         admin.setRole(Role.ROLE_ADMIN);
         admin.setWalletBalance(BigDecimal.ZERO);
         if (admin.getCreatedAt() == null) {

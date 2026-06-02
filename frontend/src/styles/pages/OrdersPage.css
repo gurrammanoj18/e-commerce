@@ -7,7 +7,8 @@
 .orders-page__header {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 14px;
 }
 
@@ -29,23 +30,15 @@
   font-weight: 400;
 }
 
-.orders-page__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
 .orders-page__filters-button {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  min-height: 60px;
-  padding: 0 20px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: #fff;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--dark);
   font-weight: 700;
 }
@@ -233,26 +226,6 @@
   background: linear-gradient(180deg, rgba(248, 250, 252, 0.7), #fff);
 }
 
-.order-card__review-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  min-width: 0;
-}
-
-.order-card__review-label {
-  font-weight: 600;
-}
-
-.order-card__stars {
-  display: inline-flex;
-  gap: 10px;
-  color: rgba(15, 23, 42, 0.45);
-  font-size: 1.6rem;
-  line-height: 1;
-  letter-spacing: 0.02em;
-}
-
 .order-card__status-copy,
 .order-card__refund-row {
   display: inline-flex;
@@ -337,7 +310,8 @@
 .order-card__timeline {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
+  gap: 0;
+  align-items: start;
 }
 
 .order-card__timeline--return {
@@ -345,12 +319,25 @@
 }
 
 .order-card__timeline-step {
+  position: relative;
   display: grid;
   justify-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 4px 8px 0;
   text-align: center;
   color: var(--muted);
   font-size: 0.8rem;
+}
+
+.order-card__timeline-step:not(:first-child)::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.18), rgba(148, 163, 184, 0.18));
+  z-index: 0;
 }
 
 .order-card__timeline-step.is-active {
@@ -358,7 +345,13 @@
   font-weight: 700;
 }
 
+.order-card__timeline-step.is-active:not(:first-child)::before {
+  background: linear-gradient(90deg, rgba(22, 163, 74, 0.18), rgba(22, 163, 74, 0.9));
+}
+
 .order-card__timeline-dot {
+  position: relative;
+  z-index: 1;
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -371,6 +364,12 @@
   background: #16a34a;
 }
 
+.order-card__timeline-label {
+  position: relative;
+  z-index: 1;
+  line-height: 1.35;
+}
+
 .order-card__timeline-dot--return {
   border-color: rgba(37, 99, 235, 0.3);
 }
@@ -378,6 +377,20 @@
 .order-card__timeline-step.is-active .order-card__timeline-dot--return {
   border-color: #2563eb;
   background: #2563eb;
+}
+
+.order-card__timeline-group--return .order-card__timeline-step.is-active:not(:first-child)::before {
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.92));
+}
+
+.order-card__timeline-copy {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+}
+
+.order-card__timeline-copy strong {
+  color: var(--dark);
 }
 
 .order-card__detail-grid {
@@ -569,12 +582,8 @@
 }
 
 @media (max-width: 900px) {
-  .orders-page__toolbar {
-    justify-content: flex-start;
-  }
-
   .orders-page__filters-button {
-    justify-self: start;
+    width: auto;
   }
 
   .order-card__timeline,
@@ -591,16 +600,13 @@
   }
 
   .orders-page__header {
+    align-items: flex-start;
     margin-bottom: 12px;
   }
 
-  .orders-page__toolbar {
-    gap: 12px;
-  }
-
   .orders-page__filters-button {
-    min-height: 56px;
-    border-radius: 18px;
+    min-height: 0;
+    padding-top: 4px;
   }
 
   .orders-page__filters {
@@ -638,7 +644,6 @@
 
   .order-card__badge-row,
   .order-card__action-strip,
-  .order-card__review-row,
   .order-card__footer-hint,
   .order-card__details-header {
     flex-direction: column;
@@ -656,11 +661,6 @@
   .order-card__action-strip {
     gap: 10px;
     padding: 12px 14px 16px;
-  }
-
-  .order-card__stars {
-    font-size: 1.35rem;
-    gap: 8px;
   }
 
   .order-card__details {
@@ -753,20 +753,18 @@
     width: 100%;
   }
 
-  .order-card__copy-button,
-  .order-card__help-button {
-    min-height: 36px;
-    padding-inline: 12px;
-    font-size: 0.9rem;
-  }
-
   .order-card__mobile-status-card {
     display: grid;
-    gap: 12px;
-    padding: 14px;
+    gap: 10px;
+    padding: 12px;
     border-radius: 18px;
     border: 1px solid var(--border);
     background: #fff;
+  }
+
+  .order-card__mobile-status-head {
+    display: grid;
+    gap: 6px;
   }
 
   .order-card__mobile-status-card h4 {
@@ -775,18 +773,24 @@
     line-height: 1.2;
   }
 
+  .order-card__mobile-status-card p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
   .order-card__status-bar {
     display: grid;
-    gap: 20px;
-    padding-top: 6px;
+    gap: 10px;
+    padding-top: 4px;
   }
 
   .order-card__status-step {
     position: relative;
     display: grid;
     grid-template-columns: 16px minmax(0, 1fr);
-    column-gap: 16px;
-    row-gap: 6px;
+    column-gap: 12px;
+    row-gap: 4px;
     align-items: start;
     padding-left: 2px;
   }
@@ -803,6 +807,16 @@
     margin-top: 4px;
   }
 
+  .order-card__status-dot--return {
+    border-color: rgba(37, 99, 235, 0.28);
+    background: #fff;
+  }
+
+  .order-card__status-step.is-active .order-card__status-dot--return {
+    border-color: #2563eb;
+    background: #2563eb;
+  }
+
   .order-card__status-dot--warning {
     border-color: #f59e0b;
     background: #f59e0b;
@@ -816,11 +830,20 @@
   .order-card__status-rail {
     position: absolute;
     left: 6px;
-    top: 18px;
-    bottom: -14px;
+    top: 16px;
+    bottom: -10px;
     width: 2px;
-    background: #22c55e;
+    background: rgba(148, 163, 184, 0.28);
     z-index: 0;
+  }
+
+  .order-card__status-step.is-active .order-card__status-rail {
+    background: #22c55e;
+  }
+
+  .order-card__status-step.is-active .order-card__status-dot--return ~ .order-card__status-rail,
+  .order-card__status-step.is-active .order-card__status-dot--return + .order-card__status-rail {
+    background: #2563eb;
   }
 
   .order-card__status-step:last-child .order-card__status-rail {
@@ -830,7 +853,7 @@
   .order-card__status-copy {
     grid-column: 2;
     display: grid;
-    gap: 4px;
+    gap: 2px;
   }
 
   .order-card__status-title-row {
@@ -852,19 +875,14 @@
 
   .order-card__status-date {
     color: var(--muted);
-    font-size: 0.98rem;
+    font-size: 0.92rem;
   }
 
   .order-card__status-copy p {
     margin: 0;
     color: var(--dark);
-    font-size: 0.92rem;
-    line-height: 1.45;
-  }
-
-  .order-card__status-time {
-    color: var(--muted);
     font-size: 0.9rem;
+    line-height: 1.35;
   }
 
   .order-card__mobile-status-meta {
@@ -873,7 +891,7 @@
     justify-content: space-between;
     gap: 12px;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: 0.86rem;
   }
 
   .order-card__mobile-return-button {
@@ -891,18 +909,7 @@
   }
 
   .order-card__mobile-updates {
-    padding-top: 12px;
-  }
-
-  .order-card__mobile-return-note {
-    display: grid;
-    gap: 4px;
     padding-top: 8px;
-    color: var(--muted);
-  }
-
-  .order-card__mobile-return-note strong {
-    color: var(--dark);
   }
 
   .order-card__timeline-desktop {

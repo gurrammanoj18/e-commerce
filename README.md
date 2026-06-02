@@ -36,11 +36,11 @@ cd backend
 docker compose up -d
 ```
 
-This starts a PostgreSQL 16 database on `localhost:5433` with:
+This starts a PostgreSQL 16 database on `localhost:5432` with:
 
 - database: `voltmart`
 - username: `postgres`
-- password: `postgres`
+- password: the value you set in `SPRING_DATASOURCE_PASSWORD`
 
 ### 2. Backend
 
@@ -67,10 +67,9 @@ npm start
 
 Set `REACT_APP_API_BASE_URL` from `frontend/.env.example`.
 
-## Seed credentials
+## Seed admin
 
-    - Admin: ` admin@voltmart.in ` / `Admin@123`
-- Customer: `customer@voltmart.in` / `Customer@123`
+Set `APP_SEED_ADMIN_EMAIL` and `APP_SEED_ADMIN_PASSWORD` before deployment. Do not deploy the local development admin password to production.
 
 ## Verification
 
@@ -83,7 +82,8 @@ Set `REACT_APP_API_BASE_URL` from `frontend/.env.example`.
 2. In Render, create Docker web services from `render.yaml` or point each service at `backend/Dockerfile` and `frontend/Dockerfile`.
 3. Provision PostgreSQL and copy the connection values into backend environment variables.
 4. Set `APP_JWT_SECRET` to a long secure value.
-5. Update the frontend/backend public URLs if you rename the Render services.
+5. Set `APP_SEED_ADMIN_EMAIL`, `APP_SEED_ADMIN_PASSWORD`, `APP_STORE_FRONTEND_URL`, `APP_CORS_ALLOWED_ORIGINS`, and any email/WhatsApp/Google credentials you plan to enable.
+6. Update the frontend/backend public URLs if you rename the Render services.
 
 ## API and schema docs
 

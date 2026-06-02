@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   getBestSellerProducts,
   getCategories,
   getFeaturedProducts,
   getProductBySlug,
   getProducts,
+  isPromotionalCategory,
 } from "../services/productService";
 import {
   CategorySummary,
@@ -70,7 +71,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
   const [priceRange, setPriceRangeState] = useState({ min: 0, max: 250000 });
   const productsPerPage = 8;
 
-  const loadCatalog = async () => {
+  const loadCatalog = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -83,7 +84,9 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
       setProducts(pagedProducts.content);
       setFeaturedProducts(featured);
       setBestSellerProducts(bestSellers);
-      setCategories(categoryList);
+      setCategories(
+        categoryList.filter((category) => !category.showInNavbar && !isPromotionalCategory(category))
+      );
       const highestPrice = pagedProducts.content.reduce(
         (maxPrice, product) => Math.max(maxPrice, product.price),
         0
@@ -97,11 +100,20 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadCatalog();
-  }, []);
+  }, [loadCatalog]);
+
+  useEffect(() => {
+    const handleCatalogRefresh = () => {
+      void loadCatalog();
+    };
+
+    window.addEventListener("catalog:categories-updated", handleCatalogRefresh);
+    return () => window.removeEventListener("catalog:categories-updated", handleCatalogRefresh);
+  }, [loadCatalog]);
 
   const maxCatalogPrice = useMemo(
     () => products.reduce((maxPrice, product) => Math.max(maxPrice, product.price), 0),

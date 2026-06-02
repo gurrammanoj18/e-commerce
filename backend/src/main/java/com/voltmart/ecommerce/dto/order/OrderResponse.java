@@ -25,6 +25,7 @@ public record OrderResponse(
         BigDecimal totalAmount,
         BigDecimal walletDebitAmount,
         String appliedCouponCode,
+        BigDecimal appliedDiscountAmount,
         BigDecimal walletCreditAmount,
         LocalDateTime walletCreditEligibleAt,
         boolean walletCreditProcessed,

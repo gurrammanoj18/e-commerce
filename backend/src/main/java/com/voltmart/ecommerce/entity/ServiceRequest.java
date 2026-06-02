@@ -43,7 +43,7 @@ public class ServiceRequest {
     @Column(nullable = false, length = 2000)
     private String description;
 
-    @Lob
+    @Column(columnDefinition = "text")
     private String problemImages;
 
     @Column(nullable = false)

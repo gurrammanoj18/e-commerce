@@ -86,6 +86,9 @@ public class Order {
     private String appliedCouponCode;
 
     @Column(precision = 12, scale = 2)
+    private BigDecimal appliedDiscountAmount;
+
+    @Column(precision = 12, scale = 2)
     private BigDecimal walletCreditAmount;
 
     private LocalDateTime walletCreditEligibleAt;

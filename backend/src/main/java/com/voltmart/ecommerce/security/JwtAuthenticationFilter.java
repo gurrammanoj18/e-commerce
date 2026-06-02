@@ -8,7 +8,9 @@ import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -37,10 +39,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String username = jwtService.extractUsername(token);
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                var userDetails = userDetailsService.loadUserByUsername(username);
-                if (jwtService.isTokenValid(token, userDetails)) {
+                String role = jwtService.extractClaim(token, claims -> claims.get("role", String.class));
+                var principal = loadPrincipal(username, role);
+                if (jwtService.isTokenValid(token, principal)) {
                     UsernamePasswordAuthenticationToken authenticationToken =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                            new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
                     authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                 }
@@ -50,5 +53,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private org.springframework.security.core.userdetails.UserDetails loadPrincipal(String username, String role) {
+        try {
+            return userDetailsService.loadUserByUsername(username);
+        } catch (UsernameNotFoundException exception) {
+            if (role == null || role.isBlank()) {
+                throw exception;
+            }
+            return User.withUsername(username)
+                    .password("")
+                    .authorities(new SimpleGrantedAuthority(normalizeRoleAuthority(role)))
+                    .build();
+        }
+    }
+
+    private String normalizeRoleAuthority(String role) {
+        String normalizedRole = role.trim();
+        return normalizedRole.startsWith("ROLE_") ? normalizedRole : "ROLE_" + normalizedRole;
     }
 }

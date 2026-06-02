@@ -18,6 +18,7 @@ import {
   updateAdminOrderStatus,
   updateAdminProduct,
 } from "../services/adminService";
+import { fetchAdminReturnRequests } from "../services/returnService";
 import { getCategories } from "../services/productService";
 import {
   AdminProductPayload,
@@ -27,6 +28,7 @@ import {
   InventoryItem,
   Order,
   Product,
+  ReturnRequest,
 } from "../types/store";
 import { optimizeImageFile } from "../utils/imageUpload";
 
@@ -63,14 +65,13 @@ interface ProductFormState {
 
 const REFRESH_INTERVAL_MS = 15000;
 const ORDER_STATUS_OPTIONS = [
-  "PENDING",
   "CONFIRMED",
   "PROCESSING",
   "SHIPPED",
   "DELIVERED",
   "CANCELLED",
 ];
-const STORE_PICKUP_STATUS_OPTIONS = ["PENDING", "CONFIRMED", "DELIVERED"];
+const STORE_PICKUP_STATUS_OPTIONS = ["CONFIRMED", "DELIVERED"];
 
 const createEmptyFormState = (): ProductFormState => ({
   slug: "",
@@ -224,10 +225,11 @@ const getCurrentView = (pathname: string): AdminView => {
 const AdminDashboardPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { isAdmin, logout, user } = useAuth();
   const currentView = getCurrentView(location.pathname);
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -249,8 +251,18 @@ const AdminDashboardPage: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   const handleAdminRequestError = useCallback((error: unknown, fallback: string) => {
+    if (error instanceof AxiosError && error.response?.status === 401) {
+      toast.error("Your admin session has expired. Please log in again.");
+      logout();
+      navigate("/admin/login", {
+        replace: true,
+        state: { from: location, adminOnly: true },
+      });
+      return;
+    }
+
     if (error instanceof AxiosError && error.response?.status === 403) {
-      toast.error("Your admin session has expired or no longer has access. Please log in again.");
+      toast.error(extractErrorMessage(error, "Admin role is required for this action. Please log in again."));
       logout();
       navigate("/admin/login", {
         replace: true,
@@ -263,6 +275,11 @@ const AdminDashboardPage: React.FC = () => {
   }, [location, logout, navigate]);
 
   const loadAdminData = useCallback(async (options?: { silent?: boolean }) => {
+    if (!isAdmin) {
+      setLoading(false);
+      return;
+    }
+
     if (!options?.silent) {
       setLoading(true);
     }
@@ -275,6 +292,7 @@ const AdminDashboardPage: React.FC = () => {
         inventoryData,
         productData,
         categoryData,
+        returnRequestData,
       ] = await Promise.all([
         fetchDashboardOverview(),
         fetchAdminOrders(),
@@ -282,6 +300,7 @@ const AdminDashboardPage: React.FC = () => {
         fetchAdminInventory(),
         fetchAdminProducts(),
         getCategories(),
+        fetchAdminReturnRequests(),
       ]);
 
       setOverview(overviewData);
@@ -290,6 +309,7 @@ const AdminDashboardPage: React.FC = () => {
       setInventory(inventoryData);
       setProducts(productData);
       setCategories(categoryData);
+      setReturnRequests(returnRequestData);
     } catch (error) {
       handleAdminRequestError(error, "Could not load admin workspace.");
     } finally {
@@ -297,9 +317,18 @@ const AdminDashboardPage: React.FC = () => {
         setLoading(false);
       }
     }
-  }, [handleAdminRequestError]);
+  }, [handleAdminRequestError, isAdmin]);
 
   useEffect(() => {
+    if (!isAdmin) {
+      setLoading(false);
+      navigate("/admin/login", {
+        replace: true,
+        state: { from: location, adminOnly: true },
+      });
+      return;
+    }
+
     void loadAdminData();
 
     const refreshTimer = window.setInterval(() => {
@@ -309,7 +338,7 @@ const AdminDashboardPage: React.FC = () => {
     return () => {
       window.clearInterval(refreshTimer);
     };
-  }, [loadAdminData]);
+  }, [isAdmin, loadAdminData, location, navigate]);
 
   const resetProductForm = () => {
     setEditingProductId(null);
@@ -479,8 +508,8 @@ const AdminDashboardPage: React.FC = () => {
   };
 
   const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
-  const pendingOrders = orders.filter((order) =>
-    ["PENDING", "CONFIRMED", "PROCESSING"].includes(order.status),
+  const openOrders = orders.filter((order) =>
+    ["CONFIRMED", "PROCESSING", "SHIPPED"].includes(order.status),
   ).length;
   const lowStockItems = inventory.filter((item) => item.lowStock);
   const totalUnits = inventory.reduce((sum, item) => sum + item.stockQuantity, 0);
@@ -506,6 +535,96 @@ const AdminDashboardPage: React.FC = () => {
     const orderDate = new Date(order.createdAt);
     return orderDate.toDateString() === today.toDateString();
   });
+  const todaysOrderValue = todaysOrders.reduce(
+    (sum, order) => sum + order.totalAmount,
+    0,
+  );
+  const todaysProductUnits = todaysOrders.reduce(
+    (sum, order) =>
+      sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
+    0,
+  );
+  const todaysAverageOrderValue = todaysOrders.length
+    ? todaysOrderValue / todaysOrders.length
+    : 0;
+  const todaysDeliveredOrders = todaysOrders.filter(
+    (order) => order.status === "DELIVERED",
+  ).length;
+  const todaysOpenOrders = todaysOrders.filter((order) =>
+    ["CONFIRMED", "PROCESSING", "SHIPPED"].includes(order.status),
+  ).length;
+  const todaysUniqueCustomers = new Set(
+    todaysOrders.map((order) => order.email || order.phone || order.shippingName),
+  ).size;
+  const allTimeProductUnits = orders.reduce(
+    (sum, order) =>
+      sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
+    0,
+  );
+  const allTimeAverageOrderValue = orders.length ? totalRevenue / orders.length : 0;
+  const allTimeDeliveredOrders = orders.filter(
+    (order) => order.status === "DELIVERED",
+  ).length;
+  const allTimeOpenOrders = orders.filter((order) =>
+    ["CONFIRMED", "PROCESSING", "SHIPPED"].includes(order.status),
+  ).length;
+  const allTimeUniqueCustomers = new Set(
+    orders.map((order) => order.email || order.phone || order.shippingName),
+  ).size;
+  const salesSnapshot = ordersMode === "users"
+    ? {
+        eyebrow: "All-time analysis",
+        title: "Sales snapshot",
+        ordersLabel: "All-time orders",
+        orderCount: orders.length,
+        orderScope: "All delivery modes",
+        productUnits: allTimeProductUnits,
+        orderValue: totalRevenue,
+        averageOrderValue: allTimeAverageOrderValue,
+        openOrders: allTimeOpenOrders,
+        deliveredOrders: allTimeDeliveredOrders,
+        uniqueCustomers: allTimeUniqueCustomers,
+        valueHint: "Total revenue till now",
+      }
+    : {
+        eyebrow: "Today analysis",
+        title: "Sales snapshot",
+        ordersLabel: "Today's orders",
+        orderCount: todaysOrders.length,
+        orderScope: activeOrderDeliveryFilter === "HOME_DELIVERY" ? "Home delivery" : "Store pickup",
+        productUnits: todaysProductUnits,
+        orderValue: todaysOrderValue,
+        averageOrderValue: todaysAverageOrderValue,
+        openOrders: todaysOpenOrders,
+        deliveredOrders: todaysDeliveredOrders,
+        uniqueCustomers: todaysUniqueCustomers,
+        valueHint: "Revenue from today's orders",
+      };
+  const scopedPulseOrders = ordersMode === "users" ? orders : todaysOrders;
+  const scopedPulseReturns = ordersMode === "users"
+    ? returnRequests
+    : returnRequests.filter((request) => {
+        const today = new Date();
+        const requestDate = new Date(request.createdAt);
+        return requestDate.toDateString() === today.toDateString();
+      });
+  const opsPulse = {
+    eyebrow: ordersMode === "users" ? "All-time pulse" : "Ops pulse",
+    totalOrders: scopedPulseOrders.length,
+    delivered: scopedPulseOrders.filter((order) => order.status === "DELIVERED").length,
+    cancelled: scopedPulseOrders.filter((order) => order.status === "CANCELLED").length,
+    processing: scopedPulseOrders.filter((order) => order.status === "PROCESSING").length,
+    returned: scopedPulseReturns.filter(
+      (request) =>
+        request.requestType === "RETURN" &&
+        ["PICKED_UP", "REFUNDED"].includes(request.status),
+    ).length,
+    replaced: scopedPulseReturns.filter(
+      (request) =>
+        request.requestType === "REPLACEMENT" &&
+        request.status === "DELIVERED",
+    ).length,
+  };
   const homeDeliveryOrderCount = orders.filter(
     (order) => order.deliveryMode === "HOME_DELIVERY",
   ).length;
@@ -530,7 +649,7 @@ const AdminDashboardPage: React.FC = () => {
         <article className="store-card admin-kpi-card">
           <span>Total sales</span>
           <strong>{formatCurrency(totalRevenue)}</strong>
-          <p>{pendingOrders} open orders still need action.</p>
+          <p>{openOrders} open orders still need action.</p>
         </article>
         <article className="store-card admin-kpi-card">
           <span>Catalog coverage</span>
@@ -934,10 +1053,11 @@ const AdminDashboardPage: React.FC = () => {
               Add product
             </button>
           </div>
-          <div className="admin-table">
+          <div className="admin-table admin-table--product-list">
             <table>
               <thead>
                 <tr>
+                  <th>SL No</th>
                   <th>Product</th>
                   <th>Category</th>
                   <th>Subcategory</th>
@@ -948,8 +1068,9 @@ const AdminDashboardPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {products.map((product) => (
+                {products.map((product, index) => (
                   <tr key={product.id}>
+                    <td>{index + 1}</td>
                     <td>
                       <strong>{product.name}</strong>
                       <div>{product.brand}</div>
@@ -1183,7 +1304,7 @@ const AdminDashboardPage: React.FC = () => {
           </>
         ) : (
           <div className="admin-orders-layout">
-            <article className="store-card admin-panel">
+            <article className="store-card admin-panel admin-panel--user-ledger">
               <div className="admin-panel__heading">
                 <div>
                   <span className="eyebrow">Customer ledger</span>
@@ -1191,7 +1312,7 @@ const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
               <div className="admin-user-list">
-                {ordersByUser.map(({ user: adminUser, orders: userOrders }) => (
+                {ordersByUser.map(({ user: adminUser, orders: userOrders }, index) => (
                   <button
                     key={adminUser.id}
                     type="button"
@@ -1202,6 +1323,7 @@ const AdminDashboardPage: React.FC = () => {
                     }}
                     style={{ width: "100%", textAlign: "left", background: "transparent", border: "none" }}
                   >
+                    <span className="admin-user-list__serial">{index + 1}</span>
                     <div>
                       <strong>{adminUser.fullName}</strong>
                       <span>{adminUser.email || adminUser.phoneNumber || "No contact info"}</span>
@@ -1233,6 +1355,17 @@ const AdminDashboardPage: React.FC = () => {
                     <div>
                       <span>Total orders</span>
                       <strong>{selectedUserOrders.orders.length}</strong>
+                    </div>
+                    <div>
+                      <span>Total buy</span>
+                      <strong>
+                        {formatCurrency(
+                          selectedUserOrders.orders.reduce(
+                            (total, order) => total + order.totalAmount,
+                            0,
+                          ),
+                        )}
+                      </strong>
                     </div>
                   </div>
                   <div className="admin-table">
@@ -1269,11 +1402,11 @@ const AdminDashboardPage: React.FC = () => {
         )}
       </section>
 
-      <section className="admin-side-stack">
+      <section className="admin-side-stack admin-side-stack--orders-summary">
         <article className="store-card admin-panel">
           <div className="admin-panel__heading">
             <div>
-              <span className="eyebrow">Ops pulse</span>
+              <span className="eyebrow">{opsPulse.eyebrow}</span>
               <h2>Fulfilment snapshot</h2>
             </div>
           </div>
@@ -1284,21 +1417,74 @@ const AdminDashboardPage: React.FC = () => {
           </div>
           <div className="admin-summary-stack">
             <div>
-              <span>Pending or processing</span>
-              <strong>{pendingOrders}</strong>
+              <span>Total orders</span>
+              <strong>{opsPulse.totalOrders}</strong>
             </div>
             <div>
               <span>Delivered orders</span>
-              <strong>
-                {orders.filter((order) => order.status === "DELIVERED").length}
-              </strong>
+              <strong>{opsPulse.delivered}</strong>
             </div>
             <div>
               <span>Cancelled orders</span>
-              <strong>
-                {orders.filter((order) => order.status === "CANCELLED").length}
-              </strong>
+              <strong>{opsPulse.cancelled}</strong>
             </div>
+            <div>
+              <span>Returned</span>
+              <strong>{opsPulse.returned}</strong>
+            </div>
+            <div>
+              <span>Replaced</span>
+              <strong>{opsPulse.replaced}</strong>
+            </div>
+            <div>
+              <span>Processing</span>
+              <strong>{opsPulse.processing}</strong>
+            </div>
+          </div>
+        </article>
+        <article className="store-card admin-panel">
+          <div className="admin-panel__heading">
+            <div>
+              <span className="eyebrow">{salesSnapshot.eyebrow}</span>
+              <h2>{salesSnapshot.title}</h2>
+            </div>
+          </div>
+          <div className="admin-today-analytics">
+            <article className="admin-today-analytics__card">
+              <span>{salesSnapshot.ordersLabel}</span>
+              <strong>{salesSnapshot.orderCount}</strong>
+              <small>{salesSnapshot.orderScope}</small>
+            </article>
+            <article className="admin-today-analytics__card">
+              <span>Products ordered</span>
+              <strong>{salesSnapshot.productUnits}</strong>
+              <small>Total item quantity</small>
+            </article>
+            <article className="admin-today-analytics__card">
+              <span>Value sold</span>
+              <strong>{formatCurrency(salesSnapshot.orderValue)}</strong>
+              <small>{salesSnapshot.valueHint}</small>
+            </article>
+            <article className="admin-today-analytics__card">
+              <span>Avg order value</span>
+              <strong>{formatCurrency(salesSnapshot.averageOrderValue)}</strong>
+              <small>Sales efficiency</small>
+            </article>
+            <article className="admin-today-analytics__card">
+              <span>Open orders</span>
+              <strong>{salesSnapshot.openOrders}</strong>
+              <small>Needs fulfilment action</small>
+            </article>
+            <article className="admin-today-analytics__card">
+              <span>Delivered</span>
+              <strong>{salesSnapshot.deliveredOrders}</strong>
+              <small>{ordersMode === "users" ? "Completed all time" : "Completed today"}</small>
+            </article>
+            <article className="admin-today-analytics__card">
+              <span>Customers</span>
+              <strong>{salesSnapshot.uniqueCustomers}</strong>
+              <small>{ordersMode === "users" ? "Unique buyers all time" : "Unique buyers today"}</small>
+            </article>
           </div>
         </article>
       </section>

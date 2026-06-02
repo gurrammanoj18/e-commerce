@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { AxiosError } from "axios";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import AdminWorkspaceNav from "../components/admin/AdminWorkspaceNav";
+import { useAuth } from "../contexts/AuthContext";
 import {
   createAdminBanner,
   deleteAdminBanner,
@@ -12,30 +15,53 @@ import { optimizeImageFile } from "../utils/imageUpload";
 import "../styles/pages/AdminDashboardPage.css";
 
 const emptyBanner: BannerPayload = {
-  title: "",
-  subtitle: "",
   imageUrl: "",
-  ctaLabel: "",
-  ctaHref: "",
-  type: "INFO",
-  displayOrder: 1,
-  active: true,
 };
 
 const AdminBannersPage: React.FC = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formState, setFormState] = useState<BannerPayload>(emptyBanner);
   const [uploading, setUploading] = useState(false);
 
-  const loadBanners = async () => {
-    const response = await fetchAdminBanners();
-    setBanners(response);
-  };
+  const handleAdminRequestError = useCallback((error: unknown, fallback: string) => {
+    if (error instanceof AxiosError && error.response?.status === 401) {
+      toast.error("Your admin session has expired. Please log in again.");
+      logout();
+      navigate("/admin/login", {
+        replace: true,
+        state: { from: location, adminOnly: true },
+      });
+      return;
+    }
+
+    if (error instanceof AxiosError && error.response?.status === 403) {
+      toast.error("You do not have permission to manage banners.");
+      return;
+    }
+
+    const responseMessage =
+      error instanceof AxiosError
+        ? (error.response?.data as { message?: string } | undefined)?.message
+        : undefined;
+    toast.error(responseMessage || fallback);
+  }, [location, logout, navigate]);
+
+  const loadBanners = useCallback(async () => {
+    try {
+      const response = await fetchAdminBanners();
+      setBanners(response);
+    } catch (error) {
+      handleAdminRequestError(error, "Unable to load banners right now.");
+    }
+  }, [handleAdminRequestError]);
 
   useEffect(() => {
     void loadBanners();
-  }, []);
+  }, [loadBanners]);
 
   return (
     <section className="shell section page-section">
@@ -51,27 +77,31 @@ const AdminBannersPage: React.FC = () => {
         <div className="admin-panel__heading">
           <div>
             <span className="eyebrow">Banner form</span>
-            <h2>{editingId ? "Edit banner" : "Create small banner"}</h2>
+            <h2>{editingId ? "Edit banner image" : "Upload banner image"}</h2>
           </div>
         </div>
         <form
           className="form-grid"
           onSubmit={async (event) => {
             event.preventDefault();
-            if (editingId) {
-              await updateAdminBanner(editingId, formState);
-              toast.success("Banner updated");
-            } else {
-              await createAdminBanner(formState);
-              toast.success("Banner created");
+            try {
+              if (editingId) {
+                await updateAdminBanner(editingId, formState);
+                toast.success("Banner image updated");
+              } else {
+                await createAdminBanner(formState);
+                toast.success("Banner image created");
+              }
+              setEditingId(null);
+              setFormState(emptyBanner);
+              await loadBanners();
+            } catch (error) {
+              handleAdminRequestError(error, "Unable to save banner right now.");
             }
-            setEditingId(null);
-            setFormState(emptyBanner);
-            await loadBanners();
           }}
         >
-          <label>
-            Upload image
+          <label className="form-grid__wide">
+            Banner image
             <input
               type="file"
               accept="image/*"
@@ -91,31 +121,26 @@ const AdminBannersPage: React.FC = () => {
                   event.target.value = "";
                 }
               }}
-              required
+              required={!formState.imageUrl}
             />
           </label>
-          <label>
-            Display order
-            <input
-              type="number"
-              min={1}
-              value={formState.displayOrder}
-              onChange={(event) =>
-                setFormState((current) => ({ ...current, displayOrder: Number(event.target.value) }))
-              }
-            />
-          </label>
-          <label className="checkout-inline-check">
-            <input
-              type="checkbox"
-              checked={formState.active}
-              onChange={(event) => setFormState((current) => ({ ...current, active: event.target.checked }))}
-            />
-            <span>Banner is active</span>
-          </label>
+          {formState.imageUrl ? (
+            <div className="form-grid__wide admin-image-preview-grid">
+              <div className="admin-image-preview-card">
+                <img src={formState.imageUrl} alt="Banner preview" />
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() => setFormState((current) => ({ ...current, imageUrl: "" }))}
+                >
+                  Remove image
+                </button>
+              </div>
+            </div>
+          ) : null}
           <div className="admin-form-actions">
             <button className="button" type="submit" disabled={uploading}>
-              {editingId ? "Update banner" : "Create banner"}
+              {editingId ? "Update image" : "Create image"}
             </button>
           </div>
         </form>
@@ -132,10 +157,7 @@ const AdminBannersPage: React.FC = () => {
           <table>
             <thead>
               <tr>
-                <th>Banner</th>
-                <th>Type</th>
-                <th>Order</th>
-                <th>Status</th>
+                <th>Image</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -143,12 +165,16 @@ const AdminBannersPage: React.FC = () => {
               {banners.map((banner) => (
                 <tr key={banner.id}>
                   <td>
-                    <strong>{banner.title}</strong>
-                    <div>{banner.subtitle}</div>
+                    {banner.imageUrl ? (
+                      <img
+                        src={banner.imageUrl}
+                        alt={`Banner ${banner.id}`}
+                        style={{ width: "100%", maxWidth: 420, borderRadius: 18, display: "block" }}
+                      />
+                    ) : (
+                      "No image"
+                    )}
                   </td>
-                  <td>{banner.type}</td>
-                  <td>{banner.displayOrder}</td>
-                  <td>{banner.active ? "Active" : "Hidden"}</td>
                   <td>
                     <div className="admin-table-actions">
                       <button
@@ -157,14 +183,7 @@ const AdminBannersPage: React.FC = () => {
                         onClick={() => {
                           setEditingId(banner.id);
                           setFormState({
-                            title: banner.title || "",
-                            subtitle: banner.subtitle || "",
                             imageUrl: banner.imageUrl || "",
-                            ctaLabel: banner.ctaLabel || "",
-                            ctaHref: banner.ctaHref || "",
-                            type: "INFO",
-                            displayOrder: banner.displayOrder,
-                            active: banner.active,
                           });
                         }}
                       >
@@ -174,9 +193,18 @@ const AdminBannersPage: React.FC = () => {
                         className="link-button admin-danger-button"
                         type="button"
                         onClick={async () => {
-                          await deleteAdminBanner(banner.id);
-                          toast.success("Banner deleted");
-                          await loadBanners();
+                          try {
+                            await deleteAdminBanner(banner.id);
+                            setBanners((current) => current.filter((item) => item.id !== banner.id));
+                            if (editingId === banner.id) {
+                              setEditingId(null);
+                              setFormState(emptyBanner);
+                            }
+                            toast.success("Banner image deleted");
+                            await loadBanners();
+                          } catch (error) {
+                            handleAdminRequestError(error, "Unable to delete banner right now.");
+                          }
                         }}
                       >
                         Delete

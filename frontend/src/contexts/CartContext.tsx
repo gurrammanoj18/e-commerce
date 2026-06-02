@@ -43,7 +43,7 @@ const isAuthorizationError = (error: unknown) =>
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { startProcessing, stopProcessing } = useProcessing();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -102,17 +102,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         }))
       );
     } catch (error) {
-      if (isAuthorizationError(error)) {
-        setItems([]);
-        logout();
-        return;
-      }
-
       setItems([]);
     } finally {
       setLoading(false);
     }
-  }, [logout, useRemoteCart]);
+  }, [useRemoteCart]);
 
   useEffect(() => {
     if (useRemoteCart) {
@@ -142,7 +136,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (error) {
         if (isAuthorizationError(error)) {
           setItems([]);
-          logout();
           return;
         }
 
@@ -182,7 +175,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
           setItems(previousItems);
           if (isAuthorizationError(error)) {
             setItems([]);
-            logout();
             return;
           }
 
@@ -221,7 +213,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         } catch (error) {
           if (isAuthorizationError(error)) {
             setItems([]);
-            logout();
             return;
           }
 

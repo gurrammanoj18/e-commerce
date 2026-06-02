@@ -133,6 +133,17 @@ const CheckoutPage: React.FC = () => {
       ) ?? null,
     [checkoutCoupons, formState.couponCode],
   );
+  const couponDiscountAmount = useMemo(() => {
+    if (selectedCoupon?.type !== "ORDER_DISCOUNT") {
+      return 0;
+    }
+    const discountPercentage = selectedCoupon.discountPercentage ?? 0;
+    if (discountPercentage <= 0) {
+      return 0;
+    }
+    return Math.min(Math.round(subtotal * discountPercentage) / 100, subtotal);
+  }, [selectedCoupon, subtotal]);
+  const discountedSubtotal = Math.max(subtotal - couponDiscountAmount, 0);
   const hasSavedAddress = Boolean(selectedAddress);
   const activePostalCode = (selectedAddress?.postalCode ?? formState.postalCode).trim();
 
@@ -186,9 +197,13 @@ const CheckoutPage: React.FC = () => {
     };
   }, [activePostalCode, isStorePickup]);
 
-  const shipping = isStorePickup ? 0 : subtotal > 4999 ? 0 : 499;
-  const tax = Math.round(subtotal * 0.18);
-  const total = subtotal + shipping + tax;
+  const shipping = isStorePickup ? 0 : discountedSubtotal >= 4999 ? 0 : 499;
+  const tax = Math.round(discountedSubtotal * 0.18 * 100) / 100;
+  const total = discountedSubtotal + shipping + tax;
+  const walletDebitPreview = formState.useWalletBalance && wallet?.balance
+    ? Math.min(wallet.balance, total)
+    : 0;
+  const payableNow = Math.max(total - walletDebitPreview, 0);
 
   const extractCheckoutError = (error: unknown) => {
     if (error instanceof AxiosError) {
@@ -350,7 +365,11 @@ const CheckoutPage: React.FC = () => {
             Slot: {placedOrder?.deliverySlot || "Store pickup window"} | Fulfilment:{" "}
             {placedOrder?.deliveryMode === "STORE_PICKUP" ? "Pick up at store" : "Home delivery"}
           </p>
-          {placedOrder?.walletCreditAmount ? (
+          {placedOrder?.appliedDiscountAmount ? (
+            <p>
+              Coupon {placedOrder.appliedCouponCode} saved you {formatCurrency(placedOrder.appliedDiscountAmount)} instantly at checkout.
+            </p>
+          ) : placedOrder?.walletCreditAmount ? (
             <p>
               Coupon {placedOrder.appliedCouponCode} will credit {formatCurrency(placedOrder.walletCreditAmount)} to wallet within one hour.
             </p>
@@ -542,10 +561,13 @@ const CheckoutPage: React.FC = () => {
                       <strong>Apply Coupon</strong>
                       {selectedCoupon ? (
                         <small>
-                          {selectedCoupon.code} · {formatCurrency(selectedCoupon.amount)} cashback
+                          {selectedCoupon.code} ·{" "}
+                          {selectedCoupon.type === "ORDER_DISCOUNT"
+                            ? `${selectedCoupon.discountPercentage ?? 0}% instant discount`
+                            : `${formatCurrency(selectedCoupon.amount)} cashback`}
                         </small>
                       ) : checkoutCoupons.length ? (
-                        <small>Select a coupon for wallet cashback</small>
+                        <small>Select a coupon for instant savings or wallet cashback</small>
                       ) : (
                         <small>No coupons available right now</small>
                       )}
@@ -577,10 +599,17 @@ const CheckoutPage: React.FC = () => {
                           <span>
                             <strong>{coupon.code}</strong>
                             <small>
-                              {coupon.description?.trim() || "Wallet cashback after order placement"}
+                              {coupon.description?.trim()
+                                || (coupon.type === "ORDER_DISCOUNT"
+                                  ? "Instant discount applied before payment"
+                                  : "Wallet cashback after order placement")}
                             </small>
                           </span>
-                          <em>{formatCurrency(coupon.amount)} cashback</em>
+                          <em>
+                            {coupon.type === "ORDER_DISCOUNT"
+                              ? `${coupon.discountPercentage ?? 0}% off`
+                              : `${formatCurrency(coupon.amount)} cashback`}
+                          </em>
                         </button>
                       );
                     })}
@@ -643,6 +672,12 @@ const CheckoutPage: React.FC = () => {
               <span>Subtotal</span>
               <strong>{formatCurrency(subtotal)}</strong>
             </div>
+            {couponDiscountAmount > 0 ? (
+              <div>
+                <span>Instant discount</span>
+                <strong>-{formatCurrency(couponDiscountAmount)}</strong>
+              </div>
+            ) : null}
             <div>
               <span>Shipping</span>
               <strong>
@@ -660,17 +695,15 @@ const CheckoutPage: React.FC = () => {
             {formState.useWalletBalance && wallet?.balance ? (
               <div>
                 <span>Wallet used</span>
-                <strong>-{formatCurrency(Math.min(wallet.balance, total))}</strong>
+                <strong>-{formatCurrency(walletDebitPreview)}</strong>
               </div>
             ) : null}
             <div className="summary-total">
               <span>Payable now</span>
-              <strong>
-                {formatCurrency(formState.useWalletBalance && wallet?.balance ? Math.max(total - wallet.balance, 0) : total)}
-              </strong>
+              <strong>{formatCurrency(payableNow)}</strong>
             </div>
             <p className="admin-field-hint">
-              Checkout coupon codes add wallet cashback after order placement.
+              Checkout coupons can either add wallet cashback after order placement or reduce the total instantly.
             </p>
           </aside>
         </div>

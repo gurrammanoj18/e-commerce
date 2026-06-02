@@ -60,6 +60,7 @@ const ProductsPage: React.FC = () => {
 
     if (isDiscoverMode) {
       setSearchTerm(nextSearch);
+      setSelectedCategory(nextCategory);
       setDraftFilters((current) => ({
         ...current,
         category: nextCategory,
@@ -69,7 +70,7 @@ const ProductsPage: React.FC = () => {
     }
 
     appliedQuerySignature.current = signature;
-  }, [isDiscoverMode, resetFilters, searchParams, setSearchTerm]);
+  }, [isDiscoverMode, resetFilters, searchParams, setSearchTerm, setSelectedCategory]);
 
   useEffect(() => {
     if (!isFilterOpen) {

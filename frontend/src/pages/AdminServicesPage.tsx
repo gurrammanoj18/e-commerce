@@ -40,13 +40,18 @@ const AdminServicesPage: React.FC = () => {
   const [pincodeForm, setPincodeForm] = useState<ServiceablePincodePayload>(emptyPincode);
 
   const handleAdminRequestError = useCallback((error: unknown, fallback: string) => {
-    if (error instanceof AxiosError && error.response?.status === 403) {
-      toast.error("Your admin session has expired or no longer has access. Please log in again.");
+    if (error instanceof AxiosError && error.response?.status === 401) {
+      toast.error("Your admin session has expired. Please log in again.");
       logout();
       navigate("/admin/login", {
         replace: true,
         state: { from: location, adminOnly: true },
       });
+      return;
+    }
+
+    if (error instanceof AxiosError && error.response?.status === 403) {
+      toast.error("You do not have permission to manage services.");
       return;
     }
 

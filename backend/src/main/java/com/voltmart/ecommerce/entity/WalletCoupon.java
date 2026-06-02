@@ -1,6 +1,7 @@
 package com.voltmart.ecommerce.entity;
 
 import com.voltmart.ecommerce.entity.enums.WalletCouponType;
+import com.voltmart.ecommerce.entity.enums.WalletCouponRedemptionFrequency;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -37,10 +38,23 @@ public class WalletCoupon {
     private String assignedCustomerEmails;
 
     @Column(nullable = false)
+    @Builder.Default
+    private Integer discountPercentage = 0;
+
+    @Column(nullable = false)
     private boolean active;
 
     @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
+
+    @Column(nullable = false)
     private Integer rewardDelayMinutes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private WalletCouponRedemptionFrequency redemptionFrequency = WalletCouponRedemptionFrequency.ONCE;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

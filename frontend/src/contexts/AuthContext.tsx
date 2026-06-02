@@ -10,6 +10,7 @@ import {
   updateDeliveryPreference as updateDeliveryPreferenceRequest,
   verifyOtp as verifyOtpRequest,
 } from "../services/authService";
+import PincodeServiceChecker from "../components/shared/PincodeServiceChecker";
 
 import { useProcessing } from "./ProcessingContext";
 import { AuthUser, DeliveryMode, OtpChallengeResponse } from "../types/store";
@@ -114,13 +115,42 @@ const isAuthorizationError = (error: unknown) =>
   error instanceof AxiosError &&
   (error.response?.status === 401 || error.response?.status === 403);
 
+const readStoredAuth = () => {
+  const isAdminArea = window.location.pathname.startsWith("/admin");
+  const storedUser = window.localStorage.getItem(AUTH_STORAGE_KEY);
+  const storedToken = window.localStorage.getItem(TOKEN_STORAGE_KEY);
+
+  if (!storedUser || !storedToken) {
+    return { user: null as AuthUser | null, token: null as string | null };
+  }
+
+  try {
+    const parsedUser = JSON.parse(storedUser) as AuthUser;
+    if (!isTokenValidForUser(storedToken, parsedUser)) {
+      return { user: null as AuthUser | null, token: null as string | null };
+    }
+
+    if (parsedUser.role === "ROLE_ADMIN" && !isAdminArea) {
+      window.localStorage.removeItem(AUTH_STORAGE_KEY);
+      window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+      return { user: null as AuthUser | null, token: null as string | null };
+    }
+
+    return { user: parsedUser, token: storedToken };
+  } catch {
+    return { user: null as AuthUser | null, token: null as string | null };
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const initialAuth = readStoredAuth();
+  const [user, setUser] = useState<AuthUser | null>(initialAuth.user);
+  const [token, setToken] = useState<string | null>(initialAuth.token);
+  const [loading, setLoading] = useState(false);
   const [showDeliveryPreferenceModal, setShowDeliveryPreferenceModal] = useState(false);
+  const [showPincodeCheckerModal, setShowPincodeCheckerModal] = useState(false);
   const [showProfileCompletionModal, setShowProfileCompletionModal] = useState(false);
   const [pendingDeliveryPreferencePrompt, setPendingDeliveryPreferencePrompt] = useState(false);
   const [deliveryPreferenceError, setDeliveryPreferenceError] = useState("");
@@ -136,6 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const storedToken = window.localStorage.getItem(TOKEN_STORAGE_KEY);
 
     if (!storedUser || !storedToken) {
+      setApiAuthToken(null);
       setUser(null);
       setToken(null);
       setLoading(false);
@@ -144,18 +175,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const parsedUser = JSON.parse(storedUser) as AuthUser;
-      if (!isTokenValidForUser(storedToken, parsedUser)) {
-        window.localStorage.removeItem(AUTH_STORAGE_KEY);
-        window.localStorage.removeItem(TOKEN_STORAGE_KEY);
-        setApiAuthToken(null);
-        setUser(null);
-        setToken(null);
-        setLoading(false);
-        return;
-      }
-
       const isAdminArea = window.location.pathname.startsWith("/admin");
-      if (parsedUser.role === "ROLE_ADMIN" && !isAdminArea) {
+
+      if (!isTokenValidForUser(storedToken, parsedUser) || (parsedUser.role === "ROLE_ADMIN" && !isAdminArea)) {
         window.localStorage.removeItem(AUTH_STORAGE_KEY);
         window.localStorage.removeItem(TOKEN_STORAGE_KEY);
         setApiAuthToken(null);
@@ -377,6 +399,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       persistAuth(response.user, response.token);
       setShowDeliveryPreferenceModal(false);
+      setShowPincodeCheckerModal(false);
       setPendingDeliveryPreferencePrompt(false);
       return {};
     } catch (error) {
@@ -386,6 +409,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         window.setTimeout(() => {
           persistAuth(null, null);
           setShowDeliveryPreferenceModal(false);
+          setShowPincodeCheckerModal(false);
           setPendingDeliveryPreferencePrompt(false);
         }, 900);
         return { error: message };
@@ -404,6 +428,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = () => {
     persistAuth(null, null);
     setShowDeliveryPreferenceModal(false);
+    setShowPincodeCheckerModal(false);
     setShowProfileCompletionModal(false);
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
@@ -448,14 +473,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               <button
                 type="button"
                 className="delivery-preference-modal__button"
-                onClick={() => void updateDeliveryPreference("STORE_PICKUP")}
+                onClick={() => {
+                  void updateDeliveryPreference("STORE_PICKUP");
+                }}
               >
                 Pick up at store
               </button>
               <button
                 type="button"
                 className="delivery-preference-modal__button delivery-preference-modal__button--primary"
-                onClick={() => void updateDeliveryPreference("HOME_DELIVERY")}
+                onClick={() => {
+                  void updateDeliveryPreference("HOME_DELIVERY").then((result) => {
+                    if (!result.error) {
+                      setShowPincodeCheckerModal(true);
+                    }
+                  });
+                }}
               >
                 Home delivery
               </button>
@@ -466,6 +499,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           </div>
         </div>
       ) : null}
+      <PincodeServiceChecker
+        open={showPincodeCheckerModal && user?.role === "ROLE_CUSTOMER"}
+        onClose={() => setShowPincodeCheckerModal(false)}
+      />
     </AuthContext.Provider>
   );
 };

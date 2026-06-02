@@ -17,6 +17,7 @@ import { optimizeImageFile } from "../utils/imageUpload";
 const emptyForm = {
   name: "",
   image: "",
+  showInNavbar: false,
 };
 
 const slugify = (value: string) =>
@@ -51,13 +52,18 @@ const AdminCategoriesPage: React.FC = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleAdminRequestError = useCallback((error: unknown, fallback: string) => {
-    if (error instanceof AxiosError && error.response?.status === 403) {
-      toast.error("Your admin session has expired or no longer has access. Please log in again.");
+    if (error instanceof AxiosError && error.response?.status === 401) {
+      toast.error("Your admin session has expired. Please log in again.");
       logout();
       navigate("/admin/login", {
         replace: true,
         state: { from: location, adminOnly: true },
       });
+      return;
+    }
+
+    if (error instanceof AxiosError && error.response?.status === 403) {
+      toast.error(extractErrorMessage(error, "You do not have permission to manage categories."));
       return;
     }
 
@@ -81,6 +87,7 @@ const AdminCategoriesPage: React.FC = () => {
     category,
     ...(category.subcategories || []),
   ]);
+  const isPromoCategory = formState.showInNavbar;
 
   const handleCategoryImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -127,7 +134,7 @@ const AdminCategoriesPage: React.FC = () => {
                 toast.error("Enter a category name.");
                 return;
               }
-              if (!formState.image) {
+              if (!isPromoCategory && !formState.image) {
                 toast.error("Upload a category image.");
                 return;
               }
@@ -138,7 +145,8 @@ const AdminCategoriesPage: React.FC = () => {
                 description: "",
                 icon: "",
                 parentId: null,
-                image: formState.image,
+                image: isPromoCategory ? "" : formState.image,
+                showInNavbar: formState.showInNavbar,
               };
 
               try {
@@ -152,6 +160,7 @@ const AdminCategoriesPage: React.FC = () => {
                 setFormState(emptyForm);
                 setEditingId(null);
                 await loadCategories();
+                window.dispatchEvent(new Event("catalog:categories-updated"));
               } catch (error) {
                 handleAdminRequestError(error, "Unable to save category right now.");
               }
@@ -168,16 +177,37 @@ const AdminCategoriesPage: React.FC = () => {
             </label>
             <label>
               Cover image
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(event) => void handleCategoryImageUpload(event)}
-              />
+              {isPromoCategory ? (
+                <span className="admin-form-hint">Not required for promo categories.</span>
+              ) : (
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => void handleCategoryImageUpload(event)}
+                />
+              )}
             </label>
             <label className="form-grid__wide">
               Generated slug
               <input value={slugify(formState.name)} readOnly placeholder="appliances" />
             </label>
+            <label className="form-grid__wide admin-inline-check">
+              <input
+                type="checkbox"
+                checked={formState.showInNavbar}
+                onChange={(event) =>
+                  setFormState((current) => ({
+                    ...current,
+                    showInNavbar: event.target.checked,
+                    image: event.target.checked ? "" : current.image,
+                  }))
+                }
+              />
+              <span>Show in navbar</span>
+            </label>
+            <p className="form-grid__wide admin-form-hint">
+              Promo categories are text-only and will appear in the navbar below search.
+            </p>
             {formState.image ? (
               <div className="form-grid__wide admin-image-preview-grid">
                 <div className="admin-image-preview-card">
@@ -228,6 +258,7 @@ const AdminCategoriesPage: React.FC = () => {
                   <th>Image</th>
                   <th>Name</th>
                   <th>Slug</th>
+                  <th>Navbar</th>
                   <th>Products</th>
                   <th>Actions</th>
                 </tr>
@@ -248,21 +279,23 @@ const AdminCategoriesPage: React.FC = () => {
                     </td>
                     <td>{category.name}</td>
                     <td>{category.slug}</td>
+                    <td>{category.showInNavbar ? "Yes" : "No"}</td>
                     <td>{category.count}</td>
                     <td>
                       <div className="admin-table-actions">
                         <button
                           className="link-button"
                           type="button"
-                          onClick={() => {
+                        onClick={() => {
                             setEditingId(category.id || null);
                             setFormState({
-                              name: category.name,
-                              image: category.image || "",
-                            });
-                          }}
-                        >
-                          Edit
+                            name: category.name,
+                            image: category.showInNavbar ? "" : category.image || "",
+                            showInNavbar: Boolean(category.showInNavbar),
+                          });
+                        }}
+                      >
+                        Edit
                         </button>
                         <button
                           className="link-button admin-danger-button"
@@ -275,6 +308,7 @@ const AdminCategoriesPage: React.FC = () => {
                               await deleteAdminCategory(category.id);
                               toast.success("Category deleted");
                               await loadCategories();
+                              window.dispatchEvent(new Event("catalog:categories-updated"));
                             } catch (error) {
                               handleAdminRequestError(error, "Unable to delete category right now.");
                             }

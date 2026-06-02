@@ -29,8 +29,12 @@ public class Category {
 
     private String icon;
 
-    @Lob
+    @Column(columnDefinition = "text")
     private String image;
+
+    @Column(name = "show_in_navbar", nullable = false)
+    @Builder.Default
+    private boolean showInNavbar = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")

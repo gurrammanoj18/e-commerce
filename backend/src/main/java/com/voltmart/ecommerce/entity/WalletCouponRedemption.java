@@ -35,6 +35,8 @@ public class WalletCouponRedemption {
     @Column(nullable = false)
     private Integer redeemedCount;
 
+    private LocalDateTime lastRedeemedAt;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 

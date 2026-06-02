@@ -23,6 +23,12 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+const formatStatus = (value: string) =>
+  value
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+
 const ReturnsPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([]);
@@ -243,8 +249,7 @@ const ReturnsPage: React.FC = () => {
               </div>
             ) : (
               <div className="order-card__copy form-grid__wide">
-                Pick a delivered order first. Orders that are still pending, shipped, or in transit
-                cannot be returned yet.
+                Pick a delivered order first. Only delivered orders can be returned.
               </div>
             )}
 
@@ -274,14 +279,14 @@ const ReturnsPage: React.FC = () => {
                 <div key={request.id} className="order-card__item" style={{ gridTemplateColumns: "1fr" }}>
                   <div className="order-card__item-content">
                     <strong>
-                      Order #{request.orderNumber.slice(0, 8)} · {request.status}
+                      Order #{request.orderNumber.slice(0, 8)} · {formatStatus(request.status)}
                     </strong>
                     <span className="order-card__item-status">Reason: {request.reason}</span>
                     <span className="order-card__item-status">
-                      Type: {request.requestType.replace(/_/g, " ")}
+                      Type: {formatStatus(request.requestType)}
                     </span>
                     <span className="order-card__item-status">
-                      Resolution: {request.preferredResolution.replace(/_/g, " ")}
+                      Resolution: {formatStatus(request.preferredResolution)}
                     </span>
                     <span className="order-card__item-status">
                       {new Date(request.createdAt).toLocaleString()}

@@ -17,7 +17,7 @@ public class BannerController {
     private final BannerService bannerService;
 
     @GetMapping
-    public List<BannerResponse> getActiveBanners() {
-        return bannerService.getActiveBanners();
+    public List<BannerResponse> getBanners() {
+        return bannerService.getAllBanners();
     }
 }

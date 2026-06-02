@@ -240,4 +240,5 @@ public class AdminDashboardController {
     public void deleteServiceablePincode(@PathVariable Long id) {
         serviceablePincodeService.deletePincode(id);
     }
+
 }

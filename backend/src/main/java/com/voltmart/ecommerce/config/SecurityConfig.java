@@ -1,9 +1,11 @@
 package com.voltmart.ecommerce.config;
 
 import com.voltmart.ecommerce.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -35,14 +37,27 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.getWriter().write("{\"message\":\"Authentication is required.\"}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.getWriter().write("{\"message\":\"Admin role is required for this action.\"}");
+                        }))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/auth/delivery-preference").authenticated()
                         .requestMatchers(
-                                "/api/auth", "/api/auth/**",
+                        "/api/auth", "/api/auth/**",
+                        "/api/banners", "/api/banners/**",
                         "/api/products", "/api/products/**",
                         "/api/categories", "/api/categories/**",
-                        "/api/banners", "/api/banners/**",
                         "/api/pincode-serviceability", "/api/pincode-serviceability/**",
                         "/api/support", "/api/support/**",
                         "/api/orders/checkout"

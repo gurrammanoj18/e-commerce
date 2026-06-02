@@ -18,6 +18,7 @@ import com.voltmart.ecommerce.repository.ReturnRequestRepository;
 import com.voltmart.ecommerce.repository.UserRepository;
 import com.voltmart.ecommerce.repository.WalletTransactionRepository;
 import com.voltmart.ecommerce.service.CurrentUserService;
+import com.voltmart.ecommerce.service.EmailNotificationService;
 import com.voltmart.ecommerce.service.ReturnRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,15 +28,33 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class ReturnRequestServiceImpl implements ReturnRequestService {
+    private static final Set<ReturnRequestStatus> REPLACEMENT_STATUSES = Set.of(
+            ReturnRequestStatus.UNDER_REVIEW,
+            ReturnRequestStatus.READY_TO_PICKUP,
+            ReturnRequestStatus.PICKUP_SCHEDULED,
+            ReturnRequestStatus.SHIPPED,
+            ReturnRequestStatus.DELIVERED,
+            ReturnRequestStatus.REJECTED
+    );
+    private static final Set<ReturnRequestStatus> RETURN_STATUSES = Set.of(
+            ReturnRequestStatus.CONFIRMED,
+            ReturnRequestStatus.READY_TO_PICKUP,
+            ReturnRequestStatus.PICKUP_SCHEDULED,
+            ReturnRequestStatus.PICKED_UP,
+            ReturnRequestStatus.REFUNDED
+    );
+
     private final ReturnRequestRepository returnRequestRepository;
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final WalletTransactionRepository walletTransactionRepository;
     private final CurrentUserService currentUserService;
+    private final EmailNotificationService emailNotificationService;
 
     @Override
     @Transactional
@@ -59,7 +78,7 @@ public class ReturnRequestServiceImpl implements ReturnRequestService {
         ReturnRequest returnRequest = returnRequestRepository.save(ReturnRequest.builder()
                 .order(order)
                 .user(initiatedByAdmin ? order.getUser() : user)
-                .status(ReturnRequestStatus.REQUESTED)
+                .status(getInitialStatus(request.requestType()))
                 .requestType(request.requestType())
                 .preferredResolution(request.preferredResolution())
                 .reason(request.reason().trim())
@@ -69,6 +88,7 @@ public class ReturnRequestServiceImpl implements ReturnRequestService {
                 .refundProcessed(false)
                 .build());
 
+        emailNotificationService.sendReturnRequestNotification(returnRequest);
         return toResponse(returnRequest);
     }
 
@@ -95,13 +115,17 @@ public class ReturnRequestServiceImpl implements ReturnRequestService {
         ReturnRequest returnRequest = returnRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Return request not found"));
 
+        ReturnRequestStatus previousStatus = returnRequest.getStatus();
+        validateStatusForType(returnRequest.getRequestType(), request.status());
         returnRequest.setStatus(request.status());
         returnRequest.setAdminNote(normalizeText(request.adminNote()));
         returnRequest.setReviewedAt(LocalDateTime.now());
         if (request.status() == ReturnRequestStatus.REFUNDED) {
             processRefund(returnRequest);
         }
-        return toResponse(returnRequestRepository.save(returnRequest));
+        ReturnRequest savedRequest = returnRequestRepository.save(returnRequest);
+        emailNotificationService.sendReturnRequestStatusUpdateNotification(savedRequest, previousStatus);
+        return toResponse(savedRequest);
     }
 
     private void processRefund(ReturnRequest returnRequest) {
@@ -185,6 +209,21 @@ public class ReturnRequestServiceImpl implements ReturnRequestService {
 
         if (requestType == ReturnRequestType.RETURN && preferredResolution == ReturnResolution.REPLACEMENT) {
             throw new BadRequestException("Return requests cannot use replacement resolution");
+        }
+    }
+
+    private ReturnRequestStatus getInitialStatus(ReturnRequestType requestType) {
+        return requestType == ReturnRequestType.REPLACEMENT
+                ? ReturnRequestStatus.UNDER_REVIEW
+                : ReturnRequestStatus.CONFIRMED;
+    }
+
+    private void validateStatusForType(ReturnRequestType requestType, ReturnRequestStatus status) {
+        Set<ReturnRequestStatus> allowedStatuses =
+                requestType == ReturnRequestType.REPLACEMENT ? REPLACEMENT_STATUSES : RETURN_STATUSES;
+        if (!allowedStatuses.contains(status)) {
+            String requestLabel = requestType == ReturnRequestType.REPLACEMENT ? "replacement" : "return";
+            throw new BadRequestException("Status " + status.name() + " is not valid for a " + requestLabel + " request");
         }
     }
 }

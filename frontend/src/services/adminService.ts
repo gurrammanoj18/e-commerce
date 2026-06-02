@@ -19,7 +19,7 @@ import {
   WalletCouponPayload,
   WalletCouponRedemption,
 } from "../types/store";
-import { transformProduct } from "./productService";
+import { resolveShowInNavbar, transformProduct } from "./productService";
 
 const mapCategory = (category: any): CategorySummary => ({
   id: category.id,
@@ -29,6 +29,7 @@ const mapCategory = (category: any): CategorySummary => ({
   description: category.description,
   icon: category.icon,
   image: category.image,
+  showInNavbar: resolveShowInNavbar(category),
   parentId: category.parentId,
   isLeaf: category.leaf ?? category.isLeaf,
   subcategories: (category.subcategories || []).map(mapCategory),

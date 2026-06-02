@@ -25,38 +25,44 @@ const formatDateTime = (value: string) =>
 
 const formatRequestType = (value: string) => (value === "REPLACEMENT" ? "Replacement" : "Return");
 const formatStatus = (value: string) => value.replace(/_/g, " ");
+const getStatusLabel = (value: string) => {
+  const labels: Record<string, string> = {
+    REQUESTED: "Requested",
+    UNDER_REVIEW: "Under review",
+    CONFIRMED: "Confirmed",
+    APPROVED: "Approved",
+    READY_TO_PICKUP: "Return pickup",
+    PICKUP_SCHEDULED: "Scheduled",
+    PICKED_UP: "Returned",
+    SHIPPED: "Shipped",
+    DELIVERED: "Delivered",
+    REFUNDED: "Refunded",
+    REJECTED: "Rejected",
+    CLOSED: "Closed",
+  };
+
+  return labels[value] || formatStatus(value);
+};
 
 const TYPE_FILTERS: Array<"ALL" | ReturnRequestType> = ["ALL", "RETURN", "REPLACEMENT"];
 
 const getStatusOptionsForType = (type: ReturnRequestType) =>
   type === "REPLACEMENT"
     ? [
-        "REQUESTED",
         "UNDER_REVIEW",
         "READY_TO_PICKUP",
         "PICKUP_SCHEDULED",
         "SHIPPED",
         "DELIVERED",
         "REJECTED",
-        "CLOSED",
       ]
     : [
-        "REQUESTED",
-        "UNDER_REVIEW",
-        "APPROVED",
+        "CONFIRMED",
         "READY_TO_PICKUP",
         "PICKUP_SCHEDULED",
         "PICKED_UP",
-        "DELIVERED",
         "REFUNDED",
-        "REJECTED",
-        "CLOSED",
       ];
-
-const getStatusFlow = (type: ReturnRequestType) =>
-  type === "REPLACEMENT"
-    ? ["REQUESTED", "UNDER_REVIEW", "READY_TO_PICKUP", "SHIPPED", "DELIVERED"]
-    : ["REQUESTED", "UNDER_REVIEW", "APPROVED", "PICKUP_SCHEDULED", "PICKED_UP", "REFUNDED"];
 
 const AdminReturnsPage: React.FC = () => {
   const { logout } = useAuth();
@@ -187,8 +193,6 @@ const AdminReturnsPage: React.FC = () => {
             <div className="admin-returns__cards">
               {filteredRequests.map((request) => {
                 const statusOptions = getStatusOptionsForType(request.requestType);
-                const flow = getStatusFlow(request.requestType);
-                const activeIndex = flow.indexOf(request.status);
 
                 return (
                   <article key={request.id} className="admin-returns__card">
@@ -199,7 +203,7 @@ const AdminReturnsPage: React.FC = () => {
                       </div>
                       <div className="admin-returns__card-badges">
                         <span className="order-card__badge order-card__badge--info">
-                          {formatStatus(request.status)}
+                          {getStatusLabel(request.status)}
                         </span>
                         <span className="order-card__badge order-card__badge--neutral">
                           {request.initiatedByAdmin ? "Created by admin" : "Customer request"}
@@ -233,18 +237,6 @@ const AdminReturnsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="admin-returns__timeline">
-                      {flow.map((step, index) => (
-                        <div
-                          key={step}
-                          className={index <= activeIndex ? "admin-returns__timeline-step is-active" : "admin-returns__timeline-step"}
-                        >
-                          <span className="admin-returns__timeline-dot" />
-                          <span>{formatStatus(step)}</span>
-                        </div>
-                      ))}
-                    </div>
-
                     <div className="admin-returns__controls">
                       <label>
                         Status
@@ -259,7 +251,7 @@ const AdminReturnsPage: React.FC = () => {
                         >
                           {statusOptions.map((status) => (
                             <option key={status} value={status}>
-                              {status}
+                              {getStatusLabel(status)}
                             </option>
                           ))}
                         </select>

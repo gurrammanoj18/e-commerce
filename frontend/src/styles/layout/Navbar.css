@@ -225,8 +225,8 @@
 .delivery-switch {
   min-height: 42px;
   padding: 0 16px;
-  border: 0;
-  border-radius: 999px;
+  border: 1px solid #000;
+  border-radius: 5px;
   background: transparent;
   font-weight: 700;
   color: var(--text);
@@ -590,6 +590,10 @@
   color: #fff;
 }
 
+.site-header--solid .delivery-switch {
+  border-color: #fff;
+}
+
 .site-header--solid .site-nav__links a.active,
 .site-header--solid .site-nav__links a:hover,
 .site-header--solid .cart-pill:hover,
@@ -823,20 +827,20 @@
 }
 
 .site-header--solid .profile-menu__panel {
-  background: rgba(17, 24, 39, 0.96);
-  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.98);
+  border-color: var(--border);
 }
 
 .site-header--solid .profile-menu__header strong,
 .site-header--solid .profile-menu__links a,
 .site-header--solid .profile-menu__links button {
-  color: #fff;
+  color: var(--text);
 }
 
 .site-header--solid .profile-menu__links a:hover,
 .site-header--solid .profile-menu__links button:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.16);
+  background: var(--surface-alt);
+  border-color: var(--border);
 }
 
 .floating-support-button {
@@ -1037,6 +1041,11 @@
     font-weight: 400;
   }
 
+  .site-nav__mobile-switch {
+    min-width: 154px;
+    background: #111827;
+  }
+
   .site-nav__mobile-close {
     display: inline-flex;
     align-items: center;
@@ -1055,6 +1064,14 @@
   .site-nav__mobile-drawer-section {
     display: grid;
     border-top: 1px solid #f0ebe6;
+  }
+
+  .site-nav__mobile-drawer-section--footer {
+    padding-top: 8px;
+  }
+
+  .site-nav__mobile-drawer-section--footer .site-nav__mobile-logout {
+    width: 100%;
   }
 
   .site-nav__mobile-category-toggle,

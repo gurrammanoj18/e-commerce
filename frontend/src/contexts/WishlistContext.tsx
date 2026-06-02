@@ -37,7 +37,7 @@ const isAuthorizationError = (error: unknown) =>
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { startProcessing, stopProcessing } = useProcessing();
   const [items, setItems] = useState<WishlistEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -62,17 +62,11 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
         })),
       );
     } catch (error) {
-      if (isAuthorizationError(error)) {
-        setItems([]);
-        logout();
-        return;
-      }
-
       setItems([]);
     } finally {
       setLoading(false);
     }
-  }, [logout, useRemoteWishlist]);
+  }, [useRemoteWishlist]);
 
   useEffect(() => {
     if (useRemoteWishlist) {
@@ -105,7 +99,6 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (error) {
         if (isAuthorizationError(error)) {
           setItems([]);
-          logout();
           return;
         }
 
@@ -139,7 +132,6 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
           setItems(previousItems);
           if (isAuthorizationError(error)) {
             setItems([]);
-            logout();
             return;
           }
 

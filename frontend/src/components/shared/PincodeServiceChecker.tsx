@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { checkPincodeServiceability } from "../../services/accountService";
 import { PincodeServiceabilityResult } from "../../types/store";
@@ -6,10 +6,29 @@ import { PincodeServiceabilityResult } from "../../types/store";
 // @ts-ignore: Ignore missing module type declarations for CSS import
 import "../../styles/shared/PincodeServiceChecker.css";
 
-const PincodeServiceChecker: React.FC = () => {
+interface PincodeServiceCheckerProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+const PincodeServiceChecker: React.FC<PincodeServiceCheckerProps> = ({ open, onClose }) => {
   const [pincode, setPincode] = useState("");
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<PincodeServiceabilityResult | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    setPincode("");
+    setChecking(false);
+    setResult(null);
+  }, [open]);
+
+  if (!open) {
+    return null;
+  }
 
   const handleCheck = async () => {
     const normalized = pincode.trim();
@@ -30,11 +49,17 @@ const PincodeServiceChecker: React.FC = () => {
   };
 
   return (
-    <section className="shell section">
-      <div className="pincode-checker">
+    <div className="pincode-checker-modal" role="presentation" onClick={onClose}>
+      <section
+        className="pincode-checker-modal__card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pincode-checker-title"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="pincode-checker__copy">
           <span className="eyebrow">Pincode service</span>
-          <h2>Check home delivery availability</h2>
+          <h2 id="pincode-checker-title">Check home delivery availability</h2>
           <p>Enter your pincode to see whether VoltMart home delivery is available.</p>
         </div>
 
@@ -68,8 +93,17 @@ const PincodeServiceChecker: React.FC = () => {
             <span>{result.message}</span>
           </div>
         ) : null}
-      </div>
-    </section>
+
+        <div className="pincode-checker__footer">
+          <button type="button" className="link-button" onClick={onClose}>
+            Skip
+          </button>
+          <button type="button" className="link-button" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </section>
+    </div>
   );
 };
 

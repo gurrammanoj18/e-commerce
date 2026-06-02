@@ -8,19 +8,12 @@ import "../styles/pages/OrdersPage.css";
 import { Order, ReturnRequest, ReturnRequestType, ReturnResolution } from "../types/store";
 import { formatCurrency } from "../utils/currency";
 
-const ORDER_STATUS_FLOW = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"] as const;
-const RETURN_STATUS_FLOW = [
-  "REQUESTED",
-  "UNDER_REVIEW",
-  "APPROVED",
-  "PICKUP_SCHEDULED",
-  "PICKED_UP",
-  "REFUNDED",
-] as const;
+const ORDER_STATUS_FLOW = ["CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"] as const;
+const RETURN_STATUS_FLOW = ["CONFIRMED", "READY_TO_PICKUP", "PICKUP_SCHEDULED", "PICKED_UP", "REFUNDED"] as const;
+const REPLACEMENT_STATUS_FLOW = ["UNDER_REVIEW", "READY_TO_PICKUP", "PICKUP_SCHEDULED", "SHIPPED", "DELIVERED"] as const;
 
 const ORDER_FILTERS = [
   { value: "ALL", label: "All" },
-  { value: "PENDING", label: "Pending" },
   { value: "CONFIRMED", label: "Confirmed" },
   { value: "PROCESSING", label: "Processing" },
   { value: "SHIPPED", label: "Shipped" },
@@ -74,8 +67,83 @@ const getLatestReturnRequest = (returnRequests: ReturnRequest[], orderId: number
     .filter((request) => request.orderId === orderId)
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0];
 
+const getReturnStatusFlow = (request: ReturnRequest) =>
+  request.requestType === "REPLACEMENT" ? REPLACEMENT_STATUS_FLOW : RETURN_STATUS_FLOW;
+
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    CONFIRMED: "Confirmed",
+    PROCESSING: "Processing",
+    SHIPPED: "Shipped",
+    DELIVERED: "Delivered",
+    RETURN_REQUESTED: "Return requested",
+    UNDER_REVIEW: "Under review",
+    READY_TO_PICKUP: "Return pickup",
+    PICKUP_SCHEDULED: "Scheduled",
+    PICKED_UP: "Returned",
+    REFUNDED: "Refunded",
+    REJECTED: "Rejected",
+    REQUESTED: "Requested",
+    APPROVED: "Approved",
+    CLOSED: "Closed",
+  };
+
+  return labels[status] || formatStatus(status);
+};
+
+const getStatusNote = (status: string, order: Order, returnRequest?: ReturnRequest | undefined) => {
+  if (!returnRequest) {
+    const notes: Record<string, string> = {
+      CONFIRMED: "Your order is confirmed and ready for the next step.",
+      PROCESSING: "We're preparing your items for dispatch.",
+      SHIPPED: "Your order is on the way.",
+      DELIVERED: "Your order reached the delivery address.",
+    };
+
+    return notes[status] || "Order status updated.";
+  }
+
+  const actionLabel = returnRequest.requestType === "REPLACEMENT" ? "Replacement" : "Return";
+  const notes: Record<string, string> = {
+    CONFIRMED: `${actionLabel} request received on ${formatLongDate(returnRequest.createdAt)}.`,
+    UNDER_REVIEW: "Support is reviewing the request.",
+    READY_TO_PICKUP: "Pickup has been arranged.",
+    PICKUP_SCHEDULED: "Pickup is scheduled soon.",
+    PICKED_UP: "The item has been collected for inspection.",
+    SHIPPED: "Replacement item has been dispatched.",
+    DELIVERED: "Replacement item has been delivered.",
+    REFUNDED: "Refund has been completed.",
+    REJECTED: "The request was rejected by support.",
+  };
+
+  return notes[status] || `${actionLabel} status updated.`;
+};
+
+const getStatusDate = (status: string, order: Order, returnRequest?: ReturnRequest | undefined) => {
+  if (!returnRequest) {
+    return formatShortDate(order.createdAt);
+  }
+
+  if (status === "CONFIRMED" || status === "UNDER_REVIEW") {
+    return formatShortDate(returnRequest.createdAt);
+  }
+
+  if (status === "REFUNDED" && returnRequest.refundedAt) {
+    return formatShortDate(returnRequest.refundedAt);
+  }
+
+  return formatShortDate(returnRequest.createdAt);
+};
+
+const isReturnComplete = (request?: ReturnRequest | undefined) =>
+  Boolean(
+    request &&
+      (request.status === "REFUNDED" ||
+        (request.requestType === "REPLACEMENT" && request.status === "DELIVERED")),
+  );
+
 const getOrderFilterValue = (order: Order, returnRequest?: ReturnRequest | undefined): OrderFilterValue => {
-  if (returnRequest?.status === "REFUNDED") {
+  if (isReturnComplete(returnRequest)) {
     return "REFUNDED";
   }
 
@@ -91,21 +159,21 @@ const getOrderFilterValue = (order: Order, returnRequest?: ReturnRequest | undef
 };
 
 const getOrderHeadline = (order: Order, returnRequest?: ReturnRequest | undefined) => {
-  if (returnRequest?.status === "REFUNDED") {
-    return returnRequest.requestType === "REPLACEMENT" ? "Replacement completed" : "Refund completed";
+  if (isReturnComplete(returnRequest)) {
+    return returnRequest?.requestType === "REPLACEMENT" ? "Replacement delivered" : "Refund completed";
   }
 
   if (order.status === "DELIVERED") {
     return `Delivered on ${formatShortDate(order.createdAt)}`;
   }
 
-  return formatStatus(order.status);
+  return getStatusLabel(order.status);
 };
 
 const getOrderSubheadline = (order: Order, returnRequest?: ReturnRequest | undefined) => {
   const primaryItem = getPrimaryItem(order);
 
-  if (returnRequest?.status === "REFUNDED") {
+  if (isReturnComplete(returnRequest)) {
     return primaryItem ? primaryItem.productName : `Order ${order.orderNumber.slice(0, 8)}`;
   }
 
@@ -121,7 +189,7 @@ const getOrderSubheadline = (order: Order, returnRequest?: ReturnRequest | undef
 };
 
 const getBadgeTone = (order: Order, returnRequest?: ReturnRequest | undefined) => {
-  if (returnRequest?.status === "REFUNDED") {
+  if (isReturnComplete(returnRequest)) {
     return "success";
   }
 
@@ -133,31 +201,27 @@ const getBadgeTone = (order: Order, returnRequest?: ReturnRequest | undefined) =
     return "success";
   }
 
-  if (order.status === "PENDING") {
-    return "neutral";
-  }
-
   return "info";
 };
 
 const getBadgeLabel = (order: Order, returnRequest?: ReturnRequest | undefined) => {
-  if (returnRequest?.status === "REFUNDED") {
-    return "Refund completed";
+  if (isReturnComplete(returnRequest)) {
+    return returnRequest?.requestType === "REPLACEMENT" ? "Replacement delivered" : "Refund completed";
   }
 
   if (returnRequest) {
-    return returnRequest.requestType === "REPLACEMENT" ? "Replacement requested" : "Return requested";
+    return `${returnRequest.requestType === "REPLACEMENT" ? "Replacement" : "Return"}: ${getStatusLabel(returnRequest.status)}`;
   }
 
   if (order.status === "DELIVERED") {
     return "Delivered";
   }
 
-  return formatStatus(order.status);
+  return getStatusLabel(order.status);
 };
 
 const getDisplayStatus = (order: Order, returnRequest?: ReturnRequest | undefined) => {
-  if (returnRequest?.status === "REFUNDED") {
+  if (isReturnComplete(returnRequest)) {
     return "REFUNDED";
   }
 
@@ -179,76 +243,11 @@ const getActiveStepIndex = (currentStatus: string, steps: readonly string[]) => 
     return 0;
   }
 
+  if (normalized === "REQUESTED" || normalized === "APPROVED") {
+    return 0;
+  }
+
   return -1;
-};
-
-const buildMobileStatusEntries = (order: Order, returnRequest?: ReturnRequest | undefined) => {
-  const isRefunded = returnRequest?.status === "REFUNDED";
-  const actionLabel = returnRequest?.requestType === "REPLACEMENT" ? "Replacement" : "Return";
-  const orderDate = formatShortDate(order.createdAt);
-  const returnDate = returnRequest ? formatShortDate(returnRequest.createdAt) : orderDate;
-  const refundDate = returnRequest?.refundedAt ? formatShortDate(returnRequest.refundedAt) : orderDate;
-
-  return [
-    {
-      label: "Order Confirmed",
-      tone: "success" as const,
-      date: orderDate,
-      note: "Your Order has been placed.",
-      time: "Thu, 5th Mar '26 - 3:32pm",
-      active: true,
-    },
-    {
-      label: "Shipped",
-      tone: "success" as const,
-      date: orderDate,
-      note: "Your item has been shipped.",
-      time: "Thu, 12th Mar '26 - 4:52pm",
-      active: order.status === "SHIPPED" || order.status === "DELIVERED" || Boolean(returnRequest),
-    },
-    {
-      label: "Delivery Attempted",
-      tone: "warning" as const,
-      date: orderDate,
-      note: "Delivery agent was unable to deliver your order. Please check again after some time for further updates.",
-      time: "Tue, 17th Mar '26 - 5:40am",
-      active: false,
-    },
-    {
-      label: "Out For Delivery",
-      tone: "success" as const,
-      date: orderDate,
-      note: "Your item is out for delivery",
-      time: "Tue, 17th Mar '26 - 10:19am",
-      active: order.status === "DELIVERED" || Boolean(returnRequest),
-    },
-    {
-      label: "Delivered",
-      tone: returnRequest?.status === "REFUNDED" ? "muted" : ("success" as const),
-      date: orderDate,
-      note: "Your item has been delivered",
-      time: "Tue, 17th Mar '26 - 2:42pm",
-      active: order.status === "DELIVERED" || Boolean(returnRequest),
-    },
-    {
-      label: `${actionLabel} Requested`,
-      tone: "warning" as const,
-      date: returnDate,
-      note: returnRequest ? getReturnStatusCopy(returnRequest) : "Return requested after delivery.",
-      time: returnRequest?.createdAt ? formatLongDate(returnRequest.createdAt) : "",
-      active: Boolean(returnRequest),
-    },
-    {
-      label: "Refunded",
-      tone: "success" as const,
-      date: refundDate,
-      note: isRefunded
-        ? "Refund completed to your requested method."
-        : "Refund will be processed once approved.",
-      time: returnRequest?.refundedAt ? formatLongDate(returnRequest.refundedAt) : "",
-      active: isRefunded,
-    },
-  ];
 };
 
 const getReturnStatusCopy = (request: ReturnRequest) => {
@@ -270,7 +269,15 @@ const getReturnStatusCopy = (request: ReturnRequest) => {
     return `${actionLabel} completed by support.`;
   }
 
-  return `${actionLabel} status: ${formatStatus(request.status)}`;
+  if (request.requestType === "REPLACEMENT" && request.status === "DELIVERED") {
+    return "Replacement delivered by support.";
+  }
+
+  if (request.status === "REJECTED") {
+    return `${actionLabel} rejected by support.`;
+  }
+
+  return `${actionLabel} status: ${getStatusLabel(request.status)}`;
 };
 
 const OrdersPage: React.FC = () => {
@@ -405,43 +412,40 @@ const OrdersPage: React.FC = () => {
   };
 
   const renderTimeline = (order: Order, returnRequest?: ReturnRequest | undefined) => {
-    const orderStepIndex = getActiveStepIndex(order.status, ORDER_STATUS_FLOW);
-    const returnStepIndex =
-      returnRequest && returnRequest.status !== "REQUESTED"
-        ? getActiveStepIndex(returnRequest.status, RETURN_STATUS_FLOW)
-        : -1;
+    const flow = returnRequest ? getReturnStatusFlow(returnRequest) : ORDER_STATUS_FLOW;
+    const activeStatus = returnRequest ? returnRequest.status : order.status;
+    const activeStepIndex = getActiveStepIndex(activeStatus, flow);
 
     return (
-      <div className="order-card__timeline-group">
-        <div className="order-card__timeline">
-          {ORDER_STATUS_FLOW.map((step, index) => {
-            const isActive = index <= orderStepIndex;
+      <div className={returnRequest ? "order-card__timeline-group order-card__timeline-group--return" : "order-card__timeline-group"}>
+        <div
+          className={
+            returnRequest ? "order-card__timeline order-card__timeline--return" : "order-card__timeline"
+          }
+        >
+          {flow.map((step, index) => {
+            const isActive = index <= activeStepIndex;
             return (
               <div
                 className={isActive ? "order-card__timeline-step is-active" : "order-card__timeline-step"}
                 key={step}
               >
-                <span className="order-card__timeline-dot" />
-                <span className="order-card__timeline-label">{formatStatus(step)}</span>
+                <span
+                  className={
+                    returnRequest
+                      ? "order-card__timeline-dot order-card__timeline-dot--return"
+                      : "order-card__timeline-dot"
+                  }
+                />
+                <span className="order-card__timeline-label">{getStatusLabel(step)}</span>
               </div>
             );
           })}
         </div>
-
         {returnRequest ? (
-          <div className="order-card__timeline order-card__timeline--return">
-            {RETURN_STATUS_FLOW.map((step, index) => {
-              const isActive = index <= returnStepIndex;
-              return (
-                <div
-                  className={isActive ? "order-card__timeline-step is-active" : "order-card__timeline-step"}
-                  key={step}
-                >
-                  <span className="order-card__timeline-dot order-card__timeline-dot--return" />
-                  <span className="order-card__timeline-label">{formatStatus(step)}</span>
-                </div>
-              );
-            })}
+          <div className="order-card__timeline-copy">
+            <strong>{getReturnStatusCopy(returnRequest)}</strong>
+            <span>Requested on {formatLongDate(returnRequest.createdAt)}</span>
           </div>
         ) : null}
       </div>
@@ -449,37 +453,38 @@ const OrdersPage: React.FC = () => {
   };
 
   const renderMobileStatusBar = (order: Order, returnRequest?: ReturnRequest | undefined) => {
-    const entries = buildMobileStatusEntries(order, returnRequest);
+    const flow = returnRequest ? getReturnStatusFlow(returnRequest) : ORDER_STATUS_FLOW;
+    const activeStatus = returnRequest ? returnRequest.status : order.status;
+    const activeStepIndex = getActiveStepIndex(activeStatus, flow);
 
     return (
       <div className="order-card__status-bar">
-        {entries.map((entry, index) => {
-          const isActive = entry.active;
-          const isLast = index === entries.length - 1;
+        {flow.map((status, index) => {
+          const isActive = index <= activeStepIndex;
+          const isLast = index === flow.length - 1;
           return (
             <div
               className={
                 isActive ? "order-card__status-step is-active" : "order-card__status-step"
               }
-              key={entry.label}
+              key={status}
             >
               <span
                 className={
-                  entry.tone === "warning"
-                    ? "order-card__status-dot order-card__status-dot--warning"
-                    : entry.tone === "muted"
-                      ? "order-card__status-dot order-card__status-dot--muted"
-                      : "order-card__status-dot"
+                  returnRequest
+                    ? `order-card__status-dot order-card__status-dot--return ${
+                        status === "REJECTED" ? "order-card__status-dot--warning" : ""
+                      }`.trim()
+                    : "order-card__status-dot"
                 }
               />
               {!isLast ? <span className="order-card__status-rail" aria-hidden="true" /> : null}
               <div className="order-card__status-copy">
                 <div className="order-card__status-title-row">
-                  <span className="order-card__status-title">{entry.label}</span>
-                  <span className="order-card__status-date">{entry.date}</span>
+                  <span className="order-card__status-title">{getStatusLabel(status)}</span>
+                  <span className="order-card__status-date">{getStatusDate(status, order, returnRequest)}</span>
                 </div>
-                <p>{entry.note}</p>
-                {entry.time ? <span className="order-card__status-time">{entry.time}</span> : null}
+                <p>{getStatusNote(status, order, returnRequest)}</p>
               </div>
             </div>
           );
@@ -530,9 +535,7 @@ const OrdersPage: React.FC = () => {
           <span aria-hidden="true">{"←"}</span>
           <span>My Orders</span>
         </button>
-      </div>
 
-      <div className="orders-page__toolbar">
         <button
           className="orders-page__filters-button"
           type="button"
@@ -621,22 +624,7 @@ const OrdersPage: React.FC = () => {
                 </button>
 
                 <div className="order-card__action-strip">
-                  {order.status === "DELIVERED" ? (
-                    <div className="order-card__review-row">
-                      <span className="order-card__review-label">Rate &amp; Review</span>
-                      <div className="order-card__stars" aria-label="Rate and review">
-                        {Array.from({ length: 5 }).map((_, index) => (
-                          <span key={index} aria-hidden="true">
-                            ☆
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="order-card__status-copy">
-                      Status: {formatStatus(statusValue)}
-                    </span>
-                  )}
+                  <span className="order-card__status-copy">Status: {getStatusLabel(statusValue)}</span>
 
                   {returnRequest ? (
                     <div className="order-card__refund-row order-card__refund-row--success">
@@ -644,9 +632,9 @@ const OrdersPage: React.FC = () => {
                         {returnRequest.requestType === "REPLACEMENT" ? "↻" : "✓"}
                       </span>
                       <span>
-                        {returnRequest.status === "REFUNDED"
+                        {isReturnComplete(returnRequest)
                           ? returnRequest.requestType === "REPLACEMENT"
-                            ? "Replacement completed"
+                            ? "Replacement delivered"
                             : `Refund of ${formatCurrency(refundAmount)}`
                           : getReturnStatusCopy(returnRequest)}
                       </span>
@@ -691,30 +679,19 @@ const OrdersPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="order-card__mobile-panel-actions">
-                          <button
-                            className="link-button order-card__copy-button"
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(order.orderNumber);
-                                toast.success("Order number copied.");
-                              } catch {
-                                toast.info("Copy the order number manually.");
-                              }
-                            }}
-                          >
-                            Copy
-                          </button>
-                          <Link className="link-button order-card__help-button" to="/contact">
-                            Help
-                          </Link>
-                        </div>
                       </div>
 
                       <div className="order-card__mobile-status-card">
-                        <h4>{returnRequest?.status === "REFUNDED" ? "Refund completed" : formatStatus(order.status)}</h4>
-                        {renderMobileStatusBar(order, returnRequest)}
+                        <div className="order-card__mobile-status-head">
+                          <h4>
+                            {returnRequest ? getStatusLabel(returnRequest.status) : getStatusLabel(order.status)}
+                          </h4>
+                          <p>
+                            {returnRequest
+                              ? getReturnStatusCopy(returnRequest)
+                              : getStatusNote(order.status, order)}
+                          </p>
+                        </div>
                         <div className="order-card__mobile-status-meta">
                           <span>Order #{order.orderNumber}</span>
                           <span>{formatCurrency(returnRequest?.orderTotal ?? order.totalAmount)}</span>
@@ -749,20 +726,6 @@ const OrdersPage: React.FC = () => {
                         {showMobileUpdates ? (
                           <div className="order-card__mobile-updates">
                             {renderMobileStatusBar(order, returnRequest)}
-                          </div>
-                        ) : null}
-                        {returnRequest ? (
-                          <div className="order-card__mobile-return-note">
-                            <strong>{getReturnStatusCopy(returnRequest)}</strong>
-                            <span>
-                              Requested on {formatLongDate(returnRequest.createdAt)}
-                              {returnRequest.refundedAt
-                                ? ` · Refunded on ${formatLongDate(returnRequest.refundedAt)}`
-                                : ""}
-                            </span>
-                            <span>Type: {formatStatus(returnRequest.requestType)}</span>
-                            <span>Resolution: {formatStatus(returnRequest.preferredResolution)}</span>
-                            {returnRequest.adminNote ? <p>{returnRequest.adminNote}</p> : null}
                           </div>
                         ) : null}
                       </div>
@@ -801,7 +764,7 @@ const OrdersPage: React.FC = () => {
                       </div>
                       <div>
                         <span>Order status</span>
-                        <strong>{formatStatus(order.status)}</strong>
+                        <strong>{getStatusLabel(order.status)}</strong>
                       </div>
                       <div>
                         <span>Payment total</span>
@@ -862,13 +825,13 @@ const OrdersPage: React.FC = () => {
                         <strong>{getReturnStatusCopy(returnRequest)}</strong>
                         <span>
                           Requested on {formatLongDate(returnRequest.createdAt)}
-                          {returnRequest.refundedAt
+                          {returnRequest.requestType === "RETURN" && returnRequest.refundedAt
                             ? ` · Refunded on ${formatLongDate(returnRequest.refundedAt)}`
                             : ""}
                         </span>
-                        <span>Type: {formatStatus(returnRequest.requestType)}</span>
+                        <span>Type: {getStatusLabel(returnRequest.requestType)}</span>
                         <span>
-                          Resolution: {formatStatus(returnRequest.preferredResolution)}
+                          Resolution: {getStatusLabel(returnRequest.preferredResolution)}
                         </span>
                         {returnRequest.adminNote ? <p>{returnRequest.adminNote}</p> : null}
                       </div>

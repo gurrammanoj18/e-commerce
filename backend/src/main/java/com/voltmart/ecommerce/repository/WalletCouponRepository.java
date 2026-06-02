@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface WalletCouponRepository extends JpaRepository<WalletCoupon, Long> {
     Optional<WalletCoupon> findByCodeIgnoreCase(String code);
+    boolean existsByCodeIgnoreCase(String code);
 }

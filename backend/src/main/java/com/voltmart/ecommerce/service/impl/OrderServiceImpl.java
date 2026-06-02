@@ -17,7 +17,6 @@ import com.voltmart.ecommerce.repository.CartRepository;
 import com.voltmart.ecommerce.repository.InventoryRepository;
 import com.voltmart.ecommerce.repository.OrderRepository;
 import com.voltmart.ecommerce.repository.UserAddressRepository;
-import com.voltmart.ecommerce.repository.WalletCouponRepository;
 import com.voltmart.ecommerce.repository.WalletTransactionRepository;
 import com.voltmart.ecommerce.service.CurrentUserService;
 import com.voltmart.ecommerce.service.EmailNotificationService;
@@ -31,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.List;
@@ -41,7 +41,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
     private static final Set<OrderStatus> STORE_PICKUP_ALLOWED_STATUSES = Set.of(
-            OrderStatus.PENDING,
             OrderStatus.CONFIRMED,
             OrderStatus.DELIVERED
     );
@@ -51,7 +50,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final InventoryRepository inventoryRepository;
     private final UserAddressRepository userAddressRepository;
-    private final WalletCouponRepository walletCouponRepository;
     private final WalletTransactionRepository walletTransactionRepository;
     private final EntityMapper entityMapper;
     private final WhatsappNotificationService whatsappNotificationService;
@@ -93,11 +91,14 @@ public class OrderServiceImpl implements OrderService {
         if (!isStorePickup) {
             serviceablePincodeService.validateHomeDeliveryPincode(postalCode);
         }
+        WalletCoupon checkoutCoupon = resolveCheckoutCoupon(request.couponCode());
+        BigDecimal discountAmount = calculateDiscountAmount(subtotal, checkoutCoupon);
+        BigDecimal discountedSubtotal = subtotal.subtract(discountAmount);
         BigDecimal shipping = isStorePickup
                 ? BigDecimal.ZERO
-                : subtotal.compareTo(BigDecimal.valueOf(4999)) >= 0 ? BigDecimal.ZERO : BigDecimal.valueOf(499);
-        BigDecimal tax = subtotal.multiply(BigDecimal.valueOf(0.18));
-        BigDecimal totalBeforeWallet = subtotal.add(shipping).add(tax);
+                : discountedSubtotal.compareTo(BigDecimal.valueOf(4999)) >= 0 ? BigDecimal.ZERO : BigDecimal.valueOf(499);
+        BigDecimal tax = discountedSubtotal.multiply(BigDecimal.valueOf(0.18)).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalBeforeWallet = discountedSubtotal.add(shipping).add(tax);
         BigDecimal walletDebitAmount = BigDecimal.ZERO;
         BigDecimal total = totalBeforeWallet;
         if (request.useWalletBalance() && user.getWalletBalance() != null && user.getWalletBalance().compareTo(BigDecimal.ZERO) > 0) {
@@ -105,12 +106,14 @@ public class OrderServiceImpl implements OrderService {
             total = totalBeforeWallet.subtract(walletDebitAmount);
             user.setWalletBalance(user.getWalletBalance().subtract(walletDebitAmount));
         }
-        WalletCoupon cashbackCoupon = resolveCashbackCoupon(request.couponCode());
+        WalletCoupon cashbackCoupon = checkoutCoupon != null && checkoutCoupon.getType() == WalletCouponType.ORDER_CASHBACK
+                ? checkoutCoupon
+                : null;
 
         Order order = Order.builder()
                 .orderNumber(UUID.randomUUID())
                 .user(user)
-                .status(OrderStatus.PENDING)
+                .status(OrderStatus.CONFIRMED)
                 .deliveryMode(deliveryMode)
                 .shippingName(resolveShippingName(request.shippingName(), user.getFullName()))
                 .email(resolveEmail(request.email(), user.getEmail()))
@@ -127,7 +130,8 @@ public class OrderServiceImpl implements OrderService {
                 .taxAmount(tax)
                 .totalAmount(total)
                 .walletDebitAmount(walletDebitAmount)
-                .appliedCouponCode(cashbackCoupon == null ? null : cashbackCoupon.getCode())
+                .appliedCouponCode(checkoutCoupon == null ? null : checkoutCoupon.getCode())
+                .appliedDiscountAmount(discountAmount)
                 .walletCreditAmount(cashbackCoupon == null ? null : cashbackCoupon.getAmount())
                 .walletCreditEligibleAt(cashbackCoupon == null
                         ? null
@@ -155,8 +159,8 @@ public class OrderServiceImpl implements OrderService {
 
         order.setItems(orderItems);
         Order savedOrder = orderRepository.save(order);
-        if (cashbackCoupon != null) {
-            walletService.consumeCouponForUser(cashbackCoupon, user);
+        if (checkoutCoupon != null) {
+            walletService.consumeCouponForUser(checkoutCoupon, user);
         }
         if (walletDebitAmount.compareTo(BigDecimal.ZERO) > 0) {
             walletTransactionRepository.save(WalletTransaction.builder()
@@ -195,7 +199,7 @@ public class OrderServiceImpl implements OrderService {
         OrderStatus nextStatus = OrderStatus.valueOf(status.toUpperCase());
         if (order.getDeliveryMode() == DeliveryMode.STORE_PICKUP
                 && !STORE_PICKUP_ALLOWED_STATUSES.contains(nextStatus)) {
-            throw new BadRequestException("Store pickup orders can only be Pending, Confirmed, or Delivered");
+            throw new BadRequestException("Store pickup orders can only be Confirmed or Delivered");
         }
         OrderStatus previousStatus = order.getStatus();
         order.setStatus(nextStatus);
@@ -234,27 +238,22 @@ public class OrderServiceImpl implements OrderService {
         return normalized;
     }
 
-    private WalletCoupon resolveCashbackCoupon(String rawCode) {
-        if (!StringUtils.hasText(rawCode)) {
-            return null;
+    private WalletCoupon resolveCheckoutCoupon(String rawCode) {
+        return walletService.validateCheckoutCoupon(rawCode);
+    }
+
+    private BigDecimal calculateDiscountAmount(BigDecimal subtotal, WalletCoupon coupon) {
+        if (coupon == null || coupon.getType() != WalletCouponType.ORDER_DISCOUNT) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
-        WalletCoupon coupon = walletCouponRepository.findByCodeIgnoreCase(rawCode.trim())
-                .orElseThrow(() -> new BadRequestException("Coupon code is invalid"));
-        if (!coupon.isActive()) {
-            throw new BadRequestException("Coupon code is inactive");
+        Integer discountPercentage = coupon.getDiscountPercentage();
+        if (discountPercentage == null || discountPercentage <= 0) {
+            throw new BadRequestException("This discount coupon is not configured correctly");
         }
-        if (coupon.getType() != WalletCouponType.ORDER_CASHBACK) {
-            throw new BadRequestException("This code can only be used in wallet top-up");
-        }
-        String assignedEmails = coupon.getAssignedCustomerEmails();
-        String userEmail = currentUserService.getCurrentUser().getEmail();
-        if (StringUtils.hasText(assignedEmails)
-                && (!StringUtils.hasText(userEmail)
-                || java.util.Arrays.stream(assignedEmails.split(","))
-                    .noneMatch(email -> email.trim().equalsIgnoreCase(userEmail.trim())))) {
-            throw new BadRequestException("Coupon code is not assigned to this customer");
-        }
-        return coupon;
+        BigDecimal discount = subtotal
+                .multiply(BigDecimal.valueOf(discountPercentage))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        return discount.min(subtotal);
     }
 
     private String resolveShippingName(String requestValue, String userValue) {

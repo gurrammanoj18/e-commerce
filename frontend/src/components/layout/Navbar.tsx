@@ -1,17 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import SearchBar from "../shared/SearchBar";
 import "../../styles/layout/Navbar.css";
 import { useAuth } from "../../contexts/AuthContext";
 import { useCart } from "../../contexts/CartContext";
 import { useCollectionAnimation } from "../../contexts/CollectionAnimationContext";
 import { useWishlist } from "../../contexts/WishlistContext";
-import { checkPincodeServiceability } from "../../services/accountService";
+import { getCategories } from "../../services/productService";
+import { CategorySummary } from "../../types/store";
 import voltmartLogo from "../../assets/voltmart-logo.png";
 import voltmartLogoBlack from "../../assets/voltmart-logo-black.png";
 
 const Navbar: React.FC = () => {
-  const location = useLocation();
   const navigate = useNavigate();
   const { logout, user, updateDeliveryPreference } = useAuth();
   const { itemCount } = useCart();
@@ -22,19 +22,15 @@ const Navbar: React.FC = () => {
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  const [navbarPincode, setNavbarPincode] = useState("");
-  const [navbarPincodeMessage, setNavbarPincodeMessage] = useState("Enter pincode");
-  const [navbarPincodeStatus, setNavbarPincodeStatus] = useState<"success" | "error" | null>(null);
-  const [checkingNavbarPincode, setCheckingNavbarPincode] = useState(false);
   const [switchingMode, setSwitchingMode] = useState(false);
   const [switchVisual, setSwitchVisual] = useState<"bike" | "walk" | null>(null);
+  const [navbarPromos, setNavbarPromos] = useState<CategorySummary[]>([]);
   const profileRef = useRef<HTMLDivElement | null>(null);
   const profileInitial = useMemo(
     () => user?.fullName?.trim().charAt(0).toUpperCase() || "U",
     [user?.fullName],
   );
   const profileImageUrl = user?.profileImageUrl?.trim();
-  const isHomePage = location.pathname === "/";
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 0);
@@ -68,6 +64,26 @@ const Navbar: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const loadNavbarPromos = async () => {
+      try {
+        const categories = await getCategories();
+        setNavbarPromos(
+          categories.filter(
+            (category) =>
+              !category.parentId && category.showInNavbar && category.slug !== "services",
+          ),
+        );
+      } catch {
+        setNavbarPromos([]);
+      }
+    };
+
+    void loadNavbarPromos();
+    window.addEventListener("catalog:categories-updated", loadNavbarPromos);
+    return () => window.removeEventListener("catalog:categories-updated", loadNavbarPromos);
+  }, []);
+
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const query = searchValue.trim();
@@ -79,32 +95,6 @@ const Navbar: React.FC = () => {
     );
     setIsMenuOpen(false);
     setIsCategoryMenuOpen(false);
-  };
-
-  const handleNavbarPincodeSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const normalized = navbarPincode.trim();
-
-    if (!/^\d{6}$/.test(normalized)) {
-      setNavbarPincodeMessage("Enter valid pincode");
-      setNavbarPincodeStatus("error");
-      return;
-    }
-
-    setCheckingNavbarPincode(true);
-    setNavbarPincodeStatus(null);
-    try {
-      const result = await checkPincodeServiceability(normalized);
-      setNavbarPincodeMessage(
-        result.serviceable ? "Delivery by 10pm" : "Not serviceable"
-      );
-      setNavbarPincodeStatus(result.serviceable ? "success" : "error");
-    } catch {
-      setNavbarPincodeMessage("Unable to check now");
-      setNavbarPincodeStatus("error");
-    } finally {
-      setCheckingNavbarPincode(false);
-    }
   };
 
   const handleLogout = () => {
@@ -142,36 +132,10 @@ const Navbar: React.FC = () => {
     </button>
   ) : null;
 
-  const quickCategories = [
-    { label: "All", to: "/products?discover=1" },
-    { label: "Services", to: "/services" },
-    { label: "Appliances", to: "/products?discover=1&category=appliances" },
-    { label: "Bathroom", to: "/products?discover=1&category=bathroom" },
-    { label: "Hardware", to: "/products?discover=1&category=hardware" },
-    { label: "Kitchen", to: "/products?discover=1&category=kitchen" },
-    { label: "Lighting & Fans", to: "/products?discover=1&category=lighting-fans" },
-    { label: "Plumbing", to: "/products?discover=1&category=plumbing" },
-    { label: "Power & Hand Tools", to: "/products?discover=1&category=power-hand-tools" },
-    { label: "Electricals", to: "/products?discover=1&category=electricals" },
-  ];
-
-  const mobileQuickCategories = [
-    { label: "All", to: "/products?discover=1" },
-    { label: "Services", to: "/services" },
-    { label: "Electricals", to: "/products?discover=1&category=electricals" },
-    { label: "Hardware", to: "/products?discover=1&category=hardware" },
-  ];
-
-  const mobileMenuCategories = [
-    { label: "Electricals", to: "/products?discover=1&category=electricals" },
-    { label: "Power & Hand Tools", to: "/products?discover=1&category=power-hand-tools" },
-    { label: "Appliances", to: "/products?discover=1&category=appliances" },
-    { label: "Hardware", to: "/products?discover=1&category=hardware" },
-    { label: "Kitchen", to: "/products?discover=1&category=kitchen" },
-    { label: "Lighting & Fans", to: "/products?discover=1&category=lighting-fans" },
-    { label: "Bathroom", to: "/products?discover=1&category=bathroom" },
-    { label: "Plumbing", to: "/products?discover=1&category=plumbing" },
-  ];
+  const promoNavigationItems = navbarPromos.map((category) => ({
+    label: category.name,
+    to: `/products?discover=1&category=${encodeURIComponent(category.slug || category.name)}`,
+  }));
 
   return (
     <>
@@ -249,11 +213,16 @@ const Navbar: React.FC = () => {
           ) : null}
           <div className="site-nav__mobile-drawer">
             <div className="site-nav__mobile-drawer-top">
-              <strong>Welcome to VoltMart</strong>
+              <strong>Welcome</strong>
               <div className="site-nav__mobile-drawer-actions">
                 {user ? (
-                  <button type="button" className="site-nav__mobile-logout" onClick={handleLogout}>
-                    Logout
+                  <button
+                    type="button"
+                    className="site-nav__mobile-logout site-nav__mobile-switch"
+                    onClick={() => void handleToggleDeliveryMode()}
+                  >
+                    Switch to{" "}
+                    {user.preferredDeliveryMode === "HOME_DELIVERY" ? "Store pickup" : "Home delivery"}
                   </button>
                 ) : (
                   <Link
@@ -285,32 +254,36 @@ const Navbar: React.FC = () => {
               <Link to="/bulk-order" onClick={() => setIsMenuOpen(false)}>
                 Bulk Orders
               </Link>
-              <button
-                type="button"
-                className={`site-nav__mobile-category-toggle ${
-                  isCategoryMenuOpen ? "is-open" : ""
-                }`}
-                onClick={() => setIsCategoryMenuOpen((open) => !open)}
-              >
-                <span>Shop by Category</span>
-                <span aria-hidden="true">{isCategoryMenuOpen ? "⌄" : "›"}</span>
-              </button>
-              {isCategoryMenuOpen ? (
-                <div className="site-nav__mobile-category-list">
-                  {mobileMenuCategories.map((category) => (
-                    <Link
-                      key={category.label}
-                      to={category.to}
-                      onClick={() => {
-                        setIsCategoryMenuOpen(false);
-                        setIsMenuOpen(false);
-                      }}
-                    >
-                      <span>{category.label}</span>
-                      <span aria-hidden="true">›</span>
-                    </Link>
-                  ))}
-                </div>
+              {promoNavigationItems.length ? (
+                <>
+                  <button
+                    type="button"
+                    className={`site-nav__mobile-category-toggle ${
+                      isCategoryMenuOpen ? "is-open" : ""
+                    }`}
+                    onClick={() => setIsCategoryMenuOpen((open) => !open)}
+                  >
+                    <span>Promotions</span>
+                    <span aria-hidden="true">{isCategoryMenuOpen ? "⌄" : "›"}</span>
+                  </button>
+                  {isCategoryMenuOpen ? (
+                    <div className="site-nav__mobile-category-list">
+                      {promoNavigationItems.map((category) => (
+                        <Link
+                          key={category.label}
+                          to={category.to}
+                          onClick={() => {
+                            setIsCategoryMenuOpen(false);
+                            setIsMenuOpen(false);
+                          }}
+                        >
+                          <span>{category.label}</span>
+                          <span aria-hidden="true">›</span>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
+                </>
               ) : null}
               <Link to="/orders" onClick={() => setIsMenuOpen(false)}>
                 Orders
@@ -340,49 +313,18 @@ const Navbar: React.FC = () => {
                 Terms & Conditions
               </Link>
             </div>
+
+            {user ? (
+              <div className="site-nav__mobile-drawer-section site-nav__mobile-drawer-section--footer">
+                <button type="button" className="site-nav__mobile-logout" onClick={handleLogout}>
+                  Logout
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
 
         <div className="site-nav__utility">
-          <form className="navbar-pincode-check" onSubmit={handleNavbarPincodeSubmit}>
-            <span
-              style={{
-                color:
-                  navbarPincodeStatus === "success"
-                    ? "green"
-                    : navbarPincodeStatus === "error"
-                    ? "red"
-                    : "inherit",
-              }}
-            >
-              {navbarPincodeMessage}
-            </span>
-            <label>
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={navbarPincode}
-                onChange={(event) => {
-                  const digitsOnly = event.target.value.replace(/\D/g, "").slice(0, 6);
-                  setNavbarPincode(digitsOnly);
-                }}
-                placeholder="Pincode"
-                aria-label="Check delivery pincode"
-              />
-              <button type="submit" disabled={checkingNavbarPincode} aria-label="Check pincode">
-                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="m7 4 6 6-6 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              </button>
-            </label>
-          </form>
           <form className="site-nav__search" onSubmit={handleSearchSubmit}>
             <SearchBar
               value={searchValue}
@@ -390,20 +332,30 @@ const Navbar: React.FC = () => {
               placeholder="Search products"
             />
           </form>
-          {isHomePage && !isScrolled ? (
+          {!isScrolled ? (
             <div className="site-category-strip site-category-strip--mobile" aria-label="Quick categories">
               <div className="site-category-strip__inner">
-                {mobileQuickCategories.map((category) => (
-                  <NavLink
-                    key={category.label}
-                    to={category.to}
-                    className={({ isActive }) =>
-                      `site-category-strip__item ${isActive ? "is-active" : ""}`.trim()
-                    }
-                    end={category.label === "All"}
-                  >
+                <NavLink
+                  className={({ isActive }) =>
+                    `site-category-strip__item ${isActive ? "is-active" : ""}`.trim()
+                  }
+                  to="/products?discover=1"
+                  end
+                >
+                  All
+                </NavLink>
+                <NavLink
+                  className={({ isActive }) =>
+                    `site-category-strip__item ${isActive ? "is-active" : ""}`.trim()
+                  }
+                  to="/services"
+                >
+                  Services
+                </NavLink>
+                {promoNavigationItems.map((category) => (
+                  <Link key={category.label} className="site-category-strip__item" to={category.to}>
                     {category.label}
-                  </NavLink>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -476,7 +428,7 @@ const Navbar: React.FC = () => {
                   <span aria-hidden="true">›</span>
                 </Link>
                 <Link to="/wallet" onClick={() => setIsProfileOpen(false)}>
-                  <span>IBO Wallet</span>
+                  <span>Wallet</span>
                   <span aria-hidden="true">›</span>
                 </Link>
                 <button type="button" onClick={handleLogout}>
@@ -488,24 +440,32 @@ const Navbar: React.FC = () => {
         </div>
         </nav>
       </header>
-      {isHomePage ? (
-        <div className="site-category-strip site-category-strip--desktop" aria-label="Quick categories">
-          <div className="site-category-strip__inner shell">
-            {quickCategories.map((category) => (
-              <NavLink
-                key={category.label}
-                to={category.to}
-                className={({ isActive }) =>
-                  `site-category-strip__item ${isActive ? "is-active" : ""}`.trim()
-                }
-                end={category.label === "All"}
-              >
-                {category.label}
-              </NavLink>
-            ))}
-          </div>
+      <div className="site-category-strip site-category-strip--desktop" aria-label="Quick categories">
+        <div className="site-category-strip__inner shell">
+          <NavLink
+            className={({ isActive }) =>
+              `site-category-strip__item ${isActive ? "is-active" : ""}`.trim()
+            }
+            to="/products?discover=1"
+            end
+          >
+            All
+          </NavLink>
+          <NavLink
+            className={({ isActive }) =>
+              `site-category-strip__item ${isActive ? "is-active" : ""}`.trim()
+            }
+            to="/services"
+          >
+            Services
+          </NavLink>
+          {promoNavigationItems.map((category) => (
+            <Link key={category.label} className="site-category-strip__item" to={category.to}>
+              {category.label}
+            </Link>
+          ))}
         </div>
-      ) : null}
+      </div>
       {switchingMode && switchVisual ? (
         <div className="delivery-transition" role="dialog" aria-live="polite" aria-label="Delivery mode changing">
           <div className="delivery-transition__backdrop" />

@@ -19,10 +19,12 @@ const emptyCoupon: WalletCouponPayload = {
   code: "",
   type: "WALLET_TOPUP",
   amount: 0,
+  discountPercentage: 0,
   description: "",
   assignedCustomerEmails: "",
   active: true,
   rewardDelayMinutes: 60,
+  redemptionFrequency: "ONCE",
 };
 
 const extractErrorMessage = (error: unknown, fallback: string) => {
@@ -43,13 +45,18 @@ const AdminWalletPage: React.FC = () => {
   const [couponForm, setCouponForm] = useState<WalletCouponPayload>(emptyCoupon);
 
   const handleAdminRequestError = useCallback((error: unknown, fallback: string) => {
-    if (error instanceof AxiosError && error.response?.status === 403) {
-      toast.error("Your admin session has expired or no longer has access. Please log in again.");
+    if (error instanceof AxiosError && error.response?.status === 401) {
+      toast.error("Your admin session has expired. Please log in again.");
       logout();
       navigate("/admin/login", {
         replace: true,
         state: { from: location, adminOnly: true },
       });
+      return;
+    }
+
+    if (error instanceof AxiosError && error.response?.status === 403) {
+      toast.error(extractErrorMessage(error, "You do not have permission to manage wallet coupons."));
       return;
     }
 
@@ -103,11 +110,22 @@ const AdminWalletPage: React.FC = () => {
             onSubmit={async (event) => {
               event.preventDefault();
               try {
+                const payload: WalletCouponPayload =
+                  couponForm.type === "ORDER_DISCOUNT"
+                    ? {
+                        ...couponForm,
+                        amount: 0,
+                        discountPercentage: couponForm.discountPercentage ?? 0,
+                      }
+                    : {
+                        ...couponForm,
+                        discountPercentage: 0,
+                      };
                 if (editingCouponId) {
-                  await updateAdminWalletCoupon(editingCouponId, couponForm);
+                  await updateAdminWalletCoupon(editingCouponId, payload);
                   toast.success("Wallet coupon updated.");
                 } else {
-                  await createAdminWalletCoupon(couponForm);
+                  await createAdminWalletCoupon(payload);
                   toast.success("Wallet coupon created.");
                 }
                 setCouponForm(emptyCoupon);
@@ -130,31 +148,54 @@ const AdminWalletPage: React.FC = () => {
             </label>
             <label>
               Type
-              <select
-                value={couponForm.type}
-                onChange={(event) =>
-                  setCouponForm((current) => ({
-                    ...current,
-                    type: event.target.value as WalletCouponPayload["type"],
-                  }))
-                }
-              >
+                <select
+                  value={couponForm.type}
+                  onChange={(event) =>
+                    setCouponForm((current) => ({
+                      ...current,
+                      type: event.target.value as WalletCouponPayload["type"],
+                      amount: event.target.value === "ORDER_DISCOUNT" ? 0 : current.amount,
+                      discountPercentage:
+                        event.target.value === "ORDER_DISCOUNT" ? current.discountPercentage ?? 0 : 0,
+                    }))
+                  }
+                >
                 <option value="WALLET_TOPUP">Wallet top-up code</option>
                 <option value="ORDER_CASHBACK">Checkout cashback code</option>
+                <option value="ORDER_DISCOUNT">Instant discount code</option>
               </select>
             </label>
-            <label>
-              Amount
-              <input
-                type="number"
-                min={0}
-                value={couponForm.amount}
-                onChange={(event) =>
-                  setCouponForm((current) => ({ ...current, amount: Number(event.target.value) }))
-                }
-                required
-              />
-            </label>
+            {couponForm.type === "ORDER_DISCOUNT" ? (
+              <label>
+                Discount percentage
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={couponForm.discountPercentage ?? 0}
+                  onChange={(event) =>
+                    setCouponForm((current) => ({
+                      ...current,
+                      discountPercentage: Number(event.target.value),
+                    }))
+                  }
+                  required
+                />
+              </label>
+            ) : (
+              <label>
+                Amount
+                <input
+                  type="number"
+                  min={0}
+                  value={couponForm.amount}
+                  onChange={(event) =>
+                    setCouponForm((current) => ({ ...current, amount: Number(event.target.value) }))
+                  }
+                  required
+                />
+              </label>
+            )}
             <label>
               Reward delay in minutes
               <input
@@ -168,6 +209,23 @@ const AdminWalletPage: React.FC = () => {
                   }))
                 }
               />
+            </label>
+            <label>
+              Redeem frequency
+              <select
+                value={couponForm.redemptionFrequency}
+                onChange={(event) =>
+                  setCouponForm((current) => ({
+                    ...current,
+                    redemptionFrequency: event.target.value as WalletCouponPayload["redemptionFrequency"],
+                  }))
+                }
+              >
+                <option value="ONCE">Only once</option>
+                <option value="WEEKLY">Once every week</option>
+                <option value="MONTHLY">Once every month</option>
+                <option value="YEARLY">Once every year</option>
+              </select>
             </label>
             <label className="form-grid__wide">
               Description
@@ -221,7 +279,8 @@ const AdminWalletPage: React.FC = () => {
                 <tr>
                   <th>Code</th>
                   <th>Type</th>
-                  <th>Amount</th>
+                  <th>Value</th>
+                  <th>Frequency</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -230,8 +289,19 @@ const AdminWalletPage: React.FC = () => {
                 {coupons.map((coupon) => (
                   <tr key={coupon.id}>
                     <td>{coupon.code}</td>
-                    <td>{coupon.type}</td>
-                    <td>{coupon.amount}</td>
+                    <td>
+                      {coupon.type === "ORDER_DISCOUNT"
+                        ? "Instant discount"
+                        : coupon.type === "ORDER_CASHBACK"
+                          ? "Checkout cashback"
+                          : "Wallet top-up"}
+                    </td>
+                    <td>
+                      {coupon.type === "ORDER_DISCOUNT"
+                        ? `${coupon.discountPercentage ?? 0}% off`
+                        : coupon.amount}
+                    </td>
+                    <td>{coupon.redemptionFrequency}</td>
                     <td>{coupon.active ? "Active" : "Inactive"}</td>
                     <td>
                       <div className="admin-table-actions">
@@ -244,10 +314,12 @@ const AdminWalletPage: React.FC = () => {
                               code: coupon.code,
                               type: coupon.type,
                               amount: coupon.amount,
+                              discountPercentage: coupon.discountPercentage ?? 0,
                               description: coupon.description || "",
                               assignedCustomerEmails: coupon.assignedCustomerEmails || "",
                               active: coupon.active,
                               rewardDelayMinutes: coupon.rewardDelayMinutes,
+                              redemptionFrequency: coupon.redemptionFrequency || "ONCE",
                             });
                           }}
                         >
@@ -277,7 +349,7 @@ const AdminWalletPage: React.FC = () => {
                 ))}
                 {!coupons.length ? (
                   <tr>
-                    <td colSpan={5}>No wallet coupons created yet.</td>
+                    <td colSpan={6}>No wallet coupons created yet.</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -302,7 +374,7 @@ const AdminWalletPage: React.FC = () => {
                 <option value="">Select coupon</option>
                 {coupons.map((coupon) => (
                   <option key={coupon.id} value={coupon.id}>
-                    {coupon.code} - {coupon.type}
+                    {coupon.code} - {coupon.type === "ORDER_DISCOUNT" ? `${coupon.discountPercentage ?? 0}% off` : coupon.type}
                   </option>
                 ))}
               </select>

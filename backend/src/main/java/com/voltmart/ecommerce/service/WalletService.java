@@ -15,6 +15,7 @@ public interface WalletService {
     WalletResponse redeemWalletTopupCode(String code);
     List<WalletCouponResponse> getAllCoupons();
     List<WalletCouponResponse> getCustomerCheckoutCoupons();
+    WalletCoupon validateCheckoutCoupon(String rawCode);
     WalletCouponResponse createCoupon(WalletCouponRequest request);
     WalletCouponResponse updateCoupon(Long id, WalletCouponRequest request);
     void deleteCoupon(Long id);

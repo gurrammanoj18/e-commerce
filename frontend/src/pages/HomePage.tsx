@@ -6,7 +6,7 @@ import ProductCard from "../components/product/ProductCard";
 import LoadingState from "../components/shared/LoadingState";
 import { useProducts } from "../contexts/ProductContext";
 import { Banner, Product } from "../types/store";
-import { fetchActiveBanners } from "../services/bannerService";
+import { fetchBanners } from "../services/bannerService";
 import bannerOne from "../assets/banners/ban1.png";
 import bannerTwo from "../assets/banners/ban2.png";
 import bannerThree from "../assets/banners/ban4.png";
@@ -75,16 +75,7 @@ const whyShopItems = [
 ];
 
 const getItemsPerPage = () => {
-  if (window.innerWidth <= 560) {
-    return 5;
-  }
-  if (window.innerWidth <= 820) {
-    return 1;
-  }
-  if (window.innerWidth <= 980) {
-    return 2;
-  }
-  return 3;
+  return 4;
 };
 
 const chunkProducts = (products: Product[], size: number) => {
@@ -106,17 +97,22 @@ interface ProductCarouselSectionProps {
 
 const promoBanners = [bannerOne, bannerTwo, bannerThree];
 
-const MidPageBannerCarousel: React.FC = () => {
+const MidPageBannerCarousel: React.FC<{ banners: string[] }> = ({ banners }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const carouselBanners = banners.length ? banners : promoBanners;
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
-      setActiveIndex((currentIndex) => (currentIndex + 1) % promoBanners.length);
+      setActiveIndex((currentIndex) => (currentIndex + 1) % carouselBanners.length);
     }, 3500);
 
     return () => window.clearInterval(intervalId);
-  }, []);
+  }, [carouselBanners.length]);
+
+  useEffect(() => {
+    setActiveIndex((currentIndex) => Math.min(currentIndex, carouselBanners.length - 1));
+  }, [carouselBanners.length]);
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     setTouchStartX(event.touches[0]?.clientX ?? null);
@@ -137,9 +133,9 @@ const MidPageBannerCarousel: React.FC = () => {
 
     setActiveIndex((currentIndex) =>
       deltaX < 0
-        ? (currentIndex + 1) % promoBanners.length
+        ? (currentIndex + 1) % carouselBanners.length
         : currentIndex === 0
-          ? promoBanners.length - 1
+          ? carouselBanners.length - 1
           : currentIndex - 1
     );
     setTouchStartX(null);
@@ -157,7 +153,7 @@ const MidPageBannerCarousel: React.FC = () => {
             className="banner-carousel__track"
             style={{ transform: `translateX(-${activeIndex * 100}%)` }}
           >
-            {promoBanners.map((bannerImage, index) => (
+            {carouselBanners.map((bannerImage, index) => (
               <div key={bannerImage} className="banner-carousel__slide">
                 <img src={bannerImage} alt={`VoltMart banner ${index + 1}`} />
               </div>
@@ -170,7 +166,7 @@ const MidPageBannerCarousel: React.FC = () => {
           className="banner-carousel__arrow banner-carousel__arrow--prev"
           onClick={() =>
             setActiveIndex((currentIndex) =>
-              currentIndex === 0 ? promoBanners.length - 1 : currentIndex - 1
+              currentIndex === 0 ? carouselBanners.length - 1 : currentIndex - 1
             )
           }
           aria-label="Show previous banner"
@@ -181,7 +177,7 @@ const MidPageBannerCarousel: React.FC = () => {
           type="button"
           className="banner-carousel__arrow banner-carousel__arrow--next"
           onClick={() =>
-            setActiveIndex((currentIndex) => (currentIndex + 1) % promoBanners.length)
+            setActiveIndex((currentIndex) => (currentIndex + 1) % carouselBanners.length)
           }
           aria-label="Show next banner"
         >
@@ -189,7 +185,7 @@ const MidPageBannerCarousel: React.FC = () => {
         </button>
 
         <div className="banner-carousel__dots" aria-label="Banner slides">
-          {promoBanners.map((bannerImage, index) => (
+          {carouselBanners.map((bannerImage, index) => (
             <button
               key={`${bannerImage}-dot`}
               type="button"
@@ -329,19 +325,29 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
 
 const HomePage: React.FC = () => {
   const { bestSellerProducts, categories, loading, products } = useProducts();
-  const [infoBanner, setInfoBanner] = useState<Banner | null>(null);
+  const [banners, setBanners] = useState<Banner[]>([]);
 
   useEffect(() => {
-    const loadInfoBanner = async () => {
+    let isMounted = true;
+
+    const loadBanners = async () => {
       try {
-        const banners = await fetchActiveBanners();
-        setInfoBanner(banners.find((banner) => banner.type === "INFO") ?? null);
+        const response = await fetchBanners();
+        if (isMounted) {
+          setBanners(response);
+        }
       } catch {
-        setInfoBanner(null);
+        if (isMounted) {
+          setBanners([]);
+        }
       }
     };
 
-    void loadInfoBanner();
+    void loadBanners();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const trendingProducts = useMemo(
@@ -383,7 +389,7 @@ const HomePage: React.FC = () => {
         loading={loading}
       />
 
-      <MidPageBannerCarousel />
+      <MidPageBannerCarousel banners={banners.map((banner) => banner.imageUrl).filter(Boolean)} />
 
       <ProductCarouselSection
         eyebrow="Trending products"
@@ -391,16 +397,6 @@ const HomePage: React.FC = () => {
         products={trendingProducts}
         loading={loading}
       />
-
-      {infoBanner ? (
-        <section className="shell section home-info-banner-section">
-          <article className="home-info-banner">
-            <span className="eyebrow">Store update</span>
-            <h2>{infoBanner.title}</h2>
-            <p>{infoBanner.subtitle}</p>
-          </article>
-        </section>
-      ) : null}
 
       <ProductCarouselSection
         eyebrow="Best-selling products"

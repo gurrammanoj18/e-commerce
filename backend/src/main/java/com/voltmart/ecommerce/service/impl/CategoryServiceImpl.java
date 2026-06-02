@@ -46,12 +46,21 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public CategoryResponse createCategory(CategoryRequest request) {
+        boolean showInNavbar = Boolean.TRUE.equals(request.showInNavbar());
+        String name = request.name().trim();
+        String slug = request.slug().trim();
+        validateUniqueCategory(name, slug, null);
+        String image = blankToNull(request.image());
+        if (!showInNavbar && image == null) {
+            throw new BadRequestException("Upload a category image");
+        }
         Category category = Category.builder()
-                .name(request.name().trim())
-                .slug(request.slug().trim())
+                .name(name)
+                .slug(slug)
                 .description(blankToNull(request.description()))
                 .icon(blankToNull(request.icon()))
-                .image(blankToNull(request.image()))
+                .image(showInNavbar ? null : image)
+                .showInNavbar(showInNavbar)
                 .parent(resolveParent(request.parentId(), null))
                 .build();
         return toCategoryTree(categoryRepository.save(category), buildProductCounts());
@@ -62,11 +71,20 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
-        category.setName(request.name().trim());
-        category.setSlug(request.slug().trim());
+        boolean showInNavbar = Boolean.TRUE.equals(request.showInNavbar());
+        String name = request.name().trim();
+        String slug = request.slug().trim();
+        validateUniqueCategory(name, slug, id);
+        String image = blankToNull(request.image());
+        if (!showInNavbar && image == null) {
+            throw new BadRequestException("Upload a category image");
+        }
+        category.setName(name);
+        category.setSlug(slug);
         category.setDescription(blankToNull(request.description()));
         category.setIcon(blankToNull(request.icon()));
-        category.setImage(blankToNull(request.image()));
+        category.setImage(showInNavbar ? null : image);
+        category.setShowInNavbar(showInNavbar);
         category.setParent(resolveParent(request.parentId(), id));
         return toCategoryTree(categoryRepository.save(category), buildProductCounts());
     }
@@ -122,5 +140,18 @@ public class CategoryServiceImpl implements CategoryService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private void validateUniqueCategory(String name, String slug, Long currentCategoryId) {
+        categoryRepository.findByNameIgnoreCase(name)
+                .filter(category -> currentCategoryId == null || !category.getId().equals(currentCategoryId))
+                .ifPresent(category -> {
+                    throw new BadRequestException("Category name already exists");
+                });
+        categoryRepository.findBySlugIgnoreCase(slug)
+                .filter(category -> currentCategoryId == null || !category.getId().equals(currentCategoryId))
+                .ifPresent(category -> {
+                    throw new BadRequestException("Category slug already exists");
+                });
     }
 }

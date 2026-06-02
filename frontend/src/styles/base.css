@@ -90,6 +90,7 @@ img {
 }
 
 .app-tagline {
+  display: none;
   position: relative;
   z-index: 5;
   padding-top: 8px;
@@ -170,12 +171,16 @@ img {
 }
 
 @media (max-width: 820px) {
+  .app-tagline {
+    display: block;
+  }
+
   .app-main--home {
     padding-top: 144px;
   }
 
   .app-main--page {
-    padding-top: 78px;
+    padding-top: 144px;
   }
 
   .app-tagline {

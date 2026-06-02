@@ -14,6 +14,8 @@ public class AppProperties {
     private final Jwt jwt = new Jwt();
     private final Cors cors = new Cors();
     private final Google google = new Google();
+    private final Store store = new Store();
+    private final Seed seed = new Seed();
     private final Whatsapp whatsapp = new Whatsapp();
     private final Email email = new Email();
 
@@ -34,6 +36,19 @@ public class AppProperties {
     @Setter
     public static class Google {
         private String clientId;
+    }
+
+    @Getter
+    @Setter
+    public static class Store {
+        private String frontendUrl = "http://localhost:3000";
+    }
+
+    @Getter
+    @Setter
+    public static class Seed {
+        private String adminEmail = "admin@voltmart.in";
+        private String adminPassword = "Admin@123";
     }
 
     @Getter

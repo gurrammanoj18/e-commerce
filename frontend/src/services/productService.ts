@@ -91,6 +91,24 @@ export const getBestSellerProducts = async (): Promise<Product[]> => {
   return response.data.map(transformProduct);
 };
 
+export const resolveShowInNavbar = (category: any): boolean => {
+  const explicitValue = category.showInNavbar ?? category.show_in_navbar;
+  if (typeof explicitValue === "boolean") {
+    return explicitValue;
+  }
+
+  const label = `${category.name ?? ""} ${category.slug ?? ""}`.toLowerCase();
+  const looksPromotional = /\b(offer|off|sale|deal|discount|season|festival|diwali|promo)\b/.test(label);
+  const hasProducts = Number(category.productCount ?? category.count ?? 0) > 0;
+
+  return looksPromotional && !category.image && !hasProducts;
+};
+
+export const isPromotionalCategory = (category: any): boolean => {
+  const label = `${category.name ?? ""} ${category.slug ?? ""}`.toLowerCase();
+  return /\b(offer|off|sale|deal|discount|season|festival|diwali|promo)\b/.test(label);
+};
+
 export const getCategories = async (): Promise<CategorySummary[]> => {
   const response = await api.get<any[]>("/categories");
   const mapCategory = (category: any): CategorySummary => ({
@@ -101,6 +119,7 @@ export const getCategories = async (): Promise<CategorySummary[]> => {
     description: category.description,
     icon: category.icon,
     image: category.image,
+    showInNavbar: resolveShowInNavbar(category),
     parentId: category.parentId,
     isLeaf: category.leaf,
     subcategories: (category.subcategories || []).map(mapCategory),

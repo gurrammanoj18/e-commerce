@@ -28,7 +28,6 @@ C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecomme
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\auth\OtpVerifyRequest.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\auth\ProfileCompletionRequest.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\banner\AdminBannerRequest.java
-C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\banner\BannerRequest.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\banner\BannerResponse.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\bulk\BulkInquiryLineItemRequest.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\bulk\BulkInquiryLineItemResponse.java
@@ -78,7 +77,6 @@ C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecomme
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\Cart.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\CartItem.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\Category.java
-C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\enums\BannerType.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\enums\BulkQuoteStatus.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\enums\DeliveryMode.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\enums\OrderStatus.java
@@ -86,6 +84,7 @@ C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecomme
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\enums\ReturnRequestType.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\enums\ReturnResolution.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\enums\Role.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\enums\WalletCouponRedemptionFrequency.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\enums\WalletCouponType.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\enums\WalletTransactionType.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\Inventory.java

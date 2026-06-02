@@ -36,6 +36,7 @@ export type ReturnResolution = "WALLET_CREDIT" | "REPLACEMENT" | "MANUAL_REFUND"
 export type ReturnRequestStatus =
   | "REQUESTED"
   | "UNDER_REVIEW"
+  | "CONFIRMED"
   | "APPROVED"
   | "READY_TO_PICKUP"
   | "PICKUP_SCHEDULED"
@@ -138,6 +139,7 @@ export interface CategorySummary {
   description: string;
   icon: string;
   image?: string;
+  showInNavbar?: boolean;
   parentId?: number | null;
   isLeaf?: boolean;
   subcategories?: CategorySummary[];
@@ -225,6 +227,7 @@ export interface Order {
   totalAmount: number;
   walletDebitAmount?: number;
   appliedCouponCode?: string | null;
+  appliedDiscountAmount?: number | null;
   walletCreditAmount?: number | null;
   walletCreditEligibleAt?: string | null;
   walletCreditProcessed: boolean;
@@ -292,29 +295,17 @@ export interface CategoryPayload {
   icon?: string;
   image?: string;
   parentId?: number | null;
+  showInNavbar?: boolean;
+  show_in_navbar?: boolean;
 }
 
 export interface Banner {
   id: number;
-  title: string;
-  subtitle?: string | null;
-  imageUrl?: string | null;
-  ctaLabel?: string | null;
-  ctaHref?: string | null;
-  type: "HERO" | "INFO";
-  displayOrder: number;
-  active: boolean;
+  imageUrl: string;
 }
 
 export interface BannerPayload {
-  title: string;
-  subtitle?: string;
-  imageUrl?: string;
-  ctaLabel?: string;
-  ctaHref?: string;
-  type: "HERO" | "INFO";
-  displayOrder: number;
-  active: boolean;
+  imageUrl: string;
 }
 
 export interface WalletTransaction {
@@ -334,12 +325,14 @@ export interface WalletSummary {
 export interface WalletCoupon {
   id: number;
   code: string;
-  type: "WALLET_TOPUP" | "ORDER_CASHBACK";
+  type: "WALLET_TOPUP" | "ORDER_CASHBACK" | "ORDER_DISCOUNT";
   amount: number;
+  discountPercentage?: number | null;
   description?: string | null;
   assignedCustomerEmails?: string | null;
   active: boolean;
   rewardDelayMinutes: number;
+  redemptionFrequency: "ONCE" | "WEEKLY" | "MONTHLY" | "YEARLY";
 }
 
 export interface WalletCouponRedemption {
@@ -355,12 +348,14 @@ export interface WalletCouponRedemption {
 
 export interface WalletCouponPayload {
   code: string;
-  type: "WALLET_TOPUP" | "ORDER_CASHBACK";
+  type: "WALLET_TOPUP" | "ORDER_CASHBACK" | "ORDER_DISCOUNT";
   amount: number;
+  discountPercentage?: number;
   description?: string;
   assignedCustomerEmails?: string;
   active: boolean;
   rewardDelayMinutes: number;
+  redemptionFrequency: "ONCE" | "WEEKLY" | "MONTHLY" | "YEARLY";
 }
 
 export interface WalletCouponGrantPayload {
