@@ -1,0 +1,125 @@
+.site-entry-prompt {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(10px);
+}
+
+.site-entry-prompt__card {
+  width: min(100%, 560px);
+  display: grid;
+  gap: 18px;
+  padding: 28px;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 30px 60px rgba(15, 23, 42, 0.24);
+}
+
+.site-entry-prompt__header {
+  display: grid;
+  gap: 10px;
+}
+
+.site-entry-prompt__header h2,
+.site-entry-prompt__header p,
+.site-entry-prompt__hint,
+.site-entry-prompt__result {
+  margin: 0;
+}
+
+.site-entry-prompt__header p,
+.site-entry-prompt__hint {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.site-entry-prompt__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.site-entry-prompt__mode {
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.site-entry-prompt__mode--primary,
+.site-entry-prompt__mode.is-active {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: #fff;
+}
+
+.site-entry-prompt__checker {
+  display: grid;
+  gap: 10px;
+}
+
+.site-entry-prompt__checker label {
+  display: grid;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.site-entry-prompt__checker-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.site-entry-prompt__checker-row input {
+  min-height: 50px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--text);
+}
+
+.site-entry-prompt__result {
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 600;
+}
+
+.site-entry-prompt__result.is-serviceable {
+  background: #ecfdf3;
+  color: #166534;
+}
+
+.site-entry-prompt__result.is-unserviceable {
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.site-entry-prompt__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 560px) {
+  .site-entry-prompt {
+    padding: 16px;
+  }
+
+  .site-entry-prompt__card {
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .site-entry-prompt__actions,
+  .site-entry-prompt__checker-row {
+    grid-template-columns: 1fr;
+  }
+}

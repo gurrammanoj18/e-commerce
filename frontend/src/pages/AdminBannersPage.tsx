@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import AdminWorkspaceNav from "../components/admin/AdminWorkspaceNav";
 import { useAuth } from "../contexts/AuthContext";
+import { useProcessing } from "../contexts/ProcessingContext";
 import {
   createAdminBanner,
   createAdminSeasonalPick,
@@ -26,6 +27,7 @@ const AdminBannersPage: React.FC = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { startProcessing, stopProcessing } = useProcessing();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [seasonalPicks, setSeasonalPicks] = useState<Banner[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -59,6 +61,10 @@ const AdminBannersPage: React.FC = () => {
   }, [location, logout, navigate]);
 
   const loadBanners = useCallback(async () => {
+    const processingId = startProcessing({
+      title: "Loading banners",
+      message: "Fetching homepage banners and seasonal picks...",
+    });
     try {
       const [bannerResponse, seasonalResponse] = await Promise.all([
         fetchAdminBanners(),
@@ -68,8 +74,10 @@ const AdminBannersPage: React.FC = () => {
       setSeasonalPicks(seasonalResponse);
     } catch (error) {
       handleAdminRequestError(error, "Unable to load banners right now.");
+    } finally {
+      stopProcessing(processingId);
     }
-  }, [handleAdminRequestError]);
+  }, [handleAdminRequestError, startProcessing, stopProcessing]);
 
   useEffect(() => {
     void loadBanners();
@@ -96,6 +104,10 @@ const AdminBannersPage: React.FC = () => {
           className="form-grid"
           onSubmit={async (event) => {
             event.preventDefault();
+            const processingId = startProcessing({
+              title: editingId ? "Updating banner" : "Creating banner",
+              message: "Saving the banner image and refreshing the homepage...",
+            });
             try {
               if (editingId) {
                 await updateAdminBanner(editingId, formState);
@@ -109,6 +121,8 @@ const AdminBannersPage: React.FC = () => {
               await loadBanners();
             } catch (error) {
               handleAdminRequestError(error, "Unable to save banner right now.");
+            } finally {
+              stopProcessing(processingId);
             }
           }}
         >
@@ -152,7 +166,16 @@ const AdminBannersPage: React.FC = () => {
           ) : null}
           <div className="admin-form-actions">
             <button className="button" type="submit" disabled={uploading}>
-              {editingId ? "Update image" : "Create image"}
+              {uploading ? (
+                <span className="button-loading">
+                  <span className="button-loading__spinner" aria-hidden="true" />
+                  Preparing...
+                </span>
+              ) : editingId ? (
+                "Update image"
+              ) : (
+                "Create image"
+              )}
             </button>
           </div>
         </form>
@@ -241,6 +264,10 @@ const AdminBannersPage: React.FC = () => {
           className="form-grid"
           onSubmit={async (event) => {
             event.preventDefault();
+            const processingId = startProcessing({
+              title: editingSeasonalId ? "Updating seasonal pick" : "Creating seasonal pick",
+              message: "Saving the seasonal banner and refreshing the homepage...",
+            });
             try {
               if (editingSeasonalId) {
                 await updateAdminSeasonalPick(editingSeasonalId, seasonalFormState);
@@ -254,6 +281,8 @@ const AdminBannersPage: React.FC = () => {
               await loadBanners();
             } catch (error) {
               handleAdminRequestError(error, "Unable to save seasonal pick right now.");
+            } finally {
+              stopProcessing(processingId);
             }
           }}
         >
@@ -297,7 +326,16 @@ const AdminBannersPage: React.FC = () => {
           ) : null}
           <div className="admin-form-actions">
             <button className="button" type="submit" disabled={uploadingSeasonal}>
-              {editingSeasonalId ? "Update seasonal pick" : "Create seasonal pick"}
+              {uploadingSeasonal ? (
+                <span className="button-loading">
+                  <span className="button-loading__spinner" aria-hidden="true" />
+                  Preparing...
+                </span>
+              ) : editingSeasonalId ? (
+                "Update seasonal pick"
+              ) : (
+                "Create seasonal pick"
+              )}
             </button>
             {editingSeasonalId ? (
               <button

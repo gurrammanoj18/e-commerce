@@ -16,6 +16,7 @@ import {
   ServiceablePincode,
   ServiceablePincodePayload,
 } from "../types/store";
+import { useProcessing } from "../contexts/ProcessingContext";
 
 const emptyPincode: ServiceablePincodePayload = {
   pincode: "",
@@ -34,10 +35,12 @@ const AdminServicesPage: React.FC = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { startProcessing, stopProcessing } = useProcessing();
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
   const [serviceablePincodes, setServiceablePincodes] = useState<ServiceablePincode[]>([]);
   const [editingPincodeId, setEditingPincodeId] = useState<number | null>(null);
   const [pincodeForm, setPincodeForm] = useState<ServiceablePincodePayload>(emptyPincode);
+  const [savingPincode, setSavingPincode] = useState(false);
 
   const handleAdminRequestError = useCallback((error: unknown, fallback: string) => {
     if (error instanceof AxiosError && error.response?.status === 401) {
@@ -59,6 +62,10 @@ const AdminServicesPage: React.FC = () => {
   }, [location, logout, navigate]);
 
   const loadData = useCallback(async () => {
+    const processingId = startProcessing({
+      title: "Loading services",
+      message: "Fetching serviceable pincodes and customer requests...",
+    });
     const [pincodeResult, requestResult] = await Promise.allSettled([
       fetchAdminServiceablePincodes(),
       fetchAdminServiceRequests(),
@@ -75,7 +82,8 @@ const AdminServicesPage: React.FC = () => {
     } else {
       handleAdminRequestError(requestResult.reason, "Unable to load service requests.");
     }
-  }, [handleAdminRequestError]);
+    stopProcessing(processingId);
+  }, [handleAdminRequestError, startProcessing, stopProcessing]);
 
   useEffect(() => {
     void loadData();
@@ -103,6 +111,11 @@ const AdminServicesPage: React.FC = () => {
             className="form-grid"
             onSubmit={async (event) => {
               event.preventDefault();
+              const processingId = startProcessing({
+                title: editingPincodeId ? "Updating pincode" : "Adding pincode",
+                message: "Saving service coverage and refreshing the list...",
+              });
+              setSavingPincode(true);
               try {
                 const payload = {
                   ...pincodeForm,
@@ -120,6 +133,9 @@ const AdminServicesPage: React.FC = () => {
                 await loadData();
               } catch (error) {
                 handleAdminRequestError(error, "Unable to save pincode.");
+              } finally {
+                setSavingPincode(false);
+                stopProcessing(processingId);
               }
             }}
           >
@@ -159,8 +175,17 @@ const AdminServicesPage: React.FC = () => {
               <span>Pincode is active</span>
             </label>
             <div className="admin-form-actions">
-              <button className="button" type="submit">
-                {editingPincodeId ? "Update pincode" : "Add pincode"}
+              <button className="button" type="submit" disabled={savingPincode}>
+                {savingPincode ? (
+                  <span className="button-loading">
+                    <span className="button-loading__spinner" aria-hidden="true" />
+                    Saving...
+                  </span>
+                ) : editingPincodeId ? (
+                  "Update pincode"
+                ) : (
+                  "Add pincode"
+                )}
               </button>
             </div>
           </form>

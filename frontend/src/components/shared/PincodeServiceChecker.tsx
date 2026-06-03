@@ -23,12 +23,12 @@ const PincodeServiceChecker: React.FC<PincodeServiceCheckerProps> = ({ open, onC
       return;
     }
 
-    if (window.sessionStorage.getItem(PINCODE_CHECKER_SESSION_KEY) === "true") {
+    if (window.localStorage.getItem(PINCODE_CHECKER_SESSION_KEY) === "true") {
       onClose();
       return;
     }
 
-    window.sessionStorage.setItem(PINCODE_CHECKER_SESSION_KEY, "true");
+    window.localStorage.setItem(PINCODE_CHECKER_SESSION_KEY, "true");
 
     setPincode("");
     setChecking(false);

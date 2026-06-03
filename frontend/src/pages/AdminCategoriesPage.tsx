@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import AdminWorkspaceNav from "../components/admin/AdminWorkspaceNav";
 import { useAuth } from "../contexts/AuthContext";
+import { useProcessing } from "../contexts/ProcessingContext";
 import {
   createAdminCategory,
   deleteAdminCategory,
@@ -46,6 +47,7 @@ const AdminCategoriesPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { startProcessing, stopProcessing } = useProcessing();
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [formState, setFormState] = useState(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -71,13 +73,19 @@ const AdminCategoriesPage: React.FC = () => {
   }, [location, logout, navigate]);
 
   const loadCategories = useCallback(async () => {
+    const processingId = startProcessing({
+      title: "Loading categories",
+      message: "Fetching category data and navbar visibility settings...",
+    });
     try {
       const response = await fetchAdminCategories();
       setCategories(response);
     } catch (error) {
       handleAdminRequestError(error, "Unable to load categories right now.");
+    } finally {
+      stopProcessing(processingId);
     }
-  }, [handleAdminRequestError]);
+  }, [handleAdminRequestError, startProcessing, stopProcessing]);
 
   useEffect(() => {
     void loadCategories();
@@ -149,6 +157,10 @@ const AdminCategoriesPage: React.FC = () => {
                 showInNavbar: formState.showInNavbar,
               };
 
+              const processingId = startProcessing({
+                title: editingId ? "Updating category" : "Creating category",
+                message: "Saving the category and refreshing navigation...",
+              });
               try {
                 if (editingId) {
                   await updateAdminCategory(editingId, payload);
@@ -163,6 +175,8 @@ const AdminCategoriesPage: React.FC = () => {
                 window.dispatchEvent(new Event("catalog:categories-updated"));
               } catch (error) {
                 handleAdminRequestError(error, "Unable to save category right now.");
+              } finally {
+                stopProcessing(processingId);
               }
             }}
           >
@@ -224,11 +238,16 @@ const AdminCategoriesPage: React.FC = () => {
             ) : null}
             <div className="admin-form-actions">
               <button className="button" type="submit" disabled={uploadingImage}>
-                {uploadingImage
-                  ? "Preparing image..."
-                  : editingId
-                    ? "Update category"
-                    : "Create category"}
+                {uploadingImage ? (
+                  <span className="button-loading">
+                    <span className="button-loading__spinner" aria-hidden="true" />
+                    Preparing image...
+                  </span>
+                ) : editingId ? (
+                  "Update category"
+                ) : (
+                  "Create category"
+                )}
               </button>
               <button
                 className="link-button"

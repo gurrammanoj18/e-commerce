@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { AxiosError } from "axios";
 import "../styles/shared/DeliveryPreferenceModal.css";
+import "../styles/shared/LoadingState.css";
 import { setApiAuthToken } from "../services/api";
 import {
   adminLogin as adminLoginRequest,
@@ -35,7 +36,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = "voltmart-auth-user";
 const TOKEN_STORAGE_KEY = "voltmart-token";
-const DELIVERY_PROMPT_SESSION_PREFIX = "voltmart-delivery-prompt-shown";
+const DELIVERY_PROMPT_STORAGE_PREFIX = "voltmart-delivery-prompt-shown";
 
 const decodeJwtPayload = (token: string) => {
   try {
@@ -76,13 +77,13 @@ const shouldRequireCustomerName = (user: AuthUser | null) =>
   Boolean(user?.role === "ROLE_CUSTOMER" && (!getDisplayName(user) || !user.phoneNumber?.trim()));
 
 const getDeliveryPromptSessionKey = (user: AuthUser) =>
-  `${DELIVERY_PROMPT_SESSION_PREFIX}:${user.email || user.phoneNumber || user.id || "customer"}`;
+  `${DELIVERY_PROMPT_STORAGE_PREFIX}:${user.email || user.phoneNumber || user.id || "customer"}`;
 
 const hasSeenDeliveryPromptThisSession = (user: AuthUser) =>
-  window.sessionStorage.getItem(getDeliveryPromptSessionKey(user)) === "true";
+  window.localStorage.getItem(getDeliveryPromptSessionKey(user)) === "true";
 
 const markDeliveryPromptSeenThisSession = (user: AuthUser) => {
-  window.sessionStorage.setItem(getDeliveryPromptSessionKey(user), "true");
+  window.localStorage.setItem(getDeliveryPromptSessionKey(user), "true");
 };
 
 const shouldShowDeliveryPromptThisSession = (user: AuthUser, requireProfile: boolean) =>
@@ -137,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [showProfileCompletionModal, setShowProfileCompletionModal] = useState(false);
   const [pendingDeliveryPreferencePrompt, setPendingDeliveryPreferencePrompt] = useState(false);
   const [deliveryPreferenceError, setDeliveryPreferenceError] = useState("");
+  const [savingDeliveryPreference, setSavingDeliveryPreference] = useState<DeliveryMode | null>(null);
   const { startProcessing, stopProcessing } = useProcessing();
   const isAdminSession = user?.role === "ROLE_ADMIN";
   const isCustomerOnboardingBlocked = Boolean(
@@ -359,6 +361,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       };
     }
 
+    setSavingDeliveryPreference(mode);
     const processingId = startProcessing({
       title: "Saving preference",
       message: "Updating your default fulfilment option...",
@@ -390,6 +393,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         error: message,
       };
     } finally {
+      setSavingDeliveryPreference(null);
       stopProcessing(processingId);
     }
   };
@@ -439,16 +443,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               <button
                 type="button"
                 className="delivery-preference-modal__button"
+                disabled={Boolean(savingDeliveryPreference)}
                 onClick={() => void updateDeliveryPreference("STORE_PICKUP")}
               >
-                Pick up at store
+                {savingDeliveryPreference === "STORE_PICKUP" ? (
+                  <span className="button-loading button-loading--dark">
+                    <span className="button-loading__spinner" aria-hidden="true" />
+                    Opening...
+                  </span>
+                ) : (
+                  "Pick up at store"
+                )}
               </button>
               <button
                 type="button"
                 className="delivery-preference-modal__button delivery-preference-modal__button--primary"
+                disabled={Boolean(savingDeliveryPreference)}
                 onClick={() => void updateDeliveryPreference("HOME_DELIVERY")}
               >
-                Home delivery
+                {savingDeliveryPreference === "HOME_DELIVERY" ? (
+                  <span className="button-loading">
+                    <span className="button-loading__spinner" aria-hidden="true" />
+                    Opening...
+                  </span>
+                ) : (
+                  "Home delivery"
+                )}
               </button>
             </div>
             {deliveryPreferenceError ? (

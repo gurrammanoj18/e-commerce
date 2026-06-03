@@ -11,6 +11,7 @@ import { CollectionAnimationProvider } from "./contexts/CollectionAnimationConte
 import { ProcessingProvider } from "./contexts/ProcessingContext";
 import { ProductProvider } from "./contexts/ProductContext";
 import { WishlistProvider } from "./contexts/WishlistContext";
+import ProcessingOverlay from "./components/shared/ProcessingOverlay";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminBannersPage from "./pages/AdminBannersPage";
 import AdminBulkInquiriesPage from "./pages/AdminBulkInquiriesPage";
@@ -214,6 +215,7 @@ const App: React.FC = () => {
                       />
                     </Route>
                   </Routes>
+                  <ProcessingOverlay />
                   <ToastContainer position="top-right" autoClose={2500} />
                 </BrowserRouter>
               </CollectionAnimationProvider>

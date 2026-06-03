@@ -4,6 +4,7 @@ import { AxiosError } from "axios";
 import { toast } from "react-toastify";
 import AdminWorkspaceNav from "../components/admin/AdminWorkspaceNav";
 import { useAuth } from "../contexts/AuthContext";
+import { useProcessing } from "../contexts/ProcessingContext";
 import { fetchAdminReturnRequests, updateAdminReturnRequest } from "../services/returnService";
 import { ReturnRequest, ReturnRequestStatus, ReturnRequestType } from "../types/store";
 
@@ -68,6 +69,7 @@ const AdminReturnsPage: React.FC = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { startProcessing, stopProcessing } = useProcessing();
   const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -96,6 +98,10 @@ const AdminReturnsPage: React.FC = () => {
   }, [location, logout, navigate]);
 
   const loadData = useCallback(async () => {
+    const processingId = startProcessing({
+      title: "Loading return requests",
+      message: "Fetching return and replacement operations...",
+    });
     try {
       const response = await fetchAdminReturnRequests();
       setReturnRequests(response);
@@ -109,8 +115,9 @@ const AdminReturnsPage: React.FC = () => {
       handleAdminRequestError(error, "Unable to load return requests.");
     } finally {
       setLoading(false);
+      stopProcessing(processingId);
     }
-  }, [handleAdminRequestError]);
+  }, [handleAdminRequestError, startProcessing, stopProcessing]);
 
   useEffect(() => {
     void loadData();
@@ -137,6 +144,10 @@ const AdminReturnsPage: React.FC = () => {
     }
 
     setSavingId(requestId);
+    const processingId = startProcessing({
+      title: "Saving return request",
+      message: "Updating the return workflow...",
+    });
     try {
       const updated = await updateAdminReturnRequest(requestId, {
         status: statusDrafts[requestId],
@@ -150,6 +161,7 @@ const AdminReturnsPage: React.FC = () => {
       handleAdminRequestError(error, "Unable to update the return request.");
     } finally {
       setSavingId(null);
+      stopProcessing(processingId);
     }
   };
 
@@ -276,7 +288,14 @@ const AdminReturnsPage: React.FC = () => {
                         disabled={savingId === request.id}
                         onClick={() => void handleSave(request.id)}
                       >
-                        {savingId === request.id ? "Saving..." : "Save"}
+                        {savingId === request.id ? (
+                          <span className="button-loading">
+                            <span className="button-loading__spinner" aria-hidden="true" />
+                            Saving...
+                          </span>
+                        ) : (
+                          "Save"
+                        )}
                       </button>
                     </div>
 

@@ -6,6 +6,7 @@ import { AxiosError } from "axios";
 import "../styles/pages/AdminDashboardPage.css";
 import AdminWorkspaceNav from "../components/admin/AdminWorkspaceNav";
 import { useAuth } from "../contexts/AuthContext";
+import { useProcessing } from "../contexts/ProcessingContext";
 import {
   createAdminProduct,
   deleteAdminOrder,
@@ -287,6 +288,7 @@ const AdminDashboardPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAdmin, logout, user } = useAuth();
+  const { startProcessing, stopProcessing } = useProcessing();
   const currentView = getCurrentView(location.pathname);
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -343,6 +345,13 @@ const AdminDashboardPage: React.FC = () => {
       return;
     }
 
+    const processingId = options?.silent
+      ? null
+      : startProcessing({
+          title: "Loading admin workspace",
+          message: "Fetching products, orders, inventory, and customer activity...",
+        });
+
     if (!options?.silent) {
       setLoading(true);
     }
@@ -379,8 +388,11 @@ const AdminDashboardPage: React.FC = () => {
       if (!options?.silent) {
         setLoading(false);
       }
+      if (processingId !== null) {
+        stopProcessing(processingId);
+      }
     }
-  }, [handleAdminRequestError, isAdmin]);
+  }, [handleAdminRequestError, isAdmin, startProcessing, stopProcessing]);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -448,6 +460,10 @@ const AdminDashboardPage: React.FC = () => {
     }
 
     setUploadingImages(true);
+    const processingId = startProcessing({
+      title: "Preparing images",
+      message: "Optimizing your selected product photos...",
+    });
     try {
       const uploadedImages = await Promise.all(files.map(optimizeImageFile));
       handleProductFormChange("images", [...existingImages, ...uploadedImages].join("\n"));
@@ -455,6 +471,7 @@ const AdminDashboardPage: React.FC = () => {
       toast.error(extractErrorMessage(error, "Unable to prepare one or more selected images."));
     } finally {
       setUploadingImages(false);
+      stopProcessing(processingId);
       event.target.value = "";
     }
   };
@@ -480,6 +497,10 @@ const AdminDashboardPage: React.FC = () => {
     }
 
     setDeletingProductId(productId);
+    const processingId = startProcessing({
+      title: "Removing product",
+      message: "Updating catalog entries...",
+    });
     try {
       await deleteAdminProduct(productId);
       toast.success("Product removed from catalog.");
@@ -491,6 +512,7 @@ const AdminDashboardPage: React.FC = () => {
       handleAdminRequestError(error, "Unable to delete that product.");
     } finally {
       setDeletingProductId(null);
+      stopProcessing(processingId);
     }
   };
 
@@ -514,6 +536,10 @@ const AdminDashboardPage: React.FC = () => {
     }
 
     setSavingProduct(true);
+    const processingId = startProcessing({
+      title: editingProductId ? "Updating product" : "Creating product",
+      message: "Saving catalog changes and refreshing inventory...",
+    });
     try {
       if (editingProductId) {
         await updateAdminProduct(editingProductId, payload);
@@ -529,11 +555,16 @@ const AdminDashboardPage: React.FC = () => {
       handleAdminRequestError(error, "We couldn't save that product.");
     } finally {
       setSavingProduct(false);
+      stopProcessing(processingId);
     }
   };
 
   const handleStatusChange = async (orderId: number, status: string) => {
     setStatusUpdatingId(orderId);
+    const processingId = startProcessing({
+      title: "Updating order",
+      message: "Saving the new order status...",
+    });
     try {
       await updateAdminOrderStatus(orderId, status);
       toast.success("Order status updated.");
@@ -542,6 +573,7 @@ const AdminDashboardPage: React.FC = () => {
       handleAdminRequestError(error, "Unable to update the order status.");
     } finally {
       setStatusUpdatingId(null);
+      stopProcessing(processingId);
     }
   };
 
@@ -559,6 +591,10 @@ const AdminDashboardPage: React.FC = () => {
     }
 
     setDeletingOrderId(orderId);
+    const processingId = startProcessing({
+      title: "Deleting order",
+      message: "Removing the order from the admin view...",
+    });
     try {
       await deleteAdminOrder(orderId);
       toast.success("Order removed from history.");
@@ -567,6 +603,7 @@ const AdminDashboardPage: React.FC = () => {
       handleAdminRequestError(error, "Unable to delete the order history.");
     } finally {
       setDeletingOrderId(null);
+      stopProcessing(processingId);
     }
   };
 
@@ -1149,11 +1186,16 @@ const AdminDashboardPage: React.FC = () => {
 
             <div className="admin-form-actions">
               <button className="button" type="submit" disabled={savingProduct}>
-                {savingProduct
-                  ? "Saving..."
-                  : editingProductId
-                    ? "Update product"
-                    : "Add product"}
+                {savingProduct ? (
+                  <span className="button-loading">
+                    <span className="button-loading__spinner" aria-hidden="true" />
+                    {editingProductId ? "Updating..." : "Saving..."}
+                  </span>
+                ) : editingProductId ? (
+                  "Update product"
+                ) : (
+                  "Add product"
+                )}
               </button>
               <button className="link-button" type="button" onClick={resetProductForm}>
                 Clear

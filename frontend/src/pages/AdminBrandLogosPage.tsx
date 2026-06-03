@@ -13,6 +13,7 @@ import {
 import { BrandLogo, BrandLogoPayload } from "../types/store";
 import { optimizeImageFile } from "../utils/imageUpload";
 import { resolveMediaUrl } from "../utils/mediaUrl";
+import { useProcessing } from "../contexts/ProcessingContext";
 import "../styles/pages/AdminDashboardPage.css";
 
 const emptyLogo: BrandLogoPayload = {
@@ -26,6 +27,7 @@ const AdminBrandLogosPage: React.FC = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { startProcessing, stopProcessing } = useProcessing();
   const [logos, setLogos] = useState<BrandLogo[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formState, setFormState] = useState<BrandLogoPayload>(emptyLogo);
@@ -55,12 +57,18 @@ const AdminBrandLogosPage: React.FC = () => {
   }, [location, logout, navigate]);
 
   const loadLogos = useCallback(async () => {
+    const processingId = startProcessing({
+      title: "Loading brand logos",
+      message: "Fetching the homepage brand strip...",
+    });
     try {
       setLogos(await fetchAdminBrandLogos());
     } catch (error) {
       handleAdminRequestError(error, "Unable to load brand logos right now.");
+    } finally {
+      stopProcessing(processingId);
     }
-  }, [handleAdminRequestError]);
+  }, [handleAdminRequestError, startProcessing, stopProcessing]);
 
   useEffect(() => {
     void loadLogos();
@@ -79,6 +87,10 @@ const AdminBrandLogosPage: React.FC = () => {
     }
 
     setUploading(true);
+    const processingId = startProcessing({
+      title: editingId ? "Updating brand logo" : "Creating brand logo",
+      message: "Saving the logo and refreshing the homepage brand strip...",
+    });
     try {
       const payload = {
         ...formState,
@@ -101,6 +113,7 @@ const AdminBrandLogosPage: React.FC = () => {
       handleAdminRequestError(error, "Unable to save brand logo right now.");
     } finally {
       setUploading(false);
+      stopProcessing(processingId);
     }
   };
 
@@ -200,7 +213,16 @@ const AdminBrandLogosPage: React.FC = () => {
           </label>
           <div className="admin-form-actions">
             <button className="button" type="submit" disabled={uploading}>
-              {editingId ? "Update logo" : "Create logo"}
+              {uploading ? (
+                <span className="button-loading">
+                  <span className="button-loading__spinner" aria-hidden="true" />
+                  Saving...
+                </span>
+              ) : editingId ? (
+                "Update logo"
+              ) : (
+                "Create logo"
+              )}
             </button>
           </div>
         </form>

@@ -2,6 +2,7 @@ import React from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import AboutVoltmartSection from "./AboutVoltmartSection";
 import Footer from "./Footer";
+import SiteEntryPrompt from "../shared/SiteEntryPrompt";
 import Navbar from "./Navbar";
 import ScrollToTop from "./ScrollToTop";
 import "../../styles/layout/Navbar.css";
@@ -25,6 +26,7 @@ const Layout: React.FC = () => {
       </Link>
       <Footer />
       <AboutVoltmartSection />
+      <SiteEntryPrompt />
     </div>
   );
 };
