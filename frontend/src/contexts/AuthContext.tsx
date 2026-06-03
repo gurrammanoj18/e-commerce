@@ -6,12 +6,13 @@ import {
   adminLogin as adminLoginRequest,
   completeProfile as completeProfileRequest,
   googleLogin as googleLoginRequest,
+  requestOtp as requestOtpRequest,
   updateDeliveryPreference as updateDeliveryPreferenceRequest,
+  verifyOtp as verifyOtpRequest,
 } from "../services/authService";
-import PincodeServiceChecker from "../components/shared/PincodeServiceChecker";
 
 import { useProcessing } from "./ProcessingContext";
-import { AuthUser, DeliveryMode } from "../types/store";
+import { AuthUser, DeliveryMode, OtpChallengeResponse } from "../types/store";
 import { optimizeImageFile } from "../utils/imageUpload";
 
 interface AuthActionResult<T = void> {
@@ -25,6 +26,8 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isAdmin: boolean;
   loading: boolean;
+  requestOtp: (email: string) => Promise<AuthActionResult<OtpChallengeResponse>>;
+  verifyOtp: (email: string, otpCode: string) => Promise<AuthActionResult>;
   googleLogin: (credential: string) => Promise<AuthActionResult>;
   adminLogin: (email: string, password: string) => Promise<AuthActionResult>;
   completeProfile: (payload: ProfileCompletionPayload) => Promise<AuthActionResult>;
@@ -36,7 +39,6 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = "voltmart-auth-user";
 const TOKEN_STORAGE_KEY = "voltmart-token";
-const DELIVERY_PROMPT_SESSION_KEY = "voltmart-delivery-prompt-shown";
 
 const decodeJwtPayload = (token: string) => {
   try {
@@ -112,59 +114,13 @@ const isAuthorizationError = (error: unknown) =>
   error instanceof AxiosError &&
   (error.response?.status === 401 || error.response?.status === 403);
 
-const hasSeenDeliveryPromptThisSession = () =>
-  window.sessionStorage.getItem(DELIVERY_PROMPT_SESSION_KEY) === "true";
-
-const markDeliveryPromptSeenThisSession = () => {
-  window.sessionStorage.setItem(DELIVERY_PROMPT_SESSION_KEY, "true");
-};
-
-const clearDeliveryPromptSession = () => {
-  window.sessionStorage.removeItem(DELIVERY_PROMPT_SESSION_KEY);
-};
-
-const shouldShowDeliveryPromptForSession = (user: AuthUser | null, requireProfile: boolean) =>
-  Boolean(
-    user?.role === "ROLE_CUSTOMER" &&
-      !requireProfile &&
-      !window.location.pathname.startsWith("/admin") &&
-      !hasSeenDeliveryPromptThisSession(),
-  );
-
-const clearStoredAuth = () => {
-  window.localStorage.removeItem(AUTH_STORAGE_KEY);
-  window.localStorage.removeItem(TOKEN_STORAGE_KEY);
-};
-
-const readStoredAuth = () => {
-  const storedUser = window.localStorage.getItem(AUTH_STORAGE_KEY);
-  const storedToken = window.localStorage.getItem(TOKEN_STORAGE_KEY);
-
-  if (!storedUser || !storedToken) {
-    return { user: null as AuthUser | null, token: null as string | null };
-  }
-
-  try {
-    const parsedUser = JSON.parse(storedUser) as AuthUser;
-    if (!isTokenValidForUser(storedToken, parsedUser)) {
-      return { user: null as AuthUser | null, token: null as string | null };
-    }
-
-    return { user: parsedUser, token: storedToken };
-  } catch {
-    return { user: null as AuthUser | null, token: null as string | null };
-  }
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const initialAuth = readStoredAuth();
-  const [user, setUser] = useState<AuthUser | null>(initialAuth.user);
-  const [token, setToken] = useState<string | null>(initialAuth.token);
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showDeliveryPreferenceModal, setShowDeliveryPreferenceModal] = useState(false);
-  const [showPincodeCheckerModal, setShowPincodeCheckerModal] = useState(false);
   const [showProfileCompletionModal, setShowProfileCompletionModal] = useState(false);
   const [pendingDeliveryPreferencePrompt, setPendingDeliveryPreferencePrompt] = useState(false);
   const [deliveryPreferenceError, setDeliveryPreferenceError] = useState("");
@@ -180,7 +136,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const storedToken = window.localStorage.getItem(TOKEN_STORAGE_KEY);
 
     if (!storedUser || !storedToken) {
-      setApiAuthToken(null);
       setUser(null);
       setToken(null);
       setLoading(false);
@@ -189,9 +144,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const parsedUser = JSON.parse(storedUser) as AuthUser;
-
       if (!isTokenValidForUser(storedToken, parsedUser)) {
-        clearStoredAuth();
+        window.localStorage.removeItem(AUTH_STORAGE_KEY);
+        window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+        setApiAuthToken(null);
+        setUser(null);
+        setToken(null);
+        setLoading(false);
+        return;
+      }
+
+      const isAdminArea = window.location.pathname.startsWith("/admin");
+      if (parsedUser.role === "ROLE_ADMIN" && !isAdminArea) {
+        window.localStorage.removeItem(AUTH_STORAGE_KEY);
+        window.localStorage.removeItem(TOKEN_STORAGE_KEY);
         setApiAuthToken(null);
         setUser(null);
         setToken(null);
@@ -200,20 +166,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const requireProfile = shouldRequireCustomerName(parsedUser);
-      const shouldPromptDeliveryPreference = shouldShowDeliveryPromptForSession(
-        parsedUser,
-        requireProfile,
-      );
       setUser(parsedUser);
       setToken(storedToken);
       setApiAuthToken(storedToken);
       setShowProfileCompletionModal(requireProfile);
-      setShowDeliveryPreferenceModal(shouldPromptDeliveryPreference);
-      if (shouldPromptDeliveryPreference) {
-        markDeliveryPromptSeenThisSession();
-      }
+      setShowDeliveryPreferenceModal(
+        parsedUser.role === "ROLE_CUSTOMER" && !requireProfile && !isAdminArea,
+      );
     } catch {
-      clearStoredAuth();
+      window.localStorage.removeItem(AUTH_STORAGE_KEY);
+      window.localStorage.removeItem(TOKEN_STORAGE_KEY);
       setApiAuthToken(null);
       setUser(null);
       setToken(null);
@@ -244,17 +206,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
     const shouldPromptDeliveryPreference = Boolean(
       options?.promptDeliveryPreference &&
+        !shouldRequireProfileCompletion &&
         nextUser &&
         nextToken &&
-        shouldShowDeliveryPromptForSession(nextUser, shouldRequireProfileCompletion),
+        nextUser.role === "ROLE_CUSTOMER" &&
+        !window.location.pathname.startsWith("/admin"),
     );
     const shouldDelayDeliveryPreference = false;
 
     setShowProfileCompletionModal(shouldRequireProfileCompletion);
     setShowDeliveryPreferenceModal(shouldPromptDeliveryPreference && !shouldDelayDeliveryPreference);
-    if (shouldPromptDeliveryPreference) {
-      markDeliveryPromptSeenThisSession();
-    }
     setPendingDeliveryPreferencePrompt(shouldDelayDeliveryPreference);
     setDeliveryPreferenceError("");
     setApiAuthToken(nextToken);
@@ -266,7 +227,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    clearStoredAuth();
+    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    window.localStorage.removeItem(TOKEN_STORAGE_KEY);
     setApiAuthToken(null);
   };
 
@@ -276,7 +238,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     setShowDeliveryPreferenceModal(true);
-    markDeliveryPromptSeenThisSession();
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
   }, [isAdminSession, pendingDeliveryPreferencePrompt]);
@@ -290,6 +251,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
   }, [isAdminSession]);
+
+  const requestOtp = async (email: string) => {
+    const processingId = startProcessing({
+      title: "Sending OTP",
+      message: "We are preparing your sign-in code now...",
+    });
+    try {
+      return { data: await requestOtpRequest({ email }) };
+    } catch (error) {
+      return {
+        error: extractErrorMessage(error, "Unable to send OTP right now."),
+      };
+    } finally {
+      stopProcessing(processingId);
+    }
+  };
+
+  const verifyOtp = async (email: string, otpCode: string) => {
+    const processingId = startProcessing({
+      title: "Signing you in",
+      message: "Checking your OTP and preparing your account...",
+    });
+    try {
+      const response = await verifyOtpRequest({ email, otpCode });
+      persistAuth(response.user, response.token, {
+        promptDeliveryPreference: true,
+        requireProfileCompletion: response.requiresProfileCompletion,
+      });
+
+      return {};
+    } catch (error) {
+      return {
+        error: extractErrorMessage(error, "Unable to verify OTP right now."),
+      };
+    } finally {
+      stopProcessing(processingId);
+    }
+  };
 
   const googleLogin = async (credential: string) => {
     const processingId = startProcessing({
@@ -346,14 +345,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         requireProfileCompletion: response.requiresProfileCompletion,
       });
       setShowProfileCompletionModal(false);
-      const shouldPromptDeliveryPreference = shouldShowDeliveryPromptForSession(
-        response.user,
-        response.requiresProfileCompletion,
+      setShowDeliveryPreferenceModal(
+        response.user.role === "ROLE_CUSTOMER" && !response.requiresProfileCompletion,
       );
-      setShowDeliveryPreferenceModal(shouldPromptDeliveryPreference);
-      if (shouldPromptDeliveryPreference) {
-        markDeliveryPromptSeenThisSession();
-      }
       return {};
     } catch (error) {
       return {
@@ -383,7 +377,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       persistAuth(response.user, response.token);
       setShowDeliveryPreferenceModal(false);
-      setShowPincodeCheckerModal(false);
       setPendingDeliveryPreferencePrompt(false);
       return {};
     } catch (error) {
@@ -393,7 +386,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         window.setTimeout(() => {
           persistAuth(null, null);
           setShowDeliveryPreferenceModal(false);
-          setShowPincodeCheckerModal(false);
           setPendingDeliveryPreferencePrompt(false);
         }, 900);
         return { error: message };
@@ -412,11 +404,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = () => {
     persistAuth(null, null);
     setShowDeliveryPreferenceModal(false);
-    setShowPincodeCheckerModal(false);
     setShowProfileCompletionModal(false);
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
-    clearDeliveryPromptSession();
   };
 
   return (
@@ -427,6 +417,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAuthenticated: Boolean(user && token),
         isAdmin: user?.role === "ROLE_ADMIN",
         loading,
+        requestOtp,
+        verifyOtp,
         googleLogin,
         adminLogin,
         completeProfile,
@@ -456,22 +448,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               <button
                 type="button"
                 className="delivery-preference-modal__button"
-                onClick={() => {
-                  void updateDeliveryPreference("STORE_PICKUP");
-                }}
+                onClick={() => void updateDeliveryPreference("STORE_PICKUP")}
               >
                 Pick up at store
               </button>
               <button
                 type="button"
                 className="delivery-preference-modal__button delivery-preference-modal__button--primary"
-                onClick={() => {
-                  void updateDeliveryPreference("HOME_DELIVERY").then((result) => {
-                    if (!result.error) {
-                      setShowPincodeCheckerModal(true);
-                    }
-                  });
-                }}
+                onClick={() => void updateDeliveryPreference("HOME_DELIVERY")}
               >
                 Home delivery
               </button>
@@ -482,10 +466,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           </div>
         </div>
       ) : null}
-      <PincodeServiceChecker
-        open={showPincodeCheckerModal && user?.role === "ROLE_CUSTOMER"}
-        onClose={() => setShowPincodeCheckerModal(false)}
-      />
     </AuthContext.Provider>
   );
 };
