@@ -357,7 +357,7 @@ const Navbar: React.FC = () => {
                   className={({ isActive }) =>
                     `site-category-strip__item ${isActive ? "is-active" : ""}`.trim()
                   }
-                  to="/products?discover=1"
+                  to="/"
                   end
                 >
                   All
@@ -477,7 +477,7 @@ const Navbar: React.FC = () => {
             className={({ isActive }) =>
               `site-category-strip__item ${isActive ? "is-active" : ""}`.trim()
             }
-            to="/products?discover=1"
+            to="/"
             end
           >
             All
