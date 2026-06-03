@@ -36,6 +36,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = "voltmart-auth-user";
 const TOKEN_STORAGE_KEY = "voltmart-token";
+const DELIVERY_PROMPT_SESSION_KEY = "voltmart-delivery-prompt-shown";
 
 const decodeJwtPayload = (token: string) => {
   try {
@@ -111,6 +112,25 @@ const isAuthorizationError = (error: unknown) =>
   error instanceof AxiosError &&
   (error.response?.status === 401 || error.response?.status === 403);
 
+const hasSeenDeliveryPromptThisSession = () =>
+  window.sessionStorage.getItem(DELIVERY_PROMPT_SESSION_KEY) === "true";
+
+const markDeliveryPromptSeenThisSession = () => {
+  window.sessionStorage.setItem(DELIVERY_PROMPT_SESSION_KEY, "true");
+};
+
+const clearDeliveryPromptSession = () => {
+  window.sessionStorage.removeItem(DELIVERY_PROMPT_SESSION_KEY);
+};
+
+const shouldShowDeliveryPromptForSession = (user: AuthUser | null, requireProfile: boolean) =>
+  Boolean(
+    user?.role === "ROLE_CUSTOMER" &&
+      !requireProfile &&
+      !window.location.pathname.startsWith("/admin") &&
+      !hasSeenDeliveryPromptThisSession(),
+  );
+
 const clearStoredAuth = () => {
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
   window.localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -180,15 +200,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const requireProfile = shouldRequireCustomerName(parsedUser);
+      const shouldPromptDeliveryPreference = shouldShowDeliveryPromptForSession(
+        parsedUser,
+        requireProfile,
+      );
       setUser(parsedUser);
       setToken(storedToken);
       setApiAuthToken(storedToken);
       setShowProfileCompletionModal(requireProfile);
-      setShowDeliveryPreferenceModal(
-        parsedUser.role === "ROLE_CUSTOMER" &&
-          !requireProfile &&
-          !window.location.pathname.startsWith("/admin"),
-      );
+      setShowDeliveryPreferenceModal(shouldPromptDeliveryPreference);
+      if (shouldPromptDeliveryPreference) {
+        markDeliveryPromptSeenThisSession();
+      }
     } catch {
       clearStoredAuth();
       setApiAuthToken(null);
@@ -221,16 +244,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
     const shouldPromptDeliveryPreference = Boolean(
       options?.promptDeliveryPreference &&
-        !shouldRequireProfileCompletion &&
         nextUser &&
         nextToken &&
-        nextUser.role === "ROLE_CUSTOMER" &&
-        !window.location.pathname.startsWith("/admin"),
+        shouldShowDeliveryPromptForSession(nextUser, shouldRequireProfileCompletion),
     );
     const shouldDelayDeliveryPreference = false;
 
     setShowProfileCompletionModal(shouldRequireProfileCompletion);
     setShowDeliveryPreferenceModal(shouldPromptDeliveryPreference && !shouldDelayDeliveryPreference);
+    if (shouldPromptDeliveryPreference) {
+      markDeliveryPromptSeenThisSession();
+    }
     setPendingDeliveryPreferencePrompt(shouldDelayDeliveryPreference);
     setDeliveryPreferenceError("");
     setApiAuthToken(nextToken);
@@ -252,6 +276,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     setShowDeliveryPreferenceModal(true);
+    markDeliveryPromptSeenThisSession();
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
   }, [isAdminSession, pendingDeliveryPreferencePrompt]);
@@ -321,9 +346,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         requireProfileCompletion: response.requiresProfileCompletion,
       });
       setShowProfileCompletionModal(false);
-      setShowDeliveryPreferenceModal(
-        response.user.role === "ROLE_CUSTOMER" && !response.requiresProfileCompletion,
+      const shouldPromptDeliveryPreference = shouldShowDeliveryPromptForSession(
+        response.user,
+        response.requiresProfileCompletion,
       );
+      setShowDeliveryPreferenceModal(shouldPromptDeliveryPreference);
+      if (shouldPromptDeliveryPreference) {
+        markDeliveryPromptSeenThisSession();
+      }
       return {};
     } catch (error) {
       return {
@@ -386,6 +416,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setShowProfileCompletionModal(false);
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
+    clearDeliveryPromptSession();
   };
 
   return (
