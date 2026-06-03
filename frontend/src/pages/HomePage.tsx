@@ -11,6 +11,14 @@ import { fetchBanners } from "../services/bannerService";
 import bannerOne from "../assets/banners/ban1.png";
 import bannerTwo from "../assets/banners/ban2.png";
 import bannerThree from "../assets/banners/ban4.png";
+import anchorLogo from "../assets/brands/anchor.jpg";
+import finolexLogo from "../assets/brands/finolex.jpg";
+import gmLogo from "../assets/brands/gm.png";
+import godrejLogo from "../assets/brands/godrej.jpg";
+import havellsLogo from "../assets/brands/havells.jpg";
+import legrandLogo from "../assets/brands/legrand.jpg";
+import philipsLogo from "../assets/brands/philips.jpg";
+import polycabLogo from "../assets/brands/polycab.jpg";
 
 const WhyShopIconBoxes = () => (
   <svg viewBox="0 0 64 64" aria-hidden="true">
@@ -99,14 +107,14 @@ interface ProductCarouselSectionProps {
 const promoBanners = [bannerOne, bannerTwo, bannerThree];
 
 const defaultBrandLogos: Record<string, string> = {
-  Anchor: "https://logo.clearbit.com/anchor-world.com",
-  GM: "https://logo.clearbit.com/gmmodular.com",
-  Havells: "https://logo.clearbit.com/havells.com",
-  Polycab: "https://logo.clearbit.com/polycab.com",
-  Finolex: "https://logo.clearbit.com/finolex.com",
-  Legrand: "https://logo.clearbit.com/legrand.co.in",
-  Philips: "https://logo.clearbit.com/philips.com",
-  Godrej: "https://logo.clearbit.com/godrej.com",
+  Anchor: anchorLogo,
+  GM: gmLogo,
+  Havells: havellsLogo,
+  Polycab: polycabLogo,
+  Finolex: finolexLogo,
+  Legrand: legrandLogo,
+  Philips: philipsLogo,
+  Godrej: godrejLogo,
 };
 
 const seasonalModules = [
@@ -168,7 +176,7 @@ const BrandSection: React.FC<{ products: Product[] }> = ({ products }) => {
       }
       brandMap.set(product.brand, {
         name: product.brand,
-        logoUrl: product.brandLogoUrl || defaultBrandLogos[product.brand] || "",
+        logoUrl: defaultBrandLogos[product.brand] || product.brandLogoUrl || "",
       });
       return brandMap;
     }, new Map<string, { name: string; logoUrl: string }>())

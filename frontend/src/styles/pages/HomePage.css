@@ -197,9 +197,9 @@
 }
 
 .home-brand-card {
-  min-height: 104px;
+  min-height: 112px;
   display: grid;
-  grid-template-rows: 46px auto;
+  grid-template-rows: 58px auto;
   place-items: center;
   gap: 10px;
   padding: 16px 10px 14px;
@@ -208,8 +208,9 @@
 
 .home-brand-card img {
   display: block;
-  max-width: 88px;
-  max-height: 42px;
+  width: 100%;
+  max-width: 112px;
+  height: 58px;
   object-fit: contain;
 }
 
@@ -470,14 +471,14 @@
   }
 
   .home-brand-card {
-    min-height: 78px;
-    grid-template-rows: 34px auto;
+    min-height: 86px;
+    grid-template-rows: 42px auto;
     padding: 10px 6px;
   }
 
   .home-brand-card img {
-    max-width: 58px;
-    max-height: 30px;
+    max-width: 70px;
+    height: 42px;
   }
 
   .home-brand-card strong {
