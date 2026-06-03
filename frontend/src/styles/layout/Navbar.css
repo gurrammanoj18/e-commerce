@@ -1333,12 +1333,13 @@
 @media (max-width: 320px) {
   .site-nav__utility {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: center;
     gap: 4px;
   }
 
   .site-nav__search {
+    order: 1;
     flex: 1 1 auto;
     min-width: 0;
   }
@@ -1349,8 +1350,22 @@
   }
 
   .site-nav__quick-links {
+    order: 2;
     flex: 0 0 auto;
     gap: 3px;
+  }
+
+  .site-category-strip--mobile {
+    order: 3;
+    flex: 0 0 100%;
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .site-category-strip--mobile .site-category-strip__inner {
+    justify-content: flex-start;
+    min-height: 28px;
+    gap: 4px;
   }
 
   .cart-pill--wishlist,
