@@ -201,6 +201,9 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedBrandLogos() {
+        if (brandLogoRepository.count() > 0) {
+            return;
+        }
         seedBrandLogo("Anchor", "/brand-logos/anchor-p.jpg", 10);
         seedBrandLogo("GM", "/brand-logos/gm.png", 20);
         seedBrandLogo("Havells", "/brand-logos/havells.jpg", 30);
@@ -212,13 +215,16 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedBrandLogo(String brandName, String logoUrl, int displayOrder) {
-        BrandLogo logo = brandLogoRepository.findByBrandNameIgnoreCase(brandName)
-                .orElseGet(() -> BrandLogo.builder().brandName(brandName).build());
-        logo.setBrandName(brandName);
-        logo.setLogoUrl(logoUrl);
-        logo.setDisplayOrder(displayOrder);
-        logo.setActive(true);
-        brandLogoRepository.save(logo);
+        if (brandLogoRepository.findByBrandNameIgnoreCase(brandName).isPresent()) {
+            return;
+        }
+
+        brandLogoRepository.save(BrandLogo.builder()
+                .brandName(brandName)
+                .logoUrl(logoUrl)
+                .displayOrder(displayOrder)
+                .active(true)
+                .build());
     }
 
     private void seedProduct(String slug, String name, String brand, Category category, String heroTag, String badge,
