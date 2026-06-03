@@ -52,6 +52,25 @@
   background: #fff;
 }
 
+.admin-brand-logo-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
+}
+
+.admin-brand-logo-preview img {
+  width: 112px;
+  height: 54px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+}
+
 .admin-field-hint {
   display: block;
   margin-top: 8px;

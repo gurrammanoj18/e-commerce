@@ -246,6 +246,7 @@ const AdminDashboardPage: React.FC = () => {
   const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadingBrandLogo, setUploadingBrandLogo] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [activeOrderDeliveryFilter, setActiveOrderDeliveryFilter] =
     useState<AdminOrderDeliveryFilter>("HOME_DELIVERY");
@@ -398,6 +399,30 @@ const AdminDashboardPage: React.FC = () => {
       setUploadingImages(false);
       event.target.value = "";
     }
+  };
+
+  const handleBrandLogoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setUploadingBrandLogo(true);
+    try {
+      const uploadedLogo = await optimizeImageFile(file);
+      handleProductFormChange("brandLogoUrl", uploadedLogo);
+    } catch (error) {
+      toast.error(extractErrorMessage(error, "Unable to prepare selected brand logo."));
+    } finally {
+      setUploadingBrandLogo(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleRemoveBrandLogo = () => {
+    handleProductFormChange("brandLogoUrl", "");
   };
 
   const handleRemoveProductImage = (imageToRemove: string) => {
@@ -806,10 +831,27 @@ const AdminDashboardPage: React.FC = () => {
             <label>
               Brand logo URL
               <input
+                type="file"
+                accept="image/*"
+                onChange={handleBrandLogoUpload}
+                disabled={uploadingBrandLogo}
+              />
+              <span className="admin-field-hint">
+                Upload a logo from your device, or paste a logo URL below.
+              </span>
+              <input
                 value={productForm.brandLogoUrl}
                 onChange={(event) => handleProductFormChange("brandLogoUrl", event.target.value)}
                 placeholder="https://example.com/brand-logo.png"
               />
+              {productForm.brandLogoUrl ? (
+                <div className="admin-brand-logo-preview">
+                  <img src={productForm.brandLogoUrl} alt="Brand logo preview" />
+                  <button className="link-button" type="button" onClick={handleRemoveBrandLogo}>
+                    Remove logo
+                  </button>
+                </div>
+              ) : null}
             </label>
             <label>
               Category
