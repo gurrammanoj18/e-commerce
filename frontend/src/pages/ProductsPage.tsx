@@ -45,14 +45,16 @@ const ProductsPage: React.FC = () => {
     () =>
       searchParams.get("discover") === "1" ||
       Boolean(searchParams.get("search")) ||
-      Boolean(searchParams.get("category")),
+      Boolean(searchParams.get("category")) ||
+      Boolean(searchParams.get("brand")),
     [searchParams],
   );
 
   useEffect(() => {
     const nextSearch = searchParams.get("search") ?? "";
     const nextCategory = searchParams.get("category") ?? "All";
-    const signature = `${isDiscoverMode}|${nextSearch}|${nextCategory}`;
+    const nextBrand = searchParams.get("brand") ?? "All";
+    const signature = `${isDiscoverMode}|${nextSearch}|${nextCategory}|${nextBrand}`;
 
     if (appliedQuerySignature.current === signature) {
       return;
@@ -61,16 +63,18 @@ const ProductsPage: React.FC = () => {
     if (isDiscoverMode) {
       setSearchTerm(nextSearch);
       setSelectedCategory(nextCategory);
+      setSelectedBrand(nextBrand);
       setDraftFilters((current) => ({
         ...current,
         category: nextCategory,
+        brand: nextBrand,
       }));
     } else {
       resetFilters();
     }
 
     appliedQuerySignature.current = signature;
-  }, [isDiscoverMode, resetFilters, searchParams, setSearchTerm, setSelectedCategory]);
+  }, [isDiscoverMode, resetFilters, searchParams, setSearchTerm, setSelectedBrand, setSelectedCategory]);
 
   useEffect(() => {
     if (!isFilterOpen) {

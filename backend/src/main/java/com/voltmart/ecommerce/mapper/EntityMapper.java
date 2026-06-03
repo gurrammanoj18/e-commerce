@@ -58,6 +58,7 @@ public class EntityMapper {
                 product.getSlug(),
                 product.getName(),
                 product.getBrand(),
+                product.getBrandLogoUrl(),
                 parentCategory.getName(),
                 parentCategory.getSlug(),
                 leafCategory.getName(),

@@ -11,6 +11,7 @@ public record ProductRequest(
         @NotBlank String slug,
         @NotBlank String name,
         @NotBlank String brand,
+        String brandLogoUrl,
         @NotNull Long categoryId,
         @NotNull @DecimalMin("0.0") BigDecimal price,
         @NotNull @DecimalMin("0.0") BigDecimal originalPrice,

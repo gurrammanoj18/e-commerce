@@ -41,6 +41,7 @@ interface ProductFormState {
   slug: string;
   name: string;
   brand: string;
+  brandLogoUrl: string;
   categoryId: string;
   subcategoryId: string;
   price: string;
@@ -77,6 +78,7 @@ const createEmptyFormState = (): ProductFormState => ({
   slug: "",
   name: "",
   brand: "",
+  brandLogoUrl: "",
   categoryId: "",
   subcategoryId: "",
   price: "",
@@ -137,6 +139,7 @@ const buildProductPayload = (form: ProductFormState): AdminProductPayload => ({
   slug: slugify(form.slug || form.name),
   name: form.name.trim(),
   brand: form.brand.trim(),
+  brandLogoUrl: form.brandLogoUrl.trim() || null,
   categoryId: Number(form.subcategoryId || form.categoryId),
   price: Number(form.price),
   originalPrice: Number(form.originalPrice),
@@ -174,6 +177,7 @@ const createFormStateFromProduct = (
     slug: product.slug,
     name: product.name,
     brand: product.brand,
+    brandLogoUrl: product.brandLogoUrl ?? "",
     categoryId: matchedCategory?.id ? String(matchedCategory.id) : "",
     subcategoryId: matchedSubcategory?.id ? String(matchedSubcategory.id) : "",
     price: String(product.price),
@@ -800,6 +804,14 @@ const AdminDashboardPage: React.FC = () => {
               />
             </label>
             <label>
+              Brand logo URL
+              <input
+                value={productForm.brandLogoUrl}
+                onChange={(event) => handleProductFormChange("brandLogoUrl", event.target.value)}
+                placeholder="https://example.com/brand-logo.png"
+              />
+            </label>
+            <label>
               Category
               <select
                 value={productForm.categoryId}
@@ -1073,7 +1085,10 @@ const AdminDashboardPage: React.FC = () => {
                     <td>{index + 1}</td>
                     <td>
                       <strong>{product.name}</strong>
-                      <div>{product.brand}</div>
+                      <div className="admin-product-brand-line">
+                        {product.brandLogoUrl ? <img src={product.brandLogoUrl} alt="" /> : null}
+                        <span>{product.brand}</span>
+                      </div>
                     </td>
                     <td>{product.category}</td>
                     <td>{product.subcategory}</td>

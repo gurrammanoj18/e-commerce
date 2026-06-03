@@ -184,6 +184,7 @@ public class DataSeeder implements CommandLineRunner {
                 .slug(slug)
                 .name(name)
                 .brand(brand)
+                .brandLogoUrl(defaultBrandLogoUrl(brand))
                 .category(category)
                 .price(price)
                 .originalPrice(originalPrice)
@@ -210,5 +211,19 @@ public class DataSeeder implements CommandLineRunner {
                 .lowStockThreshold(5)
                 .updatedAt(LocalDateTime.now())
                 .build());
+    }
+
+    private String defaultBrandLogoUrl(String brand) {
+        return switch (brand.toLowerCase()) {
+            case "anchor" -> "https://logo.clearbit.com/anchor-world.com";
+            case "gm" -> "https://logo.clearbit.com/gmmodular.com";
+            case "havells" -> "https://logo.clearbit.com/havells.com";
+            case "polycab" -> "https://logo.clearbit.com/polycab.com";
+            case "finolex" -> "https://logo.clearbit.com/finolex.com";
+            case "legrand" -> "https://logo.clearbit.com/legrand.co.in";
+            case "philips" -> "https://logo.clearbit.com/philips.com";
+            case "godrej" -> "https://logo.clearbit.com/godrej.com";
+            default -> null;
+        };
     }
 }

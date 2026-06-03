@@ -197,15 +197,36 @@
 }
 
 .home-brand-card {
-  min-height: 86px;
+  min-height: 104px;
   display: grid;
+  grid-template-rows: 46px auto;
   place-items: center;
-  padding: 16px 10px;
+  gap: 10px;
+  padding: 16px 10px 14px;
   text-align: center;
 }
 
+.home-brand-card img {
+  display: block;
+  max-width: 88px;
+  max-height: 42px;
+  object-fit: contain;
+}
+
+.home-brand-card strong {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #111827;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
 .home-brand-card span {
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 800;
   letter-spacing: 0;
 }
@@ -449,8 +470,20 @@
   }
 
   .home-brand-card {
-    min-height: 62px;
+    min-height: 78px;
+    grid-template-rows: 34px auto;
     padding: 10px 6px;
+  }
+
+  .home-brand-card img {
+    max-width: 58px;
+    max-height: 30px;
+  }
+
+  .home-brand-card strong {
+    width: 34px;
+    height: 34px;
+    font-size: 0.72rem;
   }
 
   .home-seasonal-card {

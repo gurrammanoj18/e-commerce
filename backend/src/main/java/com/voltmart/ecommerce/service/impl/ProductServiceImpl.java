@@ -148,6 +148,7 @@ public class ProductServiceImpl implements ProductService {
         product.setSlug(request.slug());
         product.setName(request.name());
         product.setBrand(request.brand());
+        product.setBrandLogoUrl(emptyToNull(request.brandLogoUrl()));
         product.setCategory(categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found")));
         product.setPrice(request.price());

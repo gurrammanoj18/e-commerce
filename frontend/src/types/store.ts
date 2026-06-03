@@ -3,6 +3,7 @@ export interface ProductApiShape {
   slug: string;
   name: string;
   brand: string;
+  brandLogoUrl?: string | null;
   category: string;
   categorySlug: string;
   subcategory: string;
@@ -60,6 +61,7 @@ export interface Product {
   slug: string;
   name: string;
   brand: string;
+  brandLogoUrl?: string | null;
   category: string;
   categorySlug: string;
   subcategory: string;
@@ -261,6 +263,7 @@ export interface AdminProductPayload {
   slug: string;
   name: string;
   brand: string;
+  brandLogoUrl?: string | null;
   categoryId: number;
   price: number;
   originalPrice: number;

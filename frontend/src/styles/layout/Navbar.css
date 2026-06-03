@@ -61,8 +61,8 @@
 .site-category-strip__inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 10px;
   min-height: 38px;
   overflow-x: auto;
   white-space: nowrap;
@@ -1156,8 +1156,8 @@
   }
 
   .site-category-strip--mobile .site-category-strip__inner {
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: flex-start;
+    gap: 6px;
     width: 100%;
   }
 

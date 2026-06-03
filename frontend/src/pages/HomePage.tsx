@@ -98,7 +98,16 @@ interface ProductCarouselSectionProps {
 
 const promoBanners = [bannerOne, bannerTwo, bannerThree];
 
-const brandShowcase = ["Anchor", "GM", "Havells", "Polycab", "Finolex", "Legrand", "Philips", "Godrej"];
+const defaultBrandLogos: Record<string, string> = {
+  Anchor: "https://logo.clearbit.com/anchor-world.com",
+  GM: "https://logo.clearbit.com/gmmodular.com",
+  Havells: "https://logo.clearbit.com/havells.com",
+  Polycab: "https://logo.clearbit.com/polycab.com",
+  Finolex: "https://logo.clearbit.com/finolex.com",
+  Legrand: "https://logo.clearbit.com/legrand.co.in",
+  Philips: "https://logo.clearbit.com/philips.com",
+  Godrej: "https://logo.clearbit.com/godrej.com",
+};
 
 const seasonalModules = [
   {
@@ -151,56 +160,58 @@ const pickSectionProducts = (
   return matchedProducts.length ? matchedProducts : fallbackProducts;
 };
 
-interface IconProductSectionProps {
-  eyebrow: string;
-  title: string;
-  items: string[];
-}
+const BrandSection: React.FC<{ products: Product[] }> = ({ products }) => {
+  const brands = Array.from(
+    products.reduce((brandMap, product) => {
+      if (!product.brand || brandMap.has(product.brand)) {
+        return brandMap;
+      }
+      brandMap.set(product.brand, {
+        name: product.brand,
+        logoUrl: product.brandLogoUrl || defaultBrandLogos[product.brand] || "",
+      });
+      return brandMap;
+    }, new Map<string, { name: string; logoUrl: string }>())
+  )
+    .map(([, brand]) => brand)
+    .sort((left, right) => {
+      const preferred = Object.keys(defaultBrandLogos);
+      const leftIndex = preferred.indexOf(left.name);
+      const rightIndex = preferred.indexOf(right.name);
+      if (leftIndex !== -1 || rightIndex !== -1) {
+        return (leftIndex === -1 ? preferred.length : leftIndex) - (rightIndex === -1 ? preferred.length : rightIndex);
+      }
+      return left.name.localeCompare(right.name);
+    })
+    .slice(0, 12);
 
-const IconProductSection: React.FC<IconProductSectionProps> = ({ eyebrow, title, items }) => (
-  <section className="shell section home-icon-section">
-    <div className="section-heading">
-      <div>
-        <span className="eyebrow">{eyebrow}</span>
-        <h2>{title}</h2>
+  return (
+    <section className="shell section home-brand-section">
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">Shop by Brand</span>
+          <h2>Major brands customers ask for</h2>
+        </div>
       </div>
-    </div>
-    <div className="home-icon-grid">
-      {items.map((item) => (
-        <Link
-          key={item}
-          className="home-icon-tile"
-          to={`/products?discover=1&search=${encodeURIComponent(item)}`}
-        >
-          <span>{item.slice(0, 2).toUpperCase()}</span>
-          <strong>{item}</strong>
-        </Link>
-      ))}
-    </div>
-  </section>
-);
-
-const BrandSection: React.FC = () => (
-  <section className="shell section home-brand-section">
-    <div className="section-heading">
-      <div>
-        <span className="eyebrow">Shop by Brand</span>
-        <h2>Major brands customers ask for</h2>
+      <div className="home-brand-grid">
+        {brands.map((brand) => (
+          <Link
+            key={brand.name}
+            className="home-brand-card"
+            to={`/products?discover=1&brand=${encodeURIComponent(brand.name)}`}
+          >
+            {brand.logoUrl ? (
+              <img src={brand.logoUrl} alt={`${brand.name} logo`} loading="lazy" />
+            ) : (
+              <strong>{brand.name.slice(0, 2).toUpperCase()}</strong>
+            )}
+            <span>{brand.name}</span>
+          </Link>
+        ))}
       </div>
-    </div>
-    <div className="home-brand-grid">
-      {brandShowcase.map((brand) => (
-        <Link
-          key={brand}
-          className="home-brand-card"
-          to={`/products?discover=1&brand=${encodeURIComponent(brand)}`}
-        >
-          <span>{brand}</span>
-        </Link>
-      ))}
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 const SeasonalModulesSection: React.FC = () => (
   <section className="shell section home-seasonal-section">
@@ -493,24 +504,6 @@ const HomePage: React.FC = () => {
     () => (trendingProducts.length ? trendingProducts : products),
     [products, trendingProducts]
   );
-  const hardToFindProducts = useMemo(
-    () =>
-      pickSectionProducts(
-        products,
-        [
-          "distribution box",
-          "mcb box",
-          "modular",
-          "door hardware",
-          "pipe fitting",
-          "consumable",
-          "fastener",
-          "special tool",
-        ],
-        fallbackProducts
-      ),
-    [fallbackProducts, products]
-  );
   const everydayEssentials = useMemo(
     () =>
       pickSectionProducts(
@@ -567,35 +560,13 @@ const HomePage: React.FC = () => {
       <MidPageBannerCarousel banners={banners.map((banner) => banner.imageUrl).filter(Boolean)} />
 
       <ProductCarouselSection
-        eyebrow="Hard-to-Find Products"
-        title="Rare essentials that make VoltMart useful"
-        products={hardToFindProducts}
-        loading={loading}
-      />
-
-      <IconProductSection
-        eyebrow="Discovery shortcuts"
-        title="Popular hard-to-find product types"
-        items={[
-          "Distribution Boxes",
-          "MCB Boxes",
-          "Modular Accessories",
-          "Door Hardware",
-          "Pipe Fittings",
-          "Electrical Consumables",
-          "Fasteners",
-          "Special Tools",
-        ]}
-      />
-
-      <ProductCarouselSection
         eyebrow="Everyday Essentials"
         title="Fast-moving items customers use regularly"
         products={everydayEssentials}
         loading={loading}
       />
 
-      <BrandSection />
+      <BrandSection products={products} />
 
       <ProductCarouselSection
         eyebrow="Electrical Essentials"

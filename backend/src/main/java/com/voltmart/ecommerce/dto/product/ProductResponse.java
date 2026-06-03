@@ -8,6 +8,7 @@ public record ProductResponse(
         String slug,
         String name,
         String brand,
+        String brandLogoUrl,
         String category,
         String categorySlug,
         String subcategory,

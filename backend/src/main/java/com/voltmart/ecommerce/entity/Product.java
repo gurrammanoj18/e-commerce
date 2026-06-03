@@ -29,6 +29,9 @@ public class Product {
     @Column(nullable = false)
     private String brand;
 
+    @Column(columnDefinition = "text")
+    private String brandLogoUrl;
+
     @ManyToOne(optional = false)
     private Category category;
 
