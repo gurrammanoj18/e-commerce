@@ -6,14 +6,17 @@ import CategoryCard from "../components/product/CategoryCard";
 import ProductCard from "../components/product/ProductCard";
 import LoadingState from "../components/shared/LoadingState";
 import { useProducts } from "../contexts/ProductContext";
-import { Banner, BrandLogo, HomepageSection, Product } from "../types/store";
+import { Banner, BrandLogo, Product } from "../types/store";
 import { fetchBanners } from "../services/bannerService";
-import { fetchHomepageSections } from "../services/homepageSectionService";
 import { fetchBrandLogos } from "../services/brandLogoService";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import bannerOne from "../assets/banners/ban1.png";
 import bannerTwo from "../assets/banners/ban2.png";
 import bannerThree from "../assets/banners/ban4.png";
+import promoSummer from "../assets/promos/summer.png";
+import promoMonsoon from "../assets/promos/monsoon.png";
+import promoLighting from "../assets/promos/lighting.png";
+import promoContractorDeals from "../assets/promos/contractor-deals.png";
 
 const WhyShopIconBoxes = () => (
   <svg viewBox="0 0 64 64" aria-hidden="true">
@@ -99,142 +102,100 @@ interface ProductCarouselSectionProps {
   loading: boolean;
 }
 
+interface HomeSectionDefinition {
+  sectionKey: string;
+  eyebrow: string;
+  title: string;
+  tags?: string[];
+  displayOrder: number;
+  maxProducts: number;
+}
+
 const promoBanners = [bannerOne, bannerTwo, bannerThree];
 
 const seasonalModules = [
   {
     title: "Summer Cooling Picks",
     copy: "Fans, extension boards, coolers, and wiring essentials for hot-weather demand.",
-    to: "/products?discover=1&search=fan",
+    to: "/products?discover=1&promo=summer",
+    image: promoSummer,
   },
   {
     title: "Monsoon Protection",
     copy: "Waterproof tape, sealants, outdoor switches, pipe fittings, and safety consumables.",
-    to: "/products?discover=1&search=waterproof",
+    to: "/products?discover=1&promo=monsoon",
+    image: promoMonsoon,
   },
   {
     title: "Festival Lighting",
     copy: "LED bulbs, holders, extension boards, decorative lighting, and quick replacements.",
-    to: "/products?discover=1&search=light",
+    to: "/products?discover=1&promo=lighting",
+    image: promoLighting,
   },
   {
     title: "Contractor Bulk Deals",
     copy: "Fast-moving project stock for electricians, plumbers, fabricators, and site teams.",
-    to: "/bulk-order",
+    to: "/products?discover=1&promo=contractor-deals",
+    image: promoContractorDeals,
   },
 ];
 
-const fallbackHomepageSections: HomepageSection[] = [
+const homeSections: HomeSectionDefinition[] = [
   {
-    id: 0,
     sectionKey: "hard-to-find",
     eyebrow: "Hard-to-Find Products",
     title: "Rare essentials that make VoltMart useful",
-    type: "KEYWORDS",
-    keywords: "distribution box, mcb box, modular, door hardware, pipe fitting, consumable, fastener, special tool",
+    tags: ["hard-to-find-products"],
     displayOrder: 10,
     maxProducts: 8,
-    active: true,
   },
   {
-    id: 0,
     sectionKey: "everyday-essentials",
     eyebrow: "Everyday Essentials",
     title: "Fast-moving items customers use regularly",
-    type: "KEYWORDS",
-    keywords: "led bulb, switch, wire, tap, extension, pvc tape, holder, cleaning",
+    tags: ["everyday-essentials"],
     displayOrder: 20,
     maxProducts: 8,
-    active: true,
   },
   {
-    id: 0,
     sectionKey: "electrical-essentials",
     eyebrow: "Electrical Essentials",
     title: "Switches, sockets, wires, MCBs, and power basics",
-    type: "KEYWORDS",
-    keywords: "electrical, switch, socket, wire, mcb, distribution box, fan regulator",
+    tags: ["electrical-essentials"],
     displayOrder: 30,
     maxProducts: 8,
-    active: true,
   },
   {
-    id: 0,
     sectionKey: "hardware-tools",
     eyebrow: "Hardware & Tools",
     title: "Locks, handles, hinges, fasteners, and tool kits",
-    type: "KEYWORDS",
-    keywords: "hardware, tool, lock, handle, hinge, screw, hammer, spanner, screwdriver",
+    tags: ["hardware-tools"],
     displayOrder: 40,
     maxProducts: 8,
-    active: true,
   },
   {
-    id: 0,
     sectionKey: "plumbing-bathroom",
     eyebrow: "Plumbing & Bathroom",
     title: "Pipes, taps, fittings, connectors, and shower sets",
-    type: "KEYWORDS",
-    keywords: "plumbing, bathroom, pipe, tap, fitting, connector, shower",
+    tags: ["plumbing-bathroom"],
     displayOrder: 50,
     maxProducts: 8,
-    active: true,
   },
   {
-    id: 0,
     sectionKey: "recently-added",
     eyebrow: "Recently added products",
     title: "Fresh arrivals ready for discovery",
-    type: "RECENTLY_ADDED",
     displayOrder: 70,
     maxProducts: 8,
-    active: true,
   },
   {
-    id: 0,
     sectionKey: "best-selling",
     eyebrow: "Best-selling products",
     title: "Proven performers that convert consistently",
-    type: "BEST_SELLERS",
     displayOrder: 80,
     maxProducts: 8,
-    active: true,
   },
 ];
-
-const productMatches = (product: Product, keywords: string[]) => {
-  const searchable = [
-    product.name,
-    product.brand,
-    product.category,
-    product.categorySlug,
-    product.subcategory,
-    product.subcategorySlug,
-    product.shortDescription,
-    product.description,
-    ...product.tags,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return keywords.some((keyword) => searchable.includes(keyword.toLowerCase()));
-};
-
-const pickSectionProducts = (
-  products: Product[],
-  keywords: string[],
-  fallbackProducts: Product[],
-) => {
-  const matchedProducts = products.filter((product) => productMatches(product, keywords));
-  return matchedProducts.length ? matchedProducts : fallbackProducts;
-};
-
-const parseKeywords = (value?: string | null) =>
-  (value || "")
-    .split(/\n|,/)
-    .map((item) => item.trim())
-    .filter(Boolean);
 
 const BrandSection: React.FC = () => {
   const [brandLogos, setBrandLogos] = useState<BrandLogo[]>([]);
@@ -296,14 +257,17 @@ const SeasonalModulesSection: React.FC = () => (
     <div className="section-heading">
       <div>
         <span className="eyebrow">Seasonal picks</span>
-        <h2>Fast modules for timely demand</h2>
+        <h2>Clickable promotional banners</h2>
       </div>
     </div>
     <div className="home-seasonal-grid">
       {seasonalModules.map((module) => (
-        <Link key={module.title} className="home-seasonal-card" to={module.to}>
-          <strong>{module.title}</strong>
-          <span>{module.copy}</span>
+        <Link key={module.title} className="home-seasonal-card home-seasonal-card--banner" to={module.to}>
+          <img src={module.image} alt={module.title} loading="lazy" />
+          <div className="home-seasonal-card__overlay">
+            <strong>{module.title}</strong>
+            <span>{module.copy}</span>
+          </div>
         </Link>
       ))}
     </div>
@@ -539,7 +503,6 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
 const HomePage: React.FC = () => {
   const { bestSellerProducts, categories, loading, products } = useProducts();
   const [banners, setBanners] = useState<Banner[]>([]);
-  const [homepageSections, setHomepageSections] = useState<HomepageSection[]>(fallbackHomepageSections);
 
   useEffect(() => {
     let isMounted = true;
@@ -564,29 +527,6 @@ const HomePage: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadSections = async () => {
-      try {
-        const response = await fetchHomepageSections();
-        if (isMounted && response.length) {
-          setHomepageSections(response);
-        }
-      } catch {
-        if (isMounted) {
-          setHomepageSections(fallbackHomepageSections);
-        }
-      }
-    };
-
-    void loadSections();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   const trendingProducts = useMemo(
     () =>
       [...products].sort(
@@ -596,10 +536,13 @@ const HomePage: React.FC = () => {
     [products]
   );
 
-  const recentlyAddedProducts = useMemo(() => {
-    const newArrivals = products.filter((product) => product.newArrival);
-    return newArrivals.length ? newArrivals : products;
-  }, [products]);
+  const recentlyAddedProducts = useMemo(
+    () =>
+      [...products]
+        .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+        .slice(0, 8),
+    [products]
+  );
 
   const categoryShowcase = useMemo(() => categories, [categories]);
   const fallbackProducts = useMemo(
@@ -608,27 +551,26 @@ const HomePage: React.FC = () => {
   );
   const resolvedHomepageSections = useMemo(
     () =>
-      homepageSections
-        .filter((section) => section.active)
+      [...homeSections]
         .sort((left, right) => left.displayOrder - right.displayOrder)
         .map((section) => {
-          let sectionProducts: Product[];
-          if (section.type === "BEST_SELLERS") {
-            sectionProducts = bestSellerProducts.length ? bestSellerProducts : fallbackProducts;
-          } else if (section.type === "RECENTLY_ADDED") {
-            sectionProducts = recentlyAddedProducts;
-          } else if (section.type === "FEATURED") {
-            sectionProducts = products.filter((product) => product.featured);
-          } else {
-            sectionProducts = pickSectionProducts(products, parseKeywords(section.keywords), fallbackProducts);
-          }
+          const sectionProducts =
+            section.sectionKey === "best-selling"
+              ? (bestSellerProducts.length ? bestSellerProducts : fallbackProducts)
+              : section.sectionKey === "recently-added"
+                ? recentlyAddedProducts
+                : products.filter((product) =>
+                    (section.tags || []).some((tag) =>
+                      product.tags.some((productTag) => productTag.toLowerCase() === tag.toLowerCase())
+                    )
+                  );
 
           return {
             ...section,
-            products: sectionProducts.slice(0, Math.max(1, section.maxProducts || 8)),
+            products: (sectionProducts.length ? sectionProducts : fallbackProducts).slice(0, Math.max(1, section.maxProducts || 8)),
           };
         }),
-    [bestSellerProducts, fallbackProducts, homepageSections, products, recentlyAddedProducts]
+    [bestSellerProducts, fallbackProducts, products, recentlyAddedProducts]
   );
 
   return (

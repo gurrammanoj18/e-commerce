@@ -1,6 +1,7 @@
 package com.voltmart.ecommerce.dto.product;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record ProductResponse(
@@ -32,6 +33,7 @@ public record ProductResponse(
         String badge,
         String heroTag,
         List<String> images,
-        List<String> tags
+        List<String> tags,
+        LocalDateTime createdAt
 ) {
 }

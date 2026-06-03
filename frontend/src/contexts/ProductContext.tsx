@@ -24,6 +24,7 @@ interface ProductContextValue {
   availableBrands: string[];
   selectedBrand: string;
   selectedCategory: string;
+  selectedPromoTag: string;
   availabilityFilter: ProductAvailabilityFilter;
   minimumDiscount: number;
   priceRange: { min: number; max: number };
@@ -38,6 +39,7 @@ interface ProductContextValue {
   setSearchTerm: (value: string) => void;
   setSelectedBrand: (value: string) => void;
   setSelectedCategory: (value: string) => void;
+  setSelectedPromoTag: (value: string) => void;
   setAvailabilityFilter: (value: ProductAvailabilityFilter) => void;
   setMinimumDiscount: (value: number) => void;
   setPriceRange: (value: { min: number; max: number }) => void;
@@ -63,6 +65,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
   const [searchTerm, setSearchTermState] = useState("");
   const [selectedBrand, setSelectedBrandState] = useState("All");
   const [selectedCategory, setSelectedCategoryState] = useState("All");
+  const [selectedPromoTag, setSelectedPromoTagState] = useState("All");
   const [availabilityFilter, setAvailabilityFilterState] =
     useState<ProductAvailabilityFilter>("all");
   const [minimumDiscount, setMinimumDiscountState] = useState(0);
@@ -148,6 +151,10 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
           const matchesBrand =
             selectedBrand === "All" || product.brand === selectedBrand;
 
+          const matchesPromo =
+            selectedPromoTag === "All" ||
+            product.tags.some((tag) => tag.toLowerCase() === selectedPromoTag.toLowerCase());
+
           const matchesPrice =
             product.price >= priceRange.min && product.price <= priceRange.max;
 
@@ -161,6 +168,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
             matchesSearch &&
             matchesCategory &&
             matchesBrand &&
+            matchesPromo &&
             matchesPrice &&
             matchesAvailability &&
             matchesDiscount
@@ -187,6 +195,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
       searchTerm,
       selectedBrand,
       selectedCategory,
+      selectedPromoTag,
       sortBy,
     ]
   );
@@ -210,6 +219,11 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const setSelectedBrand = (value: string) => {
     setSelectedBrandState(value);
+    setCurrentPageState(1);
+  };
+
+  const setSelectedPromoTag = (value: string) => {
+    setSelectedPromoTagState(value);
     setCurrentPageState(1);
   };
 
@@ -239,6 +253,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
     setSearchTermState("");
     setSelectedBrandState("All");
     setSelectedCategoryState("All");
+    setSelectedPromoTagState("All");
     setAvailabilityFilterState("all");
     setMinimumDiscountState(0);
     setSortByState("featured");
@@ -278,6 +293,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
         availableBrands,
         selectedBrand,
         selectedCategory,
+        selectedPromoTag,
         availabilityFilter,
         minimumDiscount,
         priceRange,
@@ -292,6 +308,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
         setSearchTerm,
         setSelectedBrand,
         setSelectedCategory,
+        setSelectedPromoTag,
         setAvailabilityFilter,
         setMinimumDiscount,
         setPriceRange,

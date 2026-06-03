@@ -53,6 +53,34 @@
   background: #fff;
 }
 
+.admin-checkbox-group {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
+}
+
+.admin-checkbox-group strong {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.admin-flag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px 12px;
+}
+
+.admin-flag-grid .admin-toggle {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+
 .admin-field-hint {
   display: block;
   margin-top: 8px;

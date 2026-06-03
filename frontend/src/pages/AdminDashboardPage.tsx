@@ -58,6 +58,8 @@ interface ProductFormState {
   badge: string;
   features: string;
   items: string;
+  homepageSectionTags: string[];
+  promoTags: string[];
   images: string;
   stockQuantity: string;
   lowStockThreshold: string;
@@ -72,6 +74,19 @@ const ORDER_STATUS_OPTIONS = [
   "CANCELLED",
 ];
 const STORE_PICKUP_STATUS_OPTIONS = ["CONFIRMED", "DELIVERED"];
+const HOMEPAGE_SECTION_TAG_OPTIONS = [
+  { label: "Hard-to-Find Products", value: "hard-to-find-products" },
+  { label: "Everyday Essentials", value: "everyday-essentials" },
+  { label: "Electrical Essentials", value: "electrical-essentials" },
+  { label: "Hardware & Tools", value: "hardware-tools" },
+  { label: "Plumbing & Bathroom", value: "plumbing-bathroom" },
+];
+const PROMO_TAG_OPTIONS = [
+  { label: "Summer", value: "summer" },
+  { label: "Monsoon", value: "monsoon" },
+  { label: "Lighting", value: "lighting" },
+  { label: "Contractor Deals", value: "contractor-deals" },
+];
 
 const createEmptyFormState = (): ProductFormState => ({
   slug: "",
@@ -94,6 +109,8 @@ const createEmptyFormState = (): ProductFormState => ({
   badge: "New",
   features: "",
   items: "",
+  homepageSectionTags: [],
+  promoTags: [],
   images: "",
   stockQuantity: "0",
   lowStockThreshold: "5",
@@ -117,6 +134,11 @@ const parseLineList = (value: string) =>
     .split(/\n|,/)
     .map((item) => item.trim())
     .filter(Boolean);
+
+const parseCheckboxTags = (values: string[], options: { value: string }[]) =>
+  options
+    .map((option) => option.value)
+    .filter((optionValue) => values.some((value) => value.toLowerCase() === optionValue.toLowerCase()));
 
 const extractErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof AxiosError) {
@@ -153,7 +175,14 @@ const buildProductPayload = (form: ProductFormState): AdminProductPayload => ({
   badge: form.badge.trim(),
   heroTag: parseLineList(form.features)[0] || "Featured product",
   images: parseImageList(form.images),
-  tags: [...parseLineList(form.features), ...parseLineList(form.items)],
+  tags: Array.from(
+    new Set([
+      ...parseLineList(form.features),
+      ...parseLineList(form.items),
+      ...form.homepageSectionTags,
+      ...form.promoTags,
+    ]),
+  ),
   stockQuantity: Number(form.stockQuantity),
   lowStockThreshold: Number(form.lowStockThreshold),
 });
@@ -191,6 +220,8 @@ const createFormStateFromProduct = (
     badge: product.badge,
     features: product.heroTag ? product.heroTag : "",
     items: product.tags.join("\n"),
+    homepageSectionTags: parseCheckboxTags(product.tags, HOMEPAGE_SECTION_TAG_OPTIONS),
+    promoTags: parseCheckboxTags(product.tags, PROMO_TAG_OPTIONS),
     images: product.images.join("\n"),
     stockQuantity: String(product.stockQuantity),
     lowStockThreshold: String(inventoryItem?.lowStockThreshold ?? 5),
@@ -994,6 +1025,50 @@ const AdminDashboardPage: React.FC = () => {
               />
               <span className="admin-field-hint">Optional. These are shown in the product details highlight list.</span>
             </label>
+            <div className="form-grid__wide admin-checkbox-group">
+              <strong>Homepage sections</strong>
+              <div className="admin-flag-grid">
+                {HOMEPAGE_SECTION_TAG_OPTIONS.map((option) => (
+                  <label key={option.value} className="admin-toggle">
+                    <input
+                      type="checkbox"
+                      checked={productForm.homepageSectionTags.includes(option.value)}
+                      onChange={(event) =>
+                        setProductForm((current) => ({
+                          ...current,
+                          homepageSectionTags: event.target.checked
+                            ? [...current.homepageSectionTags, option.value]
+                            : current.homepageSectionTags.filter((tag) => tag !== option.value),
+                        }))
+                      }
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="form-grid__wide admin-checkbox-group">
+              <strong>Promotional banners</strong>
+              <div className="admin-flag-grid">
+                {PROMO_TAG_OPTIONS.map((option) => (
+                  <label key={option.value} className="admin-toggle">
+                    <input
+                      type="checkbox"
+                      checked={productForm.promoTags.includes(option.value)}
+                      onChange={(event) =>
+                        setProductForm((current) => ({
+                          ...current,
+                          promoTags: event.target.checked
+                            ? [...current.promoTags, option.value]
+                            : current.promoTags.filter((tag) => tag !== option.value),
+                        }))
+                      }
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
             </div>
 
             <div className="admin-flag-grid">

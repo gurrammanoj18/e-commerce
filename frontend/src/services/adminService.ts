@@ -10,8 +10,6 @@ import {
   AdminUser,
   CategorySummary,
   DashboardOverview,
-  HomepageSection,
-  HomepageSectionPayload,
   InventoryItem,
   Order,
   ProductApiShape,
@@ -147,25 +145,6 @@ export const updateAdminBrandLogo = async (id: number, payload: BrandLogoPayload
 
 export const deleteAdminBrandLogo = async (id: number) => {
   await api.delete(`/admin/brand-logos/${id}`);
-};
-
-export const fetchAdminHomepageSections = async () => {
-  const response = await api.get<HomepageSection[]>("/admin/homepage-sections");
-  return response.data;
-};
-
-export const createAdminHomepageSection = async (payload: HomepageSectionPayload) => {
-  const response = await api.post<HomepageSection>("/admin/homepage-sections", payload);
-  return response.data;
-};
-
-export const updateAdminHomepageSection = async (id: number, payload: HomepageSectionPayload) => {
-  const response = await api.put<HomepageSection>(`/admin/homepage-sections/${id}`, payload);
-  return response.data;
-};
-
-export const deleteAdminHomepageSection = async (id: number) => {
-  await api.delete(`/admin/homepage-sections/${id}`);
 };
 
 export const fetchAdminServiceRequests = async () => {

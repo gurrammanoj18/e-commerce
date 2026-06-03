@@ -93,6 +93,17 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<ProductResponse> getBestSellerProducts() {
+        List<Long> topProductIds = orderItemRepository.findTopDeliveredProductIds();
+        if (!topProductIds.isEmpty()) {
+            return productRepository.findAllById(topProductIds).stream()
+                    .sorted((left, right) -> Integer.compare(
+                            topProductIds.indexOf(left.getId()),
+                            topProductIds.indexOf(right.getId())
+                    ))
+                    .map(product -> entityMapper.toProductResponse(product, inventoryFor(product.getId())))
+                    .toList();
+        }
+
         return productRepository.findAll().stream()
                 .filter(Product::getBestSeller)
                 .map(product -> entityMapper.toProductResponse(product, inventoryFor(product.getId())))

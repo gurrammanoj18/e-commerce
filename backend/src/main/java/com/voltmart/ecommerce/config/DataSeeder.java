@@ -1,7 +1,6 @@
 package com.voltmart.ecommerce.config;
 
 import com.voltmart.ecommerce.entity.*;
-import com.voltmart.ecommerce.entity.enums.HomepageSectionType;
 import com.voltmart.ecommerce.entity.enums.Role;
 import com.voltmart.ecommerce.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +39,6 @@ public class DataSeeder implements CommandLineRunner {
     private final WishlistItemRepository wishlistItemRepository;
     private final ServiceablePincodeRepository serviceablePincodeRepository;
     private final BrandLogoRepository brandLogoRepository;
-    private final HomepageSectionRepository homepageSectionRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AppProperties appProperties;
@@ -49,7 +47,6 @@ public class DataSeeder implements CommandLineRunner {
         seedUsers();
         seedServiceablePincodes();
         seedBrandLogos();
-        seedHomepageSections();
         removeLegacyCatalog();
         Map<String, Category> categories = seedCategories();
         if (productRepository.count() > 0) {
@@ -58,27 +55,53 @@ public class DataSeeder implements CommandLineRunner {
 
         seedProduct("home-ease-mixer", "Home Ease Mixer", "HomeEase", categories.get("kitchen"), "Kitchen essential", "Popular",
                 List.of("/catalog/atlas-book.webp", "/catalog/pulse-laptop.webp", "/catalog/dock-station.webp"),
-                BigDecimal.valueOf(4299), BigDecimal.valueOf(4999), 25, true, false, true, true, true);
+                BigDecimal.valueOf(4299), BigDecimal.valueOf(4999), 25, true, false, true, true, true,
+                List.of("everyday-essentials", "summer"));
 
         seedProduct("utility-storage-rack", "Utility Storage Rack", "HouseLine", categories.get("hardware"), "Home organization", "New",
                 List.of("/catalog/dock-station.webp", "/catalog/atlas-book.webp", "/catalog/lumen-monitor.webp"),
-                BigDecimal.valueOf(3499), BigDecimal.valueOf(3999), 18, true, false, true, true, false);
+                BigDecimal.valueOf(3499), BigDecimal.valueOf(3999), 18, true, false, true, true, false,
+                List.of("hardware-tools", "contractor-deals"));
 
         seedProduct("pro-grip-tool-kit", "Pro Grip Tool Kit", "ForgeMax", categories.get("power-hand-tools"), "Workshop-ready", "Top rated",
                 List.of("/catalog/vector-keyboard.webp", "/catalog/quantum-gpu.webp", "/catalog/dock-station.webp"),
-                BigDecimal.valueOf(2799), BigDecimal.valueOf(3299), 38, false, true, false, true, false);
+                BigDecimal.valueOf(2799), BigDecimal.valueOf(3299), 38, false, true, false, true, false,
+                List.of("hardware-tools", "contractor-deals"));
 
         seedProduct("steel-fix-fastener-set", "Steel Fix Fastener Set", "Hardline", categories.get("hardware"), "Durable hardware", "Featured",
                 List.of("/catalog/quantum-gpu.webp", "/catalog/vector-keyboard.webp", "/catalog/dock-station.webp"),
-                BigDecimal.valueOf(699), BigDecimal.valueOf(849), 140, false, true, false, true, false);
+                BigDecimal.valueOf(699), BigDecimal.valueOf(849), 140, false, true, false, true, false,
+                List.of("hard-to-find-products", "contractor-deals"));
 
         seedProduct("fresh-wipe-floor-cleaner", "Fresh Wipe Floor Cleaner", "PureNest", categories.get("bathroom"), "Daily cleaning", "Value pick",
                 List.of("/catalog/orbit-camera.webp", "/catalog/forge-speaker.webp", "/catalog/dock-station.webp"),
-                BigDecimal.valueOf(349), BigDecimal.valueOf(399), 96, false, true, true, true, false);
+                BigDecimal.valueOf(349), BigDecimal.valueOf(399), 96, false, true, true, true, false,
+                List.of("everyday-essentials", "monsoon"));
 
         seedProduct("flowguard-bath-fitting", "FlowGuard Bath Fitting", "AquaLine", categories.get("plumbing"), "Bathroom upgrade", "Featured",
                 List.of("/catalog/mesh-router.webp", "/catalog/orbit-camera.webp", "/catalog/dock-station.webp"),
-                BigDecimal.valueOf(2199), BigDecimal.valueOf(2599), 22, true, false, true, true, true);
+                BigDecimal.valueOf(2199), BigDecimal.valueOf(2599), 22, true, false, true, true, true,
+                List.of("plumbing-bathroom", "monsoon"));
+
+        seedProduct("wiremaster-led-bulb", "WireMaster LED Bulb", "VoltMart", categories.get("lighting-fans"), "Lighting essential", "New",
+                List.of("/catalog/lumen-monitor.webp", "/catalog/orbit-camera.webp", "/catalog/dock-station.webp"),
+                BigDecimal.valueOf(199), BigDecimal.valueOf(249), 320, true, false, true, true, false,
+                List.of("electrical-essentials", "everyday-essentials", "lighting", "summer"));
+
+        seedProduct("volt-guard-mcb-box", "VoltGuard MCB Box", "CircuitPro", categories.get("electricals"), "Project essential", "Featured",
+                List.of("/catalog/quantum-gpu.webp", "/catalog/dock-station.webp", "/catalog/vector-keyboard.webp"),
+                BigDecimal.valueOf(1499), BigDecimal.valueOf(1799), 54, false, true, false, true, true,
+                List.of("hard-to-find-products", "electrical-essentials", "contractor-deals"));
+
+        seedProduct("seal-pro-pipe-kit", "Seal Pro Pipe Kit", "AquaLine", categories.get("plumbing"), "Monsoon ready", "New",
+                List.of("/catalog/mesh-router.webp", "/catalog/forge-speaker.webp", "/catalog/orbit-camera.webp"),
+                BigDecimal.valueOf(899), BigDecimal.valueOf(1099), 66, false, true, true, true, true,
+                List.of("plumbing-bathroom", "monsoon", "hard-to-find-products"));
+
+        seedProduct("anchor-lite-switch-set", "Anchor Lite Switch Set", "Anchor", categories.get("electricals"), "Everyday electrical", "Popular",
+                List.of("/catalog/dock-station.webp", "/catalog/vector-keyboard.webp", "/catalog/lumen-monitor.webp"),
+                BigDecimal.valueOf(599), BigDecimal.valueOf(799), 88, true, false, true, true, true,
+                List.of("everyday-essentials", "electrical-essentials", "lighting"));
     }
 
     private Map<String, Category> seedCategories() {
@@ -198,92 +221,20 @@ public class DataSeeder implements CommandLineRunner {
         brandLogoRepository.save(logo);
     }
 
-    private void seedHomepageSections() {
-        seedHomepageSection(
-                "hard-to-find",
-                "Hard-to-Find Products",
-                "Rare essentials that make VoltMart useful",
-                HomepageSectionType.KEYWORDS,
-                "distribution box, mcb box, modular, door hardware, pipe fitting, consumable, fastener, special tool",
-                10
-        );
-        seedHomepageSection(
-                "everyday-essentials",
-                "Everyday Essentials",
-                "Fast-moving items customers use regularly",
-                HomepageSectionType.KEYWORDS,
-                "led bulb, switch, wire, tap, extension, pvc tape, holder, cleaning",
-                20
-        );
-        seedHomepageSection(
-                "electrical-essentials",
-                "Electrical Essentials",
-                "Switches, sockets, wires, MCBs, and power basics",
-                HomepageSectionType.KEYWORDS,
-                "electrical, switch, socket, wire, mcb, distribution box, fan regulator",
-                30
-        );
-        seedHomepageSection(
-                "hardware-tools",
-                "Hardware & Tools",
-                "Locks, handles, hinges, fasteners, and tool kits",
-                HomepageSectionType.KEYWORDS,
-                "hardware, tool, lock, handle, hinge, screw, hammer, spanner, screwdriver",
-                40
-        );
-        seedHomepageSection(
-                "plumbing-bathroom",
-                "Plumbing & Bathroom",
-                "Pipes, taps, fittings, connectors, and shower sets",
-                HomepageSectionType.KEYWORDS,
-                "plumbing, bathroom, pipe, tap, fitting, connector, shower",
-                50
-        );
-        seedHomepageSection(
-                "recently-added",
-                "Recently added products",
-                "Fresh arrivals ready for discovery",
-                HomepageSectionType.RECENTLY_ADDED,
-                "",
-                70
-        );
-        seedHomepageSection(
-                "best-selling",
-                "Best-selling products",
-                "Proven performers that convert consistently",
-                HomepageSectionType.BEST_SELLERS,
-                "",
-                80
-        );
-    }
-
-    private void seedHomepageSection(
-            String sectionKey,
-            String eyebrow,
-            String title,
-            HomepageSectionType type,
-            String keywords,
-            int displayOrder
-    ) {
-        HomepageSection section = homepageSectionRepository.findBySectionKey(sectionKey)
-                .orElseGet(() -> HomepageSection.builder().sectionKey(sectionKey).build());
-        section.setSectionKey(sectionKey);
-        section.setEyebrow(eyebrow);
-        section.setTitle(title);
-        section.setType(type);
-        section.setKeywords(keywords);
-        section.setDisplayOrder(displayOrder);
-        section.setMaxProducts(8);
-        section.setActive(true);
-        homepageSectionRepository.save(section);
-    }
-
     private void seedProduct(String slug, String name, String brand, Category category, String heroTag, String badge,
                              List<String> images, BigDecimal price, BigDecimal originalPrice, int stockQuantity,
                              boolean featured, boolean bestSeller, boolean newArrival, boolean bulkEligible,
-                             boolean warrantyAvailable) {
+                             boolean warrantyAvailable, List<String> customTags) {
         if (category == null) {
             throw new IllegalStateException("Seed category missing for product " + slug);
+        }
+
+        List<String> tags = new java.util.ArrayList<>();
+        tags.add(category.getName().toLowerCase());
+        tags.add(brand.toLowerCase());
+        tags.add("hardware");
+        if (customTags != null) {
+            tags.addAll(customTags);
         }
 
         Product product = productRepository.save(Product.builder()
@@ -307,7 +258,7 @@ public class DataSeeder implements CommandLineRunner {
                 .badge(badge)
                 .heroTag(heroTag)
                 .imageUrls(images)
-                .tags(List.of(category.getName().toLowerCase(), brand.toLowerCase(), "hardware"))
+                .tags(tags)
                 .createdAt(LocalDateTime.now())
                 .build());
 

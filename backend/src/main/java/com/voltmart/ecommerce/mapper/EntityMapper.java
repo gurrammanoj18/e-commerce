@@ -82,7 +82,8 @@ public class EntityMapper {
                 product.getBadge(),
                 product.getHeroTag(),
                 product.getImageUrls(),
-                product.getTags()
+                product.getTags(),
+                product.getCreatedAt()
         );
     }
 

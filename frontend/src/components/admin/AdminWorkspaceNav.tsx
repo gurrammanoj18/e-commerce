@@ -11,7 +11,6 @@ const adminNavItems = [
   { to: "/admin/categories", label: "Categories" },
   { to: "/admin/banners", label: "Banners" },
   { to: "/admin/brand-logos", label: "Brand logos" },
-  { to: "/admin/homepage-sections", label: "Homepage sections" },
   { to: "/admin/services", label: "Services" },
   { to: "/admin/wallet", label: "Wallet" },
   { to: "/admin/bulk-inquiries", label: "Bulk inquiries" },

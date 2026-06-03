@@ -28,6 +28,7 @@ export interface ProductApiShape {
   discountPercentage?: number;
   warrantyAvailable: boolean;
   replacementAvailable: boolean;
+  createdAt: string;
 }
 
 export type ProductAvailability = "in-stock" | "low-stock" | "out-of-stock";
@@ -85,6 +86,7 @@ export interface Product {
   newArrival: boolean;
   warrantyAvailable: boolean;
   replacementAvailable: boolean;
+  createdAt: string;
 }
 
 export interface CartItem {
@@ -314,31 +316,6 @@ export interface BrandLogoPayload {
   brandName: string;
   logoUrl: string;
   displayOrder: number;
-  active: boolean;
-}
-
-export type HomepageSectionType = "KEYWORDS" | "BEST_SELLERS" | "RECENTLY_ADDED" | "FEATURED";
-
-export interface HomepageSection {
-  id: number;
-  sectionKey: string;
-  eyebrow: string;
-  title: string;
-  type: HomepageSectionType;
-  keywords?: string | null;
-  displayOrder: number;
-  maxProducts: number;
-  active: boolean;
-}
-
-export interface HomepageSectionPayload {
-  sectionKey: string;
-  eyebrow: string;
-  title: string;
-  type: HomepageSectionType;
-  keywords?: string | null;
-  displayOrder: number;
-  maxProducts: number;
   active: boolean;
 }
 
