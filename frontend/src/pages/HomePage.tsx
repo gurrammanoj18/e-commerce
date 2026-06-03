@@ -117,6 +117,11 @@ const defaultBrandLogos: Record<string, string> = {
   Godrej: godrejLogo,
 };
 
+const brandShowcase = Object.entries(defaultBrandLogos).map(([name, logoUrl]) => ({
+  name,
+  logoUrl,
+}));
+
 const seasonalModules = [
   {
     title: "Summer Cooling Picks",
@@ -179,7 +184,7 @@ const BrandSection: React.FC<{ products: Product[] }> = ({ products }) => {
         logoUrl: defaultBrandLogos[product.brand] || product.brandLogoUrl || "",
       });
       return brandMap;
-    }, new Map<string, { name: string; logoUrl: string }>())
+    }, new Map<string, { name: string; logoUrl: string }>(brandShowcase.map((brand) => [brand.name, brand])))
   )
     .map(([, brand]) => brand)
     .sort((left, right) => {
@@ -512,6 +517,24 @@ const HomePage: React.FC = () => {
     () => (trendingProducts.length ? trendingProducts : products),
     [products, trendingProducts]
   );
+  const hardToFindProducts = useMemo(
+    () =>
+      pickSectionProducts(
+        products,
+        [
+          "distribution box",
+          "mcb box",
+          "modular",
+          "door hardware",
+          "pipe fitting",
+          "consumable",
+          "fastener",
+          "special tool",
+        ],
+        fallbackProducts
+      ),
+    [fallbackProducts, products]
+  );
   const everydayEssentials = useMemo(
     () =>
       pickSectionProducts(
@@ -566,6 +589,13 @@ const HomePage: React.FC = () => {
       </section>
 
       <MidPageBannerCarousel banners={banners.map((banner) => banner.imageUrl).filter(Boolean)} />
+
+      <ProductCarouselSection
+        eyebrow="Hard-to-Find Products"
+        title="Rare essentials that make VoltMart useful"
+        products={hardToFindProducts}
+        loading={loading}
+      />
 
       <ProductCarouselSection
         eyebrow="Everyday Essentials"
