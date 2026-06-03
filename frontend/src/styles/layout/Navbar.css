@@ -1329,3 +1329,54 @@
     font-size: 0.88rem;
   }
 }
+
+@media (max-width: 320px) {
+  .site-nav__utility {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .site-nav__search {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .site-nav__search .search-bar {
+    min-height: 34px;
+    padding-inline: 8px;
+  }
+
+  .site-nav__quick-links {
+    flex: 0 0 auto;
+    gap: 3px;
+  }
+
+  .cart-pill--wishlist,
+  .cart-pill--cart {
+    min-width: 40px;
+    width: 40px;
+    min-height: 40px;
+    padding: 4px;
+    gap: 2px;
+  }
+
+  .cart-pill--wishlist .cart-pill__icon,
+  .cart-pill--cart .cart-pill__icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .cart-pill--wishlist .cart-pill__icon svg,
+  .cart-pill--cart .cart-pill__icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .cart-pill--wishlist .cart-pill__label,
+  .cart-pill--cart .cart-pill__label {
+    font-size: 0.58rem;
+    line-height: 1;
+  }
+}
