@@ -25,6 +25,7 @@ import com.voltmart.ecommerce.service.AuthService;
 import com.voltmart.ecommerce.service.CurrentUserService;
 import com.voltmart.ecommerce.service.EmailNotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -153,7 +155,11 @@ public class AuthServiceImpl implements AuthService {
         try {
             emailNotificationService.sendLoginOtp(email, otpCode);
         } catch (IllegalStateException exception) {
-            throw new BadRequestException("Email OTP delivery is not configured. Check backend email settings.");
+            if (exception.getCause() == null) {
+                throw new BadRequestException("Email OTP delivery is not configured. Check backend email settings.");
+            }
+            log.error("Email OTP send failed for {}: {}", email, exception.getCause().getMessage(), exception.getCause());
+            throw new BadRequestException("Unable to send email OTP. Check SMTP credentials and email provider settings.");
         }
         loginOtpRepository.save(LoginOtp.builder()
                 .email(email)

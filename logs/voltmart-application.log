@@ -2031,3 +2031,6 @@ Identify and stop the process that's listening on port 8080 or configure this ap
 2026-06-02 20:26:53.646 INFO  [http-nio-8080-exec-3] c.v.e.s.i.WhatsappNotificationServiceImpl - WhatsApp notifications are disabled or missing credentials. Skipping send.
 2026-06-02 20:31:26.081 INFO  [http-nio-8080-exec-2] c.v.e.s.i.WhatsappNotificationServiceImpl - WhatsApp notifications are disabled or missing credentials. Skipping send.
 2026-06-02 20:31:46.589 INFO  [http-nio-8080-exec-9] c.v.e.s.i.WhatsappNotificationServiceImpl - WhatsApp notifications are disabled or missing credentials. Skipping send.
+2026-06-02 22:01:05.805 INFO  [SpringApplicationShutdownHook] o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-06-02 22:01:05.809 INFO  [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2026-06-02 22:01:05.812 INFO  [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.

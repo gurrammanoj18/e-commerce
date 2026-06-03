@@ -24,13 +24,27 @@ services:
       - key: APP_GOOGLE_CLIENT_ID
         sync: false
       - key: APP_EMAIL_ENABLED
-        value: "false"
+        value: "true"
       - key: APP_EMAIL_FROM_ADDRESS
         sync: false
+      - key: APP_EMAIL_FROM_NAME
+        value: VoltMart
+      - key: SPRING_MAIL_HOST
+        value: smtp.gmail.com
+      - key: SPRING_MAIL_PORT
+        value: "587"
       - key: SPRING_MAIL_USERNAME
         sync: false
       - key: SPRING_MAIL_PASSWORD
         sync: false
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_CONNECTIONTIMEOUT
+        value: "10000"
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_TIMEOUT
+        value: "10000"
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_WRITETIMEOUT
+        value: "10000"
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED
+        value: "true"
 
   - type: web
     name: voltmart-frontend
@@ -39,6 +53,6 @@ services:
     dockerfilePath: ./Dockerfile
     envVars:
       - key: REACT_APP_API_BASE_URL
-        value: https://voltmart-backend.onrender.com/api
+        value: https://voltmart-backend-xuho.onrender.com/api
       - key: REACT_APP_GOOGLE_CLIENT_ID
         sync: false

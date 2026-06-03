@@ -11,6 +11,7 @@ import com.voltmart.ecommerce.service.EmailNotificationService;
 import jakarta.mail.internet.InternetAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,15 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
 
     private final JavaMailSender mailSender;
     private final AppProperties appProperties;
+
+    @Value("${spring.mail.host:}")
+    private String mailHost;
+
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
+    @Value("${spring.mail.password:}")
+    private String mailPassword;
 
     @Override
     public void sendLoginOtp(String recipient, String otpCode) {
@@ -154,10 +164,21 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
 
     private boolean isConfigured() {
         AppProperties.Email email = appProperties.getEmail();
-        boolean configured = email.isEnabled() && StringUtils.hasText(email.getFromAddress());
+        boolean configured = email.isEnabled()
+                && StringUtils.hasText(email.getFromAddress())
+                && StringUtils.hasText(mailHost)
+                && StringUtils.hasText(mailUsername)
+                && StringUtils.hasText(mailPassword);
 
         if (!configured) {
-            log.info("Email notifications are disabled or missing sender details. Skipping send.");
+            log.info(
+                    "Email notifications are disabled or missing SMTP/sender details. enabled={}, fromAddressSet={}, mailHostSet={}, mailUsernameSet={}, mailPasswordSet={}",
+                    email.isEnabled(),
+                    StringUtils.hasText(email.getFromAddress()),
+                    StringUtils.hasText(mailHost),
+                    StringUtils.hasText(mailUsername),
+                    StringUtils.hasText(mailPassword)
+            );
         }
 
         return configured;

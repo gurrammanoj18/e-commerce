@@ -115,8 +115,12 @@ const isAuthorizationError = (error: unknown) =>
   error instanceof AxiosError &&
   (error.response?.status === 401 || error.response?.status === 403);
 
+const clearStoredAuth = () => {
+  window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+};
+
 const readStoredAuth = () => {
-  const isAdminArea = window.location.pathname.startsWith("/admin");
   const storedUser = window.localStorage.getItem(AUTH_STORAGE_KEY);
   const storedToken = window.localStorage.getItem(TOKEN_STORAGE_KEY);
 
@@ -127,12 +131,6 @@ const readStoredAuth = () => {
   try {
     const parsedUser = JSON.parse(storedUser) as AuthUser;
     if (!isTokenValidForUser(storedToken, parsedUser)) {
-      return { user: null as AuthUser | null, token: null as string | null };
-    }
-
-    if (parsedUser.role === "ROLE_ADMIN" && !isAdminArea) {
-      window.localStorage.removeItem(AUTH_STORAGE_KEY);
-      window.localStorage.removeItem(TOKEN_STORAGE_KEY);
       return { user: null as AuthUser | null, token: null as string | null };
     }
 
@@ -175,11 +173,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const parsedUser = JSON.parse(storedUser) as AuthUser;
-      const isAdminArea = window.location.pathname.startsWith("/admin");
 
-      if (!isTokenValidForUser(storedToken, parsedUser) || (parsedUser.role === "ROLE_ADMIN" && !isAdminArea)) {
-        window.localStorage.removeItem(AUTH_STORAGE_KEY);
-        window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+      if (!isTokenValidForUser(storedToken, parsedUser)) {
+        clearStoredAuth();
         setApiAuthToken(null);
         setUser(null);
         setToken(null);
@@ -193,11 +189,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setApiAuthToken(storedToken);
       setShowProfileCompletionModal(requireProfile);
       setShowDeliveryPreferenceModal(
-        parsedUser.role === "ROLE_CUSTOMER" && !requireProfile && !isAdminArea,
+        parsedUser.role === "ROLE_CUSTOMER" &&
+          !requireProfile &&
+          !window.location.pathname.startsWith("/admin"),
       );
     } catch {
-      window.localStorage.removeItem(AUTH_STORAGE_KEY);
-      window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+      clearStoredAuth();
       setApiAuthToken(null);
       setUser(null);
       setToken(null);
@@ -249,8 +246,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+    clearStoredAuth();
     setApiAuthToken(null);
   };
 

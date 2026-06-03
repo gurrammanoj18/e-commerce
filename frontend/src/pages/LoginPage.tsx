@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/pages/LoginPage.css";
 import "../styles/shared/LoadingState.css";
@@ -24,6 +24,10 @@ declare global {
   }
 }
 
+let initializedGoogleClientId: string | null = null;
+let activeGoogleLogin: ((credential: string) => Promise<{ error?: string }>) | null = null;
+let activeGoogleErrorHandler: ((message: string) => void) | null = null;
+
 const LoginPage: React.FC = () => {
   const { isAuthenticated, requestOtp, verifyOtp, googleLogin } = useAuth();
   const navigate = useNavigate();
@@ -32,9 +36,16 @@ const LoginPage: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const googleLoginRef = useRef(googleLogin);
   const googleClientId =
     window.__APP_CONFIG__?.REACT_APP_GOOGLE_CLIENT_ID ||
     process.env.REACT_APP_GOOGLE_CLIENT_ID;
+
+  useEffect(() => {
+    googleLoginRef.current = googleLogin;
+    activeGoogleLogin = googleLogin;
+    activeGoogleErrorHandler = setError;
+  }, [googleLogin]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -58,15 +69,20 @@ const LoginPage: React.FC = () => {
       }
 
       container.innerHTML = "";
-      window.google.accounts.id.initialize({
-        client_id: googleClientId,
-        callback: async ({ credential }) => {
-          const result = await googleLogin(credential);
-          if (result.error) {
-            setError(result.error);
-          }
-        },
-      });
+      if (initializedGoogleClientId !== googleClientId) {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async ({ credential }) => {
+            const result = activeGoogleLogin
+              ? await activeGoogleLogin(credential)
+              : await googleLoginRef.current(credential);
+            if (result.error) {
+              activeGoogleErrorHandler?.(result.error);
+            }
+          },
+        });
+        initializedGoogleClientId = googleClientId;
+      }
       window.google.accounts.id.renderButton(container, {
         theme: "outline",
         size: "large",
@@ -95,7 +111,7 @@ const LoginPage: React.FC = () => {
     return () => {
       script.onload = null;
     };
-  }, [googleClientId, googleLogin, navigate]);
+  }, [googleClientId]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
