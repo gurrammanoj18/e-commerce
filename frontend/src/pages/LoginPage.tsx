@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/pages/LoginPage.css";
 import "../styles/shared/LoadingState.css";
 import { useAuth } from "../contexts/AuthContext";
+import voltmartLogo from "../assets/voltmart-logo.png";
 
 declare global {
   interface Window {
@@ -124,6 +125,7 @@ const LoginPage: React.FC = () => {
         <img className="auth-page__product auth-page__product--speaker" src="/catalog/forge-speaker.webp" alt="" />
       </div>
       <div className="auth-card">
+        <img className="auth-card__logo" src={voltmartLogo} alt="VoltMart" />
         <div className="auth-card__brand">
           <span className="eyebrow">VoltMart account</span>
           <h1>Sign in to continue shopping</h1>

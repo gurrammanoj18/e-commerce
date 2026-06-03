@@ -87,9 +87,17 @@
   backdrop-filter: blur(12px);
 }
 
+.auth-card__logo {
+  width: clamp(118px, 18vw, 170px);
+  height: auto;
+  justify-self: center;
+  object-fit: contain;
+}
+
 .auth-card__brand {
   display: grid;
   gap: 0.65rem;
+  text-align: center;
 }
 
 .auth-card h1 {
@@ -200,7 +208,37 @@
   }
 
   .auth-card {
-    margin-top: 3.5rem;
+    width: min(100%, 300px);
+    gap: 0.55rem;
+    margin-top: 2.25rem;
+    padding: 0.85rem;
+  }
+
+  .auth-card__logo {
+    width: 104px;
+  }
+
+  .auth-card h1 {
+    font-size: 1.45rem;
+  }
+
+  .auth-card p {
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  .auth-card__note {
+    font-size: 0.78rem;
+  }
+
+  .auth-card__google {
+    gap: 0.55rem;
+  }
+
+  .auth-card__google-button,
+  .auth-card__google-loading,
+  .auth-card__signin-overlay {
+    min-height: 40px;
   }
 
 }
