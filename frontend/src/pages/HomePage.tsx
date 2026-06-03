@@ -6,8 +6,9 @@ import CategoryCard from "../components/product/CategoryCard";
 import ProductCard from "../components/product/ProductCard";
 import LoadingState from "../components/shared/LoadingState";
 import { useProducts } from "../contexts/ProductContext";
-import { Banner, Product } from "../types/store";
+import { Banner, HomepageSection, Product } from "../types/store";
 import { fetchBanners } from "../services/bannerService";
+import { fetchHomepageSections } from "../services/homepageSectionService";
 import bannerOne from "../assets/banners/ban1.png";
 import bannerTwo from "../assets/banners/ban2.png";
 import bannerThree from "../assets/banners/ban4.png";
@@ -145,6 +146,84 @@ const seasonalModules = [
   },
 ];
 
+const fallbackHomepageSections: HomepageSection[] = [
+  {
+    id: 0,
+    sectionKey: "hard-to-find",
+    eyebrow: "Hard-to-Find Products",
+    title: "Rare essentials that make VoltMart useful",
+    type: "KEYWORDS",
+    keywords: "distribution box, mcb box, modular, door hardware, pipe fitting, consumable, fastener, special tool",
+    displayOrder: 10,
+    maxProducts: 8,
+    active: true,
+  },
+  {
+    id: 0,
+    sectionKey: "everyday-essentials",
+    eyebrow: "Everyday Essentials",
+    title: "Fast-moving items customers use regularly",
+    type: "KEYWORDS",
+    keywords: "led bulb, switch, wire, tap, extension, pvc tape, holder, cleaning",
+    displayOrder: 20,
+    maxProducts: 8,
+    active: true,
+  },
+  {
+    id: 0,
+    sectionKey: "electrical-essentials",
+    eyebrow: "Electrical Essentials",
+    title: "Switches, sockets, wires, MCBs, and power basics",
+    type: "KEYWORDS",
+    keywords: "electrical, switch, socket, wire, mcb, distribution box, fan regulator",
+    displayOrder: 30,
+    maxProducts: 8,
+    active: true,
+  },
+  {
+    id: 0,
+    sectionKey: "hardware-tools",
+    eyebrow: "Hardware & Tools",
+    title: "Locks, handles, hinges, fasteners, and tool kits",
+    type: "KEYWORDS",
+    keywords: "hardware, tool, lock, handle, hinge, screw, hammer, spanner, screwdriver",
+    displayOrder: 40,
+    maxProducts: 8,
+    active: true,
+  },
+  {
+    id: 0,
+    sectionKey: "plumbing-bathroom",
+    eyebrow: "Plumbing & Bathroom",
+    title: "Pipes, taps, fittings, connectors, and shower sets",
+    type: "KEYWORDS",
+    keywords: "plumbing, bathroom, pipe, tap, fitting, connector, shower",
+    displayOrder: 50,
+    maxProducts: 8,
+    active: true,
+  },
+  {
+    id: 0,
+    sectionKey: "recently-added",
+    eyebrow: "Recently added products",
+    title: "Fresh arrivals ready for discovery",
+    type: "RECENTLY_ADDED",
+    displayOrder: 70,
+    maxProducts: 8,
+    active: true,
+  },
+  {
+    id: 0,
+    sectionKey: "best-selling",
+    eyebrow: "Best-selling products",
+    title: "Proven performers that convert consistently",
+    type: "BEST_SELLERS",
+    displayOrder: 80,
+    maxProducts: 8,
+    active: true,
+  },
+];
+
 const productMatches = (product: Product, keywords: string[]) => {
   const searchable = [
     product.name,
@@ -172,6 +251,12 @@ const pickSectionProducts = (
   const matchedProducts = products.filter((product) => productMatches(product, keywords));
   return matchedProducts.length ? matchedProducts : fallbackProducts;
 };
+
+const parseKeywords = (value?: string | null) =>
+  (value || "")
+    .split(/\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 
 const BrandSection: React.FC<{ products: Product[] }> = ({ products }) => {
   const brands = Array.from(
@@ -474,6 +559,7 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
 const HomePage: React.FC = () => {
   const { bestSellerProducts, categories, loading, products } = useProducts();
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [homepageSections, setHomepageSections] = useState<HomepageSection[]>(fallbackHomepageSections);
 
   useEffect(() => {
     let isMounted = true;
@@ -492,6 +578,29 @@ const HomePage: React.FC = () => {
     };
 
     void loadBanners();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSections = async () => {
+      try {
+        const response = await fetchHomepageSections();
+        if (isMounted && response.length) {
+          setHomepageSections(response);
+        }
+      } catch {
+        if (isMounted) {
+          setHomepageSections(fallbackHomepageSections);
+        }
+      }
+    };
+
+    void loadSections();
 
     return () => {
       isMounted = false;
@@ -517,59 +626,29 @@ const HomePage: React.FC = () => {
     () => (trendingProducts.length ? trendingProducts : products),
     [products, trendingProducts]
   );
-  const hardToFindProducts = useMemo(
+  const resolvedHomepageSections = useMemo(
     () =>
-      pickSectionProducts(
-        products,
-        [
-          "distribution box",
-          "mcb box",
-          "modular",
-          "door hardware",
-          "pipe fitting",
-          "consumable",
-          "fastener",
-          "special tool",
-        ],
-        fallbackProducts
-      ),
-    [fallbackProducts, products]
-  );
-  const everydayEssentials = useMemo(
-    () =>
-      pickSectionProducts(
-        products,
-        ["led bulb", "switch", "wire", "tap", "extension", "pvc tape", "holder", "cleaning"],
-        fallbackProducts
-      ),
-    [fallbackProducts, products]
-  );
-  const electricalEssentials = useMemo(
-    () =>
-      pickSectionProducts(
-        products,
-        ["electrical", "switch", "socket", "wire", "mcb", "distribution box", "fan regulator"],
-        fallbackProducts
-      ),
-    [fallbackProducts, products]
-  );
-  const hardwareTools = useMemo(
-    () =>
-      pickSectionProducts(
-        products,
-        ["hardware", "tool", "lock", "handle", "hinge", "screw", "hammer", "spanner", "screwdriver"],
-        fallbackProducts
-      ),
-    [fallbackProducts, products]
-  );
-  const plumbingBathroom = useMemo(
-    () =>
-      pickSectionProducts(
-        products,
-        ["plumbing", "bathroom", "pipe", "tap", "fitting", "connector", "shower"],
-        fallbackProducts
-      ),
-    [fallbackProducts, products]
+      homepageSections
+        .filter((section) => section.active)
+        .sort((left, right) => left.displayOrder - right.displayOrder)
+        .map((section) => {
+          let sectionProducts: Product[];
+          if (section.type === "BEST_SELLERS") {
+            sectionProducts = bestSellerProducts.length ? bestSellerProducts : fallbackProducts;
+          } else if (section.type === "RECENTLY_ADDED") {
+            sectionProducts = recentlyAddedProducts;
+          } else if (section.type === "FEATURED") {
+            sectionProducts = products.filter((product) => product.featured);
+          } else {
+            sectionProducts = pickSectionProducts(products, parseKeywords(section.keywords), fallbackProducts);
+          }
+
+          return {
+            ...section,
+            products: sectionProducts.slice(0, Math.max(1, section.maxProducts || 8)),
+          };
+        }),
+    [bestSellerProducts, fallbackProducts, homepageSections, products, recentlyAddedProducts]
   );
 
   return (
@@ -590,58 +669,39 @@ const HomePage: React.FC = () => {
 
       <MidPageBannerCarousel banners={banners.map((banner) => banner.imageUrl).filter(Boolean)} />
 
-      <ProductCarouselSection
-        eyebrow="Hard-to-Find Products"
-        title="Rare essentials that make VoltMart useful"
-        products={hardToFindProducts}
-        loading={loading}
-      />
-
-      <ProductCarouselSection
-        eyebrow="Everyday Essentials"
-        title="Fast-moving items customers use regularly"
-        products={everydayEssentials}
-        loading={loading}
-      />
+      {resolvedHomepageSections.slice(0, 2).map((section) => (
+        <ProductCarouselSection
+          key={section.sectionKey}
+          eyebrow={section.eyebrow}
+          title={section.title}
+          products={section.products}
+          loading={loading}
+        />
+      ))}
 
       <BrandSection products={products} />
 
-      <ProductCarouselSection
-        eyebrow="Electrical Essentials"
-        title="Switches, sockets, wires, MCBs, and power basics"
-        products={electricalEssentials}
-        loading={loading}
-      />
-
-      <ProductCarouselSection
-        eyebrow="Hardware & Tools"
-        title="Locks, handles, hinges, fasteners, and tool kits"
-        products={hardwareTools}
-        loading={loading}
-      />
-
-      <ProductCarouselSection
-        eyebrow="Plumbing & Bathroom"
-        title="Pipes, taps, fittings, connectors, and shower sets"
-        products={plumbingBathroom}
-        loading={loading}
-      />
+      {resolvedHomepageSections.slice(2, 5).map((section) => (
+        <ProductCarouselSection
+          key={section.sectionKey}
+          eyebrow={section.eyebrow}
+          title={section.title}
+          products={section.products}
+          loading={loading}
+        />
+      ))}
 
       <SeasonalModulesSection />
 
-      <ProductCarouselSection
-        eyebrow="Recently added products"
-        title="Fresh arrivals ready for discovery"
-        products={recentlyAddedProducts}
-        loading={loading}
-      />
-
-      <ProductCarouselSection
-        eyebrow="Best-selling products"
-        title="Proven performers that convert consistently"
-        products={bestSellerProducts}
-        loading={loading}
-      />
+      {resolvedHomepageSections.slice(5).map((section) => (
+        <ProductCarouselSection
+          key={section.sectionKey}
+          eyebrow={section.eyebrow}
+          title={section.title}
+          products={section.products}
+          loading={loading}
+        />
+      ))}
 
       <section className="section home-discovery-section">
         <DiscoverySection />

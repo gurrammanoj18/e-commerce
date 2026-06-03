@@ -305,6 +305,31 @@ export interface BannerPayload {
   imageUrl: string;
 }
 
+export type HomepageSectionType = "KEYWORDS" | "BEST_SELLERS" | "RECENTLY_ADDED" | "FEATURED";
+
+export interface HomepageSection {
+  id: number;
+  sectionKey: string;
+  eyebrow: string;
+  title: string;
+  type: HomepageSectionType;
+  keywords?: string | null;
+  displayOrder: number;
+  maxProducts: number;
+  active: boolean;
+}
+
+export interface HomepageSectionPayload {
+  sectionKey: string;
+  eyebrow: string;
+  title: string;
+  type: HomepageSectionType;
+  keywords?: string | null;
+  displayOrder: number;
+  maxProducts: number;
+  active: boolean;
+}
+
 export interface WalletTransaction {
   id: number;
   type: "CREDIT" | "DEBIT";

@@ -1,6 +1,7 @@
 package com.voltmart.ecommerce.config;
 
 import com.voltmart.ecommerce.entity.*;
+import com.voltmart.ecommerce.entity.enums.HomepageSectionType;
 import com.voltmart.ecommerce.entity.enums.Role;
 import com.voltmart.ecommerce.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class DataSeeder implements CommandLineRunner {
     private final OrderItemRepository orderItemRepository;
     private final WishlistItemRepository wishlistItemRepository;
     private final ServiceablePincodeRepository serviceablePincodeRepository;
+    private final HomepageSectionRepository homepageSectionRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AppProperties appProperties;
@@ -45,6 +47,7 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) {
         seedUsers();
         seedServiceablePincodes();
+        seedHomepageSections();
         removeLegacyCatalog();
         Map<String, Category> categories = seedCategories();
         if (productRepository.count() > 0) {
@@ -170,6 +173,86 @@ public class DataSeeder implements CommandLineRunner {
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
                         .build()));
+    }
+
+    private void seedHomepageSections() {
+        seedHomepageSection(
+                "hard-to-find",
+                "Hard-to-Find Products",
+                "Rare essentials that make VoltMart useful",
+                HomepageSectionType.KEYWORDS,
+                "distribution box, mcb box, modular, door hardware, pipe fitting, consumable, fastener, special tool",
+                10
+        );
+        seedHomepageSection(
+                "everyday-essentials",
+                "Everyday Essentials",
+                "Fast-moving items customers use regularly",
+                HomepageSectionType.KEYWORDS,
+                "led bulb, switch, wire, tap, extension, pvc tape, holder, cleaning",
+                20
+        );
+        seedHomepageSection(
+                "electrical-essentials",
+                "Electrical Essentials",
+                "Switches, sockets, wires, MCBs, and power basics",
+                HomepageSectionType.KEYWORDS,
+                "electrical, switch, socket, wire, mcb, distribution box, fan regulator",
+                30
+        );
+        seedHomepageSection(
+                "hardware-tools",
+                "Hardware & Tools",
+                "Locks, handles, hinges, fasteners, and tool kits",
+                HomepageSectionType.KEYWORDS,
+                "hardware, tool, lock, handle, hinge, screw, hammer, spanner, screwdriver",
+                40
+        );
+        seedHomepageSection(
+                "plumbing-bathroom",
+                "Plumbing & Bathroom",
+                "Pipes, taps, fittings, connectors, and shower sets",
+                HomepageSectionType.KEYWORDS,
+                "plumbing, bathroom, pipe, tap, fitting, connector, shower",
+                50
+        );
+        seedHomepageSection(
+                "recently-added",
+                "Recently added products",
+                "Fresh arrivals ready for discovery",
+                HomepageSectionType.RECENTLY_ADDED,
+                "",
+                70
+        );
+        seedHomepageSection(
+                "best-selling",
+                "Best-selling products",
+                "Proven performers that convert consistently",
+                HomepageSectionType.BEST_SELLERS,
+                "",
+                80
+        );
+    }
+
+    private void seedHomepageSection(
+            String sectionKey,
+            String eyebrow,
+            String title,
+            HomepageSectionType type,
+            String keywords,
+            int displayOrder
+    ) {
+        HomepageSection section = homepageSectionRepository.findBySectionKey(sectionKey)
+                .orElseGet(() -> HomepageSection.builder().sectionKey(sectionKey).build());
+        section.setSectionKey(sectionKey);
+        section.setEyebrow(eyebrow);
+        section.setTitle(title);
+        section.setType(type);
+        section.setKeywords(keywords);
+        section.setDisplayOrder(displayOrder);
+        section.setMaxProducts(8);
+        section.setActive(true);
+        homepageSectionRepository.save(section);
     }
 
     private void seedProduct(String slug, String name, String brand, Category category, String heroTag, String badge,

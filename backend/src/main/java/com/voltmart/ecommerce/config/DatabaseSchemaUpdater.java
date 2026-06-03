@@ -271,6 +271,51 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 drop column if exists updated_at
                 """);
         jdbcTemplate.execute("""
+                create table if not exists homepage_section (
+                    id bigserial primary key,
+                    section_key varchar(255) not null unique,
+                    eyebrow varchar(255) not null,
+                    title varchar(255) not null,
+                    type varchar(50) not null,
+                    keywords text,
+                    display_order integer not null default 0,
+                    max_products integer not null default 8,
+                    active boolean not null default true
+                )
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists homepage_section
+                add column if not exists section_key varchar(255)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists homepage_section
+                add column if not exists eyebrow varchar(255)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists homepage_section
+                add column if not exists title varchar(255)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists homepage_section
+                add column if not exists type varchar(50)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists homepage_section
+                add column if not exists keywords text
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists homepage_section
+                add column if not exists display_order integer not null default 0
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists homepage_section
+                add column if not exists max_products integer not null default 8
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists homepage_section
+                add column if not exists active boolean not null default true
+                """);
+        jdbcTemplate.execute("""
                 create table if not exists wallet_coupon (
                     id bigserial primary key,
                     code varchar(255) not null unique,
