@@ -135,6 +135,98 @@
   flex: 0 0 100%;
 }
 
+.home-icon-grid,
+.home-brand-grid,
+.home-seasonal-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.home-icon-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.home-icon-tile,
+.home-brand-card,
+.home-seasonal-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-icon-tile:hover,
+.home-brand-card:hover,
+.home-seasonal-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1);
+}
+
+.home-icon-tile {
+  min-height: 118px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  padding: 18px;
+  text-align: center;
+}
+
+.home-icon-tile span {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #111827;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.home-icon-tile strong,
+.home-seasonal-card strong {
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.home-brand-grid {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
+.home-brand-card {
+  min-height: 86px;
+  display: grid;
+  place-items: center;
+  padding: 16px 10px;
+  text-align: center;
+}
+
+.home-brand-card span {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.home-seasonal-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.home-seasonal-card {
+  min-height: 150px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 20px;
+}
+
+.home-seasonal-card span {
+  color: #4b5563;
+  line-height: 1.5;
+}
+
 .home-discovery-section {
   width: min(1200px, calc(100% - 32px));
   margin: 0 auto;
@@ -263,6 +355,12 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .home-icon-grid,
+  .home-brand-grid,
+  .home-seasonal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .banner-carousel__slide img {
     height: 34vh;
     min-height: 180px;
@@ -316,6 +414,53 @@
   .home-why-shop__grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  .home-icon-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .home-brand-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .home-seasonal-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .home-icon-tile {
+    min-height: 96px;
+    padding: 12px 8px;
+  }
+
+  .home-icon-tile span {
+    width: 34px;
+    height: 34px;
+    font-size: 0.7rem;
+  }
+
+  .home-icon-tile strong,
+  .home-brand-card span,
+  .home-seasonal-card strong {
+    font-size: 0.82rem;
+  }
+
+  .home-brand-card {
+    min-height: 62px;
+    padding: 10px 6px;
+  }
+
+  .home-seasonal-card {
+    min-height: auto;
+    padding: 14px;
+  }
+
+  .home-seasonal-card span {
+    font-size: 0.84rem;
+    line-height: 1.35;
   }
 
   .home-why-shop__card {

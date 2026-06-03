@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import "../styles/pages/HomePage.css";
 import DiscoverySection from "../components/discovery/DiscoverySection";
 import CategoryCard from "../components/product/CategoryCard";
@@ -96,6 +97,129 @@ interface ProductCarouselSectionProps {
 }
 
 const promoBanners = [bannerOne, bannerTwo, bannerThree];
+
+const brandShowcase = ["Anchor", "GM", "Havells", "Polycab", "Finolex", "Legrand", "Philips", "Godrej"];
+
+const seasonalModules = [
+  {
+    title: "Summer Cooling Picks",
+    copy: "Fans, extension boards, coolers, and wiring essentials for hot-weather demand.",
+    to: "/products?discover=1&search=fan",
+  },
+  {
+    title: "Monsoon Protection",
+    copy: "Waterproof tape, sealants, outdoor switches, pipe fittings, and safety consumables.",
+    to: "/products?discover=1&search=waterproof",
+  },
+  {
+    title: "Festival Lighting",
+    copy: "LED bulbs, holders, extension boards, decorative lighting, and quick replacements.",
+    to: "/products?discover=1&search=light",
+  },
+  {
+    title: "Contractor Bulk Deals",
+    copy: "Fast-moving project stock for electricians, plumbers, fabricators, and site teams.",
+    to: "/bulk-order",
+  },
+];
+
+const productMatches = (product: Product, keywords: string[]) => {
+  const searchable = [
+    product.name,
+    product.brand,
+    product.category,
+    product.categorySlug,
+    product.subcategory,
+    product.subcategorySlug,
+    product.shortDescription,
+    product.description,
+    ...product.tags,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return keywords.some((keyword) => searchable.includes(keyword.toLowerCase()));
+};
+
+const pickSectionProducts = (
+  products: Product[],
+  keywords: string[],
+  fallbackProducts: Product[],
+) => {
+  const matchedProducts = products.filter((product) => productMatches(product, keywords));
+  return matchedProducts.length ? matchedProducts : fallbackProducts;
+};
+
+interface IconProductSectionProps {
+  eyebrow: string;
+  title: string;
+  items: string[];
+}
+
+const IconProductSection: React.FC<IconProductSectionProps> = ({ eyebrow, title, items }) => (
+  <section className="shell section home-icon-section">
+    <div className="section-heading">
+      <div>
+        <span className="eyebrow">{eyebrow}</span>
+        <h2>{title}</h2>
+      </div>
+    </div>
+    <div className="home-icon-grid">
+      {items.map((item) => (
+        <Link
+          key={item}
+          className="home-icon-tile"
+          to={`/products?discover=1&search=${encodeURIComponent(item)}`}
+        >
+          <span>{item.slice(0, 2).toUpperCase()}</span>
+          <strong>{item}</strong>
+        </Link>
+      ))}
+    </div>
+  </section>
+);
+
+const BrandSection: React.FC = () => (
+  <section className="shell section home-brand-section">
+    <div className="section-heading">
+      <div>
+        <span className="eyebrow">Shop by Brand</span>
+        <h2>Major brands customers ask for</h2>
+      </div>
+    </div>
+    <div className="home-brand-grid">
+      {brandShowcase.map((brand) => (
+        <Link
+          key={brand}
+          className="home-brand-card"
+          to={`/products?discover=1&brand=${encodeURIComponent(brand)}`}
+        >
+          <span>{brand}</span>
+        </Link>
+      ))}
+    </div>
+  </section>
+);
+
+const SeasonalModulesSection: React.FC = () => (
+  <section className="shell section home-seasonal-section">
+    <div className="section-heading">
+      <div>
+        <span className="eyebrow">Seasonal picks</span>
+        <h2>Fast modules for timely demand</h2>
+      </div>
+    </div>
+    <div className="home-seasonal-grid">
+      {seasonalModules.map((module) => (
+        <Link key={module.title} className="home-seasonal-card" to={module.to}>
+          <strong>{module.title}</strong>
+          <span>{module.copy}</span>
+        </Link>
+      ))}
+    </div>
+  </section>
+);
 
 const MidPageBannerCarousel: React.FC<{ banners: string[] }> = ({ banners }) => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -365,6 +489,64 @@ const HomePage: React.FC = () => {
   }, [products]);
 
   const categoryShowcase = useMemo(() => categories, [categories]);
+  const fallbackProducts = useMemo(
+    () => (trendingProducts.length ? trendingProducts : products),
+    [products, trendingProducts]
+  );
+  const hardToFindProducts = useMemo(
+    () =>
+      pickSectionProducts(
+        products,
+        [
+          "distribution box",
+          "mcb box",
+          "modular",
+          "door hardware",
+          "pipe fitting",
+          "consumable",
+          "fastener",
+          "special tool",
+        ],
+        fallbackProducts
+      ),
+    [fallbackProducts, products]
+  );
+  const everydayEssentials = useMemo(
+    () =>
+      pickSectionProducts(
+        products,
+        ["led bulb", "switch", "wire", "tap", "extension", "pvc tape", "holder", "cleaning"],
+        fallbackProducts
+      ),
+    [fallbackProducts, products]
+  );
+  const electricalEssentials = useMemo(
+    () =>
+      pickSectionProducts(
+        products,
+        ["electrical", "switch", "socket", "wire", "mcb", "distribution box", "fan regulator"],
+        fallbackProducts
+      ),
+    [fallbackProducts, products]
+  );
+  const hardwareTools = useMemo(
+    () =>
+      pickSectionProducts(
+        products,
+        ["hardware", "tool", "lock", "handle", "hinge", "screw", "hammer", "spanner", "screwdriver"],
+        fallbackProducts
+      ),
+    [fallbackProducts, products]
+  );
+  const plumbingBathroom = useMemo(
+    () =>
+      pickSectionProducts(
+        products,
+        ["plumbing", "bathroom", "pipe", "tap", "fitting", "connector", "shower"],
+        fallbackProducts
+      ),
+    [fallbackProducts, products]
+  );
 
   return (
     <>
@@ -382,19 +564,66 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
+      <MidPageBannerCarousel banners={banners.map((banner) => banner.imageUrl).filter(Boolean)} />
+
+      <ProductCarouselSection
+        eyebrow="Hard-to-Find Products"
+        title="Rare essentials that make VoltMart useful"
+        products={hardToFindProducts}
+        loading={loading}
+      />
+
+      <IconProductSection
+        eyebrow="Discovery shortcuts"
+        title="Popular hard-to-find product types"
+        items={[
+          "Distribution Boxes",
+          "MCB Boxes",
+          "Modular Accessories",
+          "Door Hardware",
+          "Pipe Fittings",
+          "Electrical Consumables",
+          "Fasteners",
+          "Special Tools",
+        ]}
+      />
+
+      <ProductCarouselSection
+        eyebrow="Everyday Essentials"
+        title="Fast-moving items customers use regularly"
+        products={everydayEssentials}
+        loading={loading}
+      />
+
+      <BrandSection />
+
+      <ProductCarouselSection
+        eyebrow="Electrical Essentials"
+        title="Switches, sockets, wires, MCBs, and power basics"
+        products={electricalEssentials}
+        loading={loading}
+      />
+
+      <ProductCarouselSection
+        eyebrow="Hardware & Tools"
+        title="Locks, handles, hinges, fasteners, and tool kits"
+        products={hardwareTools}
+        loading={loading}
+      />
+
+      <ProductCarouselSection
+        eyebrow="Plumbing & Bathroom"
+        title="Pipes, taps, fittings, connectors, and shower sets"
+        products={plumbingBathroom}
+        loading={loading}
+      />
+
+      <SeasonalModulesSection />
+
       <ProductCarouselSection
         eyebrow="Recently added products"
         title="Fresh arrivals ready for discovery"
         products={recentlyAddedProducts}
-        loading={loading}
-      />
-
-      <MidPageBannerCarousel banners={banners.map((banner) => banner.imageUrl).filter(Boolean)} />
-
-      <ProductCarouselSection
-        eyebrow="Trending products"
-        title="High-interest picks shoppers are engaging with now"
-        products={trendingProducts}
         loading={loading}
       />
 

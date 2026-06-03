@@ -370,16 +370,19 @@ const Navbar: React.FC = () => {
                 >
                   Services
                 </NavLink>
-                {promoNavigationItems.map((category) => (
-                  <Link key={category.label} className="site-category-strip__item" to={category.to}>
-                    {category.label}
-                  </Link>
-                ))}
               </div>
             </div>
           ) : null}
           <div className="delivery-switch__desktop">{deliveryToggleButton}</div>
         <div className="site-nav__quick-links">
+          <Link className="cart-pill cart-pill--address" to="/address">
+            <span className="cart-pill__icon" aria-hidden="true">⌂</span>
+            <span className="cart-pill__label">Address</span>
+          </Link>
+          <Link className="cart-pill cart-pill--wallet" to="/wallet">
+            <span className="cart-pill__icon" aria-hidden="true">₹</span>
+            <span className="cart-pill__label">Wallet</span>
+          </Link>
           <Link
             className={`cart-pill cart-pill--wishlist ${wishlistCount > 0 ? "cart-pill--has-items" : ""}`}
             to="/wishlist"
@@ -490,11 +493,6 @@ const Navbar: React.FC = () => {
           >
             Services
           </NavLink>
-          {promoNavigationItems.map((category) => (
-            <Link key={category.label} className="site-category-strip__item" to={category.to}>
-              {category.label}
-            </Link>
-          ))}
         </div>
       </div>
       {switchingMode && switchVisual ? (

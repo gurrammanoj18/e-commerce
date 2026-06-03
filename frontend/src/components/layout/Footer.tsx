@@ -22,6 +22,11 @@ const Footer: React.FC = () => {
           <h3>QUICK LINKS</h3>
           <Link to="/about">About VoltMart</Link>
           <Link to="/contact">Contact Us</Link>
+          <Link to="/contact">Support</Link>
+          <a href="https://wa.me/919398546891" target="_blank" rel="noreferrer">
+            WhatsApp
+          </a>
+          <a href="mailto:support@voltmart.in">Email</a>
           <Link to="/terms">Terms &amp; Conditions</Link>
           <Link to="/privacy">Privacy Policy</Link>
           <Link to="/returns">Returns Policy</Link>
