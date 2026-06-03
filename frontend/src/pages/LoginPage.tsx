@@ -122,12 +122,6 @@ const LoginPage: React.FC = () => {
         <img className="auth-page__product auth-page__product--keyboard" src="/catalog/vector-keyboard.webp" alt="" />
         <img className="auth-page__product auth-page__product--monitor" src="/catalog/lumen-monitor.webp" alt="" />
         <img className="auth-page__product auth-page__product--speaker" src="/catalog/forge-speaker.webp" alt="" />
-        <img className="auth-page__product auth-page__product--gpu" src="/catalog/quantum-gpu.webp" alt="" />
-        <img className="auth-page__product auth-page__product--camera" src="/catalog/orbit-camera.webp" alt="" />
-        <img className="auth-page__product auth-page__product--router" src="/catalog/nova-router.webp" alt="" />
-        <img className="auth-page__product auth-page__product--mesh" src="/catalog/mesh-router.webp" alt="" />
-        <img className="auth-page__product auth-page__product--dock" src="/catalog/dock-station.webp" alt="" />
-        <img className="auth-page__product auth-page__product--book" src="/catalog/atlas-book.webp" alt="" />
       </div>
       <div className="auth-card">
         <div className="auth-card__brand">
