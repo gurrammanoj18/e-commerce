@@ -31,6 +31,7 @@ const Navbar: React.FC = () => {
     [user?.fullName],
   );
   const profileImageUrl = user?.profileImageUrl?.trim();
+  const isCustomer = user?.role === "ROLE_CUSTOMER";
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 0);
@@ -104,6 +105,11 @@ const Navbar: React.FC = () => {
     logout();
   };
 
+  const handleCustomerLogin = () => {
+    handleLogout();
+    navigate("/login");
+  };
+
   const handleToggleDeliveryMode = async () => {
     if (!user?.preferredDeliveryMode) {
       return;
@@ -122,7 +128,7 @@ const Navbar: React.FC = () => {
     }
   };
 
-  const deliveryToggleButton = user?.role === "ROLE_CUSTOMER" ? (
+  const deliveryToggleButton = isCustomer ? (
     <button
       type="button"
       className={`delivery-switch ${switchingMode ? "is-switching" : ""}`}
@@ -199,7 +205,7 @@ const Navbar: React.FC = () => {
           >
             Support
           </NavLink>
-          {user?.role === "ROLE_CUSTOMER" ? (
+          {isCustomer ? (
             <button
               type="button"
               className={`delivery-switch delivery-switch--mobile ${
@@ -215,7 +221,7 @@ const Navbar: React.FC = () => {
             <div className="site-nav__mobile-drawer-top">
               <strong>Welcome</strong>
               <div className="site-nav__mobile-drawer-actions">
-                {user ? (
+                {isCustomer ? (
                   <button
                     type="button"
                     className="site-nav__mobile-logout site-nav__mobile-switch"
@@ -223,6 +229,14 @@ const Navbar: React.FC = () => {
                   >
                     Switch to{" "}
                     {user.preferredDeliveryMode === "HOME_DELIVERY" ? "Store pickup" : "Home delivery"}
+                  </button>
+                ) : user ? (
+                  <button
+                    type="button"
+                    className="site-nav__mobile-logout"
+                    onClick={handleCustomerLogin}
+                  >
+                    Customer login
                   </button>
                 ) : (
                   <Link
@@ -285,18 +299,22 @@ const Navbar: React.FC = () => {
                   ) : null}
                 </>
               ) : null}
-              <Link to="/orders" onClick={() => setIsMenuOpen(false)}>
-                Orders
-              </Link>
-              <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
-                Account
-              </Link>
-              <Link to="/address" onClick={() => setIsMenuOpen(false)}>
-                Address
-              </Link>
-              <Link to="/wallet" onClick={() => setIsMenuOpen(false)}>
-                VoltMart Wallet
-              </Link>
+              {isCustomer ? (
+                <>
+                  <Link to="/orders" onClick={() => setIsMenuOpen(false)}>
+                    Orders
+                  </Link>
+                  <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                    Account
+                  </Link>
+                  <Link to="/address" onClick={() => setIsMenuOpen(false)}>
+                    Address
+                  </Link>
+                  <Link to="/wallet" onClick={() => setIsMenuOpen(false)}>
+                    VoltMart Wallet
+                  </Link>
+                </>
+              ) : null}
               <Link to="/services" onClick={() => setIsMenuOpen(false)}>
                 VoltMart Services
               </Link>
@@ -404,7 +422,12 @@ const Navbar: React.FC = () => {
               {profileImageUrl ? <img src={profileImageUrl} alt="" /> : profileInitial}
             </span>
           </button>
-          <Link className="profile-menu__trigger profile-menu__trigger--mobile" to="/profile" aria-label="Open profile page">
+          <Link
+            className="profile-menu__trigger profile-menu__trigger--mobile"
+            to={isCustomer ? "/profile" : "/login"}
+            onClick={!isCustomer && user ? handleLogout : undefined}
+            aria-label="Open profile page"
+          >
             <span className="profile-menu__avatar">
               {profileImageUrl ? <img src={profileImageUrl} alt="" /> : profileInitial}
             </span>
@@ -415,25 +438,33 @@ const Navbar: React.FC = () => {
                 <strong>Welcome</strong>
               </div>
               <div className="profile-menu__links">
-                <Link to="/profile" onClick={() => setIsProfileOpen(false)}>
-                  <span>Profile</span>
-                  <span aria-hidden="true">›</span>
-                </Link>
-                <Link to="/orders" onClick={() => setIsProfileOpen(false)}>
-                  <span>Orders</span>
-                  <span aria-hidden="true">›</span>
-                </Link>
-                <Link to="/address" onClick={() => setIsProfileOpen(false)}>
-                  <span>Address</span>
-                  <span aria-hidden="true">›</span>
-                </Link>
-                <Link to="/wallet" onClick={() => setIsProfileOpen(false)}>
-                  <span>Wallet</span>
-                  <span aria-hidden="true">›</span>
-                </Link>
-                <button type="button" onClick={handleLogout}>
-                  <span>Logout</span>
-                </button>
+                {isCustomer ? (
+                  <>
+                    <Link to="/profile" onClick={() => setIsProfileOpen(false)}>
+                      <span>Profile</span>
+                      <span aria-hidden="true">›</span>
+                    </Link>
+                    <Link to="/orders" onClick={() => setIsProfileOpen(false)}>
+                      <span>Orders</span>
+                      <span aria-hidden="true">›</span>
+                    </Link>
+                    <Link to="/address" onClick={() => setIsProfileOpen(false)}>
+                      <span>Address</span>
+                      <span aria-hidden="true">›</span>
+                    </Link>
+                    <Link to="/wallet" onClick={() => setIsProfileOpen(false)}>
+                      <span>Wallet</span>
+                      <span aria-hidden="true">›</span>
+                    </Link>
+                    <button type="button" onClick={handleLogout}>
+                      <span>Logout</span>
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" onClick={handleCustomerLogin}>
+                    <span>Customer login</span>
+                  </button>
+                )}
               </div>
             </div>
           ) : null}
