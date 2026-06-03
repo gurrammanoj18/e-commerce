@@ -1,1 +1,17 @@
 @import "../shared/FormStyles.css";
+
+.admin-app-shell main {
+  min-height: 100vh;
+}
+
+.admin-app-shell .auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.admin-app-shell .auth-card {
+  width: min(100%, 440px);
+  margin: 0 auto;
+}
