@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/pages/LoginPage.css";
 import "../styles/shared/LoadingState.css";
 import { useAuth } from "../contexts/AuthContext";
-import voltmartLogo from "../assets/voltmart-logo.png";
+import voltmartLogo from "../assets/voltmart-logo-black.png";
 
 declare global {
   interface Window {
