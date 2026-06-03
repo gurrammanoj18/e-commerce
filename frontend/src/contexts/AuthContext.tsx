@@ -6,13 +6,11 @@ import {
   adminLogin as adminLoginRequest,
   completeProfile as completeProfileRequest,
   googleLogin as googleLoginRequest,
-  requestOtp as requestOtpRequest,
   updateDeliveryPreference as updateDeliveryPreferenceRequest,
-  verifyOtp as verifyOtpRequest,
 } from "../services/authService";
 
 import { useProcessing } from "./ProcessingContext";
-import { AuthUser, DeliveryMode, OtpChallengeResponse } from "../types/store";
+import { AuthUser, DeliveryMode } from "../types/store";
 import { optimizeImageFile } from "../utils/imageUpload";
 
 interface AuthActionResult<T = void> {
@@ -26,8 +24,6 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isAdmin: boolean;
   loading: boolean;
-  requestOtp: (email: string) => Promise<AuthActionResult<OtpChallengeResponse>>;
-  verifyOtp: (email: string, otpCode: string) => Promise<AuthActionResult>;
   googleLogin: (credential: string) => Promise<AuthActionResult>;
   adminLogin: (email: string, password: string) => Promise<AuthActionResult>;
   completeProfile: (payload: ProfileCompletionPayload) => Promise<AuthActionResult>;
@@ -252,44 +248,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setDeliveryPreferenceError("");
   }, [isAdminSession]);
 
-  const requestOtp = async (email: string) => {
-    const processingId = startProcessing({
-      title: "Sending OTP",
-      message: "We are preparing your sign-in code now...",
-    });
-    try {
-      return { data: await requestOtpRequest({ email }) };
-    } catch (error) {
-      return {
-        error: extractErrorMessage(error, "Unable to send OTP right now."),
-      };
-    } finally {
-      stopProcessing(processingId);
-    }
-  };
-
-  const verifyOtp = async (email: string, otpCode: string) => {
-    const processingId = startProcessing({
-      title: "Signing you in",
-      message: "Checking your OTP and preparing your account...",
-    });
-    try {
-      const response = await verifyOtpRequest({ email, otpCode });
-      persistAuth(response.user, response.token, {
-        promptDeliveryPreference: true,
-        requireProfileCompletion: response.requiresProfileCompletion,
-      });
-
-      return {};
-    } catch (error) {
-      return {
-        error: extractErrorMessage(error, "Unable to verify OTP right now."),
-      };
-    } finally {
-      stopProcessing(processingId);
-    }
-  };
-
   const googleLogin = async (credential: string) => {
     const processingId = startProcessing({
       title: "Signing you in",
@@ -417,8 +375,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAuthenticated: Boolean(user && token),
         isAdmin: user?.role === "ROLE_ADMIN",
         loading,
-        requestOtp,
-        verifyOtp,
         googleLogin,
         adminLogin,
         completeProfile,
