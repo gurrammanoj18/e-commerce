@@ -3,7 +3,7 @@
 .auth-page {
   position: relative;
   overflow: hidden;
-  min-height: calc(100vh - 160px);
+  min-height: 100vh;
   display: grid;
   place-items: center;
   padding-block: clamp(2rem, 5vw, 4.5rem);
@@ -12,8 +12,7 @@
 .auth-page::before {
   content: "";
   position: absolute;
-  inset: clamp(0.75rem, 2vw, 1.25rem);
-  border-radius: 8px;
+  inset: 0;
   background:
     radial-gradient(circle at 20% 20%, rgba(255, 122, 0, 0.28), transparent 28%),
     radial-gradient(circle at 82% 28%, rgba(24, 119, 242, 0.2), transparent 24%),
@@ -29,55 +28,95 @@
 
 .auth-page__product {
   position: absolute;
-  width: clamp(96px, 16vw, 190px);
+  width: clamp(78px, 12vw, 170px);
   aspect-ratio: 1;
   object-fit: contain;
-  padding: clamp(0.6rem, 1.8vw, 1rem);
+  padding: clamp(0.45rem, 1.2vw, 0.9rem);
   border: 1px solid rgba(255, 255, 255, 0.26);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.82);
   box-shadow: 0 22px 45px rgba(17, 24, 39, 0.28);
 }
 
 .auth-page__product--laptop {
-  top: 12%;
-  left: 8%;
+  top: 10%;
+  left: 7%;
   transform: rotate(-6deg);
 }
 
 .auth-page__product--headset {
-  right: 9%;
-  top: 14%;
+  right: 8%;
+  top: 9%;
   transform: rotate(5deg);
 }
 
 .auth-page__product--keyboard {
-  left: 13%;
-  bottom: 15%;
-  width: clamp(120px, 19vw, 230px);
+  left: 10%;
+  bottom: 12%;
+  width: clamp(110px, 17vw, 220px);
   transform: rotate(4deg);
 }
 
 .auth-page__product--monitor {
-  right: 13%;
-  bottom: 13%;
+  right: 11%;
+  bottom: 14%;
   transform: rotate(-5deg);
 }
 
 .auth-page__product--speaker {
   left: 50%;
-  bottom: 6%;
-  width: clamp(88px, 12vw, 150px);
+  bottom: 4%;
+  width: clamp(74px, 10vw, 130px);
   transform: translateX(-50%) rotate(3deg);
+}
+
+.auth-page__product--gpu {
+  top: 34%;
+  left: 2%;
+  transform: rotate(7deg);
+}
+
+.auth-page__product--camera {
+  top: 34%;
+  right: 2%;
+  transform: rotate(-7deg);
+}
+
+.auth-page__product--router {
+  top: 2%;
+  left: 34%;
+  width: clamp(70px, 9vw, 120px);
+  transform: rotate(4deg);
+}
+
+.auth-page__product--mesh {
+  top: 2%;
+  right: 34%;
+  width: clamp(70px, 9vw, 120px);
+  transform: rotate(-4deg);
+}
+
+.auth-page__product--dock {
+  bottom: 28%;
+  left: 23%;
+  width: clamp(72px, 10vw, 135px);
+  transform: rotate(-3deg);
+}
+
+.auth-page__product--book {
+  bottom: 29%;
+  right: 23%;
+  width: clamp(72px, 10vw, 135px);
+  transform: rotate(3deg);
 }
 
 .auth-card {
   position: relative;
   z-index: 1;
-  width: min(100%, 480px);
+  width: min(100%, 440px);
   display: grid;
-  gap: 1.25rem;
-  padding: clamp(1.5rem, 4vw, 2.25rem);
+  gap: 1rem;
+  padding: clamp(1.35rem, 3vw, 2rem);
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 8px;
   background:
@@ -104,26 +143,6 @@
   margin: 0;
   color: #4b5563;
   line-height: 1.6;
-}
-
-.auth-card__benefits {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
-.auth-card__benefits span {
-  min-height: 44px;
-  display: grid;
-  place-items: center;
-  padding: 0.65rem;
-  border: 1px solid rgba(17, 24, 39, 0.08);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.75);
-  color: #111827;
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-align: center;
 }
 
 .auth-card__google {
@@ -186,9 +205,9 @@
 
 @media (max-width: 520px) {
   .auth-page {
-    place-items: start center;
-    min-height: calc(100vh - 120px);
-    padding-block: 1.25rem 2rem;
+    place-items: center;
+    min-height: 100vh;
+    padding: 1rem;
   }
 
   .auth-page::before {
@@ -196,34 +215,89 @@
   }
 
   .auth-page__product {
+    width: clamp(58px, 20vw, 92px);
+    padding: 0.35rem;
     opacity: 0.78;
   }
 
   .auth-page__product--laptop {
     top: 4%;
-    left: -8%;
+    left: -4%;
   }
 
   .auth-page__product--headset {
-    top: 8%;
-    right: -10%;
+    top: 6%;
+    right: -5%;
   }
 
   .auth-page__product--keyboard {
-    left: -12%;
-    bottom: 5%;
+    left: -8%;
+    bottom: 7%;
+    width: clamp(72px, 27vw, 120px);
   }
 
-  .auth-page__product--monitor,
+  .auth-page__product--monitor {
+    right: -7%;
+    bottom: 8%;
+  }
+
   .auth-page__product--speaker {
-    display: none;
+    left: 50%;
+    bottom: 1.5%;
+    width: clamp(54px, 18vw, 82px);
+  }
+
+  .auth-page__product--gpu {
+    top: 27%;
+    left: -9%;
+  }
+
+  .auth-page__product--camera {
+    top: 26%;
+    right: -8%;
+  }
+
+  .auth-page__product--router {
+    top: 1%;
+    left: 33%;
+    width: clamp(50px, 17vw, 76px);
+  }
+
+  .auth-page__product--mesh {
+    top: 15%;
+    left: 50%;
+    right: auto;
+    width: clamp(50px, 17vw, 76px);
+  }
+
+  .auth-page__product--dock {
+    bottom: 25%;
+    left: -5%;
+    width: clamp(50px, 18vw, 82px);
+  }
+
+  .auth-page__product--book {
+    bottom: 24%;
+    right: -6%;
+    width: clamp(50px, 18vw, 82px);
   }
 
   .auth-card {
-    margin-top: 3.5rem;
+    width: min(100%, 330px);
+    gap: 0.75rem;
+    padding: 1rem;
   }
 
-  .auth-card__benefits {
-    grid-template-columns: 1fr;
+  .auth-card h1 {
+    font-size: 1.65rem;
+  }
+
+  .auth-card p {
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .auth-card__google-button {
+    min-height: 42px;
   }
 }
