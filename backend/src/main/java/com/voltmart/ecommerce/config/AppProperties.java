@@ -65,7 +65,10 @@ public class AppProperties {
     @Setter
     public static class Email {
         private boolean enabled;
+        private String provider = "smtp";
         private String fromAddress;
         private String fromName = "VoltMart";
+        private String apiKey;
+        private String apiUrl = "https://api.brevo.com/v3/smtp/email";
     }
 }

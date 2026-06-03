@@ -12,10 +12,12 @@ import jakarta.mail.internet.InternetAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClient;
 
 import java.text.NumberFormat;
 import java.time.LocalTime;
@@ -24,6 +26,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,31 +48,6 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
 
     @Value("${spring.mail.password:}")
     private String mailPassword;
-
-    @Override
-    public void sendLoginOtp(String recipient, String otpCode) {
-        if (!isConfigured()) {
-            throw new IllegalStateException("Email OTP delivery is not configured");
-        }
-
-        String subject = "Your VoltMart login OTP";
-        String html = """
-                <!DOCTYPE html>
-                <html lang="en">
-                  <body style="margin:0;padding:24px;background:#111318;font-family:Arial,sans-serif;color:#f3f4f6;">
-                    <div style="max-width:560px;margin:0 auto;background:#1a1d24;border:1px solid #2a2f39;border-radius:24px;padding:32px;">
-                      <p style="margin:0 0 12px;color:#cbd5e1;font-size:14px;">VoltMart sign in</p>
-                      <h1 style="margin:0 0 16px;font-size:28px;color:#ffffff;">Your email OTP</h1>
-                      <p style="margin:0 0 24px;color:#d1d5db;font-size:16px;line-height:1.5;">Use the code below to log in. This OTP expires in 5 minutes.</p>
-                      <div style="display:inline-block;background:#243447;border-radius:18px;padding:18px 24px;font-size:32px;letter-spacing:0.35em;color:#ffffff;font-weight:700;">%s</div>
-                      <p style="margin:24px 0 0;color:#9ca3af;font-size:14px;">Do not share this OTP with anyone.</p>
-                    </div>
-                  </body>
-                </html>
-                """.formatted(escapeHtml(otpCode));
-
-        sendEmail(recipient, subject, html, "login otp");
-    }
 
     @Override
     public void sendOrderPlacedNotification(Order order) {
@@ -164,17 +142,21 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
 
     private boolean isConfigured() {
         AppProperties.Email email = appProperties.getEmail();
-        boolean configured = email.isEnabled()
-                && StringUtils.hasText(email.getFromAddress())
-                && StringUtils.hasText(mailHost)
-                && StringUtils.hasText(mailUsername)
-                && StringUtils.hasText(mailPassword);
+        boolean senderConfigured = email.isEnabled() && StringUtils.hasText(email.getFromAddress());
+        boolean configured = senderConfigured && (isBrevoConfigured()
+                ? StringUtils.hasText(email.getApiKey()) && StringUtils.hasText(email.getApiUrl())
+                : StringUtils.hasText(mailHost)
+                        && StringUtils.hasText(mailUsername)
+                        && StringUtils.hasText(mailPassword));
 
         if (!configured) {
             log.info(
-                    "Email notifications are disabled or missing SMTP/sender details. enabled={}, fromAddressSet={}, mailHostSet={}, mailUsernameSet={}, mailPasswordSet={}",
+                    "Email notifications are disabled or missing provider details. provider={}, enabled={}, fromAddressSet={}, apiKeySet={}, apiUrlSet={}, mailHostSet={}, mailUsernameSet={}, mailPasswordSet={}",
+                    email.getProvider(),
                     email.isEnabled(),
                     StringUtils.hasText(email.getFromAddress()),
+                    StringUtils.hasText(email.getApiKey()),
+                    StringUtils.hasText(email.getApiUrl()),
                     StringUtils.hasText(mailHost),
                     StringUtils.hasText(mailUsername),
                     StringUtils.hasText(mailPassword)
@@ -185,6 +167,15 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
     }
 
     private void sendEmail(String recipient, String subject, String htmlBody, String eventName) {
+        if (isBrevoConfigured()) {
+            sendBrevoEmail(recipient, subject, htmlBody, eventName);
+            return;
+        }
+
+        sendSmtpEmail(recipient, subject, htmlBody, eventName);
+    }
+
+    private void sendSmtpEmail(String recipient, String subject, String htmlBody, String eventName) {
         try {
             var message = mailSender.createMimeMessage();
             var helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
@@ -197,11 +188,37 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
             helper.setText(buildPlainTextFallback(subject, htmlBody), htmlBody);
             mailSender.send(message);
         } catch (Exception exception) {
-            if ("login otp".equals(eventName)) {
-                throw new IllegalStateException("Unable to send email OTP", exception);
-            }
             log.warn("Unable to send email {} to {}: {}", eventName, recipient, exception.getMessage());
         }
+    }
+
+    private void sendBrevoEmail(String recipient, String subject, String htmlBody, String eventName) {
+        AppProperties.Email email = appProperties.getEmail();
+        try {
+            RestClient.create()
+                    .post()
+                    .uri(email.getApiUrl())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("api-key", email.getApiKey())
+                    .body(Map.of(
+                            "sender", Map.of(
+                                    "email", email.getFromAddress(),
+                                    "name", email.getFromName()
+                            ),
+                            "to", List.of(Map.of("email", recipient)),
+                            "subject", subject,
+                            "htmlContent", htmlBody,
+                            "textContent", buildPlainTextFallback(subject, htmlBody)
+                    ))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception exception) {
+            log.warn("Unable to send email {} to {} through Brevo API: {}", eventName, recipient, exception.getMessage());
+        }
+    }
+
+    private boolean isBrevoConfigured() {
+        return "brevo".equalsIgnoreCase(appProperties.getEmail().getProvider());
     }
 
     private String buildEmailTemplate(

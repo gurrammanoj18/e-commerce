@@ -25,26 +25,16 @@ services:
         sync: false
       - key: APP_EMAIL_ENABLED
         value: "true"
+      - key: APP_EMAIL_PROVIDER
+        value: brevo
       - key: APP_EMAIL_FROM_ADDRESS
         sync: false
       - key: APP_EMAIL_FROM_NAME
         value: VoltMart
-      - key: SPRING_MAIL_HOST
-        value: smtp.gmail.com
-      - key: SPRING_MAIL_PORT
-        value: "587"
-      - key: SPRING_MAIL_USERNAME
+      - key: APP_EMAIL_API_KEY
         sync: false
-      - key: SPRING_MAIL_PASSWORD
-        sync: false
-      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_CONNECTIONTIMEOUT
-        value: "10000"
-      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_TIMEOUT
-        value: "10000"
-      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_WRITETIMEOUT
-        value: "10000"
-      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED
-        value: "true"
+      - key: APP_EMAIL_API_URL
+        value: https://api.brevo.com/v3/smtp/email
 
   - type: web
     name: voltmart-frontend

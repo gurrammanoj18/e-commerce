@@ -71,8 +71,11 @@ app:
 
   email:
     enabled: ${APP_EMAIL_ENABLED:false}
+    provider: ${APP_EMAIL_PROVIDER:smtp}
     from-address: ${APP_EMAIL_FROM_ADDRESS:}
     from-name: ${APP_EMAIL_FROM_NAME:VoltMart}
+    api-key: ${APP_EMAIL_API_KEY:}
+    api-url: ${APP_EMAIL_API_URL:https://api.brevo.com/v3/smtp/email}
 
 logging:
   level:

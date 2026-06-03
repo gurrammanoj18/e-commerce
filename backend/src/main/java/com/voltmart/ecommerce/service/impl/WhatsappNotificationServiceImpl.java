@@ -32,21 +32,6 @@ public class WhatsappNotificationServiceImpl implements WhatsappNotificationServ
     private final AppProperties appProperties;
 
     @Override
-    public void sendOtpNotification(String phoneNumber, String otpCode) {
-        if (!isConfigured()) {
-            throw new IllegalStateException("WhatsApp OTP delivery is not configured");
-        }
-
-        String message = String.join("\n",
-                "Your VoltMart login OTP is: " + otpCode,
-                "This code expires in 5 minutes.",
-                "Do not share this OTP with anyone."
-        );
-
-        sendTextMessage(phoneNumber, message, "otp");
-    }
-
-    @Override
     public void sendOrderPlacedNotification(Order order) {
         if (!isConfigured()) {
             return;
@@ -126,9 +111,6 @@ public class WhatsappNotificationServiceImpl implements WhatsappNotificationServ
                     .retrieve()
                     .toBodilessEntity();
         } catch (Exception exception) {
-            if ("otp".equals(eventName)) {
-                throw new IllegalStateException("Unable to send OTP WhatsApp message", exception);
-            }
             log.warn("Unable to send WhatsApp {} for order phone {}: {}",
                     eventName, phoneNumber, exception.getMessage());
         }

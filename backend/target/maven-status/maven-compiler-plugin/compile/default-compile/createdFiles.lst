@@ -45,7 +45,6 @@ com\voltmart\ecommerce\dto\pincode\ServiceablePincodeRequest.class
 com\voltmart\ecommerce\controller\CategoryController.class
 com\voltmart\ecommerce\dto\cart\SaveForLaterItemRequest.class
 com\voltmart\ecommerce\dto\banner\AdminBannerRequest.class
-com\voltmart\ecommerce\dto\auth\OtpVerifyRequest.class
 com\voltmart\ecommerce\dto\auth\DeliveryPreferenceRequest.class
 com\voltmart\ecommerce\entity\Product.class
 com\voltmart\ecommerce\entity\WalletCouponRedemption$WalletCouponRedemptionBuilder.class
@@ -83,7 +82,6 @@ com\voltmart\ecommerce\dto\auth\GoogleAuthRequest.class
 com\voltmart\ecommerce\entity\ReturnRequest$ReturnRequestBuilder.class
 com\voltmart\ecommerce\entity\ServiceablePincode$ServiceablePincodeBuilder.class
 com\voltmart\ecommerce\controller\SupportController.class
-com\voltmart\ecommerce\dto\auth\OtpChallengeResponse.class
 com\voltmart\ecommerce\repository\ServiceRequestRepository.class
 com\voltmart\ecommerce\controller\ProductController.class
 com\voltmart\ecommerce\entity\BulkOrderInquiryLineItem$BulkOrderInquiryLineItemBuilder.class
@@ -110,7 +108,6 @@ com\voltmart\ecommerce\entity\WalletCoupon.class
 com\voltmart\ecommerce\controller\AuthController.class
 com\voltmart\ecommerce\service\impl\UserAddressServiceImpl.class
 com\voltmart\ecommerce\dto\common\PagedResponse.class
-com\voltmart\ecommerce\entity\LoginOtp$LoginOtpBuilder.class
 com\voltmart\ecommerce\service\impl\BannerServiceImpl.class
 com\voltmart\ecommerce\dto\order\OrderItemResponse.class
 com\voltmart\ecommerce\entity\WalletCouponRedemption.class
@@ -156,7 +153,6 @@ com\voltmart\ecommerce\entity\enums\DeliveryMode.class
 com\voltmart\ecommerce\service\ProductService.class
 com\voltmart\ecommerce\config\AppProperties$Jwt.class
 com\voltmart\ecommerce\service\AdminService.class
-com\voltmart\ecommerce\dto\auth\OtpRequest.class
 com\voltmart\ecommerce\entity\BulkOrderInquiryLineItem.class
 com\voltmart\ecommerce\config\AppProperties$Seed.class
 com\voltmart\ecommerce\config\DatabaseSchemaUpdater.class
@@ -178,7 +174,6 @@ com\voltmart\ecommerce\controller\ReturnRequestController.class
 com\voltmart\ecommerce\repository\CategoryRepository.class
 com\voltmart\ecommerce\dto\wallet\WalletCouponRedemptionResponse.class
 com\voltmart\ecommerce\entity\Order.class
-com\voltmart\ecommerce\entity\LoginOtp.class
 com\voltmart\ecommerce\service\WalletService.class
 com\voltmart\ecommerce\repository\ReturnRequestRepository.class
 com\voltmart\ecommerce\service\CurrentUserService.class
@@ -186,7 +181,6 @@ com\voltmart\ecommerce\entity\Category$CategoryBuilder.class
 com\voltmart\ecommerce\entity\SavedForLaterItem.class
 com\voltmart\ecommerce\service\impl\EmailNotificationServiceImpl$1.class
 com\voltmart\ecommerce\dto\wishlist\WishlistResponse.class
-com\voltmart\ecommerce\repository\LoginOtpRepository.class
 com\voltmart\ecommerce\service\impl\SaveForLaterServiceImpl.class
 com\voltmart\ecommerce\service\impl\ReturnRequestServiceImpl$1.class
 com\voltmart\ecommerce\mapper\EntityMapper.class

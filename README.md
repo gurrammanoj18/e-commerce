@@ -55,7 +55,7 @@ The backend now supports two local modes:
 - `SPRING_PROFILES_ACTIVE=postgres` to run against PostgreSQL
 - default profile to run against embedded H2
 - set `APP_WHATSAPP_ENABLED=true` plus the Meta WhatsApp Cloud API credentials if you want automatic customer notifications after checkout and on admin status changes
-- set `APP_EMAIL_ENABLED=true` plus SMTP settings if you want matching email notifications for the same order events
+- set `APP_EMAIL_ENABLED=true` plus email provider settings if you want matching email notifications for the same order events
 
 ### 3. Frontend
 

@@ -152,12 +152,6 @@ export interface AuthResponse {
   showWelcomeGreeting: boolean;
 }
 
-export interface OtpChallengeResponse {
-  message: string;
-  email: string;
-  expiresAt: string;
-}
-
 export interface CartApiItem {
   id: number;
   productId: number;

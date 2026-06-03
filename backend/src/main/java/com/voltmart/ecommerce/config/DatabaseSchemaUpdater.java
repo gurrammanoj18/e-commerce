@@ -195,32 +195,7 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                     created_at timestamp not null
                 )
                 """);
-        jdbcTemplate.execute("""
-                create table if not exists login_otp (
-                    id bigserial primary key,
-                    email varchar(255) not null,
-                    otp_code varchar(6) not null,
-                    expires_at timestamp not null,
-                    consumed_at timestamp null,
-                    created_at timestamp not null
-                )
-                """);
-        jdbcTemplate.execute("""
-                alter table if exists login_otp
-                add column if not exists email varchar(255)
-                """);
-        jdbcTemplate.execute("""
-                alter table if exists login_otp
-                add column if not exists otp_code varchar(6)
-                """);
-        jdbcTemplate.execute("""
-                alter table if exists login_otp
-                drop column if exists phone_number
-                """);
-        jdbcTemplate.execute("""
-                alter table if exists login_otp
-                drop column if exists request_id
-                """);
+        jdbcTemplate.execute("drop table if exists login_otp");
         jdbcTemplate.execute("""
                 create table if not exists user_address (
                     id bigserial primary key,

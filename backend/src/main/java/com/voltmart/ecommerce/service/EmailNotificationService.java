@@ -6,7 +6,6 @@ import com.voltmart.ecommerce.entity.enums.OrderStatus;
 import com.voltmart.ecommerce.entity.enums.ReturnRequestStatus;
 
 public interface EmailNotificationService {
-    void sendLoginOtp(String email, String otpCode);
     void sendOrderPlacedNotification(Order order);
     void sendOrderStatusUpdateNotification(Order order, OrderStatus previousStatus);
     void sendReturnRequestNotification(ReturnRequest returnRequest);

@@ -9,15 +9,6 @@ create table users (
     created_at timestamp not null
 );
 
-create table login_otp (
-    id bigserial primary key,
-    phone_number varchar(20) not null,
-    otp_code varchar(6) not null,
-    expires_at timestamp not null,
-    consumed_at timestamp,
-    created_at timestamp not null
-);
-
 create table category (
     id bigserial primary key,
     name varchar(255) not null unique,

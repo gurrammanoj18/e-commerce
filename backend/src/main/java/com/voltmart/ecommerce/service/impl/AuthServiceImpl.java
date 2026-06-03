@@ -3,29 +3,22 @@ package com.voltmart.ecommerce.service.impl;
 import com.voltmart.ecommerce.dto.auth.AuthRequest;
 import com.voltmart.ecommerce.dto.auth.AuthResponse;
 import com.voltmart.ecommerce.entity.Cart;
-import com.voltmart.ecommerce.entity.LoginOtp;
 import com.voltmart.ecommerce.entity.User;
 import com.voltmart.ecommerce.entity.Wishlist;
 import com.voltmart.ecommerce.config.AppProperties;
 import com.voltmart.ecommerce.dto.auth.DeliveryPreferenceRequest;
 import com.voltmart.ecommerce.dto.auth.GoogleAuthRequest;
-import com.voltmart.ecommerce.dto.auth.OtpChallengeResponse;
-import com.voltmart.ecommerce.dto.auth.OtpRequest;
-import com.voltmart.ecommerce.dto.auth.OtpVerifyRequest;
 import com.voltmart.ecommerce.dto.auth.ProfileCompletionRequest;
 import com.voltmart.ecommerce.entity.enums.Role;
 import com.voltmart.ecommerce.exception.BadRequestException;
 import com.voltmart.ecommerce.mapper.EntityMapper;
 import com.voltmart.ecommerce.repository.CartRepository;
-import com.voltmart.ecommerce.repository.LoginOtpRepository;
 import com.voltmart.ecommerce.repository.UserRepository;
 import com.voltmart.ecommerce.repository.WishlistRepository;
 import com.voltmart.ecommerce.security.JwtService;
 import com.voltmart.ecommerce.service.AuthService;
 import com.voltmart.ecommerce.service.CurrentUserService;
-import com.voltmart.ecommerce.service.EmailNotificationService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
@@ -37,22 +30,18 @@ import org.springframework.web.client.RestClientResponseException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
     private final WishlistRepository wishlistRepository;
-    private final LoginOtpRepository loginOtpRepository;
     private final JwtService jwtService;
     private final EntityMapper entityMapper;
     private final AppProperties appProperties;
     private final AuthenticationManager authenticationManager;
-    private final EmailNotificationService emailNotificationService;
     private final CurrentUserService currentUserService;
 
     @Override
@@ -127,93 +116,6 @@ public class AuthServiceImpl implements AuthService {
                 .orElseGet(() -> cartRepository.save(Cart.builder().user(user).build()));
         wishlistRepository.findByUserId(user.getId())
                 .orElseGet(() -> wishlistRepository.save(Wishlist.builder().user(user).build()));
-
-        String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
-        return buildAuthResponse(user, token, true);
-    }
-
-    @Override
-    @Transactional
-    public OtpChallengeResponse requestOtp(OtpRequest request) {
-        String email = request.email().trim().toLowerCase();
-        userRepository.findByEmail(email).ifPresent(user -> {
-            if (user.getRole() == Role.ROLE_ADMIN) {
-                throw new BadRequestException("Use admin login for administrator access");
-            }
-        });
-
-        loginOtpRepository.findTopByEmailOrderByCreatedAtDesc(email).ifPresent(existingOtp -> {
-            if (existingOtp.getConsumedAt() == null
-                    && existingOtp.getExpiresAt().isAfter(LocalDateTime.now())
-                    && existingOtp.getCreatedAt().isAfter(LocalDateTime.now().minusSeconds(60))) {
-                throw new BadRequestException("An OTP was just sent. Please wait before requesting another code.");
-            }
-        });
-
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(5);
-        String otpCode = String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
-        try {
-            emailNotificationService.sendLoginOtp(email, otpCode);
-        } catch (IllegalStateException exception) {
-            if (exception.getCause() == null) {
-                throw new BadRequestException("Email OTP delivery is not configured. Check backend email settings.");
-            }
-            log.error("Email OTP send failed for {}: {}", email, exception.getCause().getMessage(), exception.getCause());
-            throw new BadRequestException("Unable to send email OTP. Check SMTP credentials and email provider settings.");
-        }
-        loginOtpRepository.save(LoginOtp.builder()
-                .email(email)
-                .otpCode(otpCode)
-                .expiresAt(expiresAt)
-                .createdAt(LocalDateTime.now())
-                .build());
-
-        return new OtpChallengeResponse(
-                "OTP sent successfully to your email address.",
-                email,
-                expiresAt
-        );
-    }
-
-    @Override
-    @Transactional
-    public AuthResponse verifyOtp(OtpVerifyRequest request) {
-        String email = request.email().trim().toLowerCase();
-        LoginOtp loginOtp = loginOtpRepository.findTopByEmailOrderByCreatedAtDesc(email)
-                .orElseThrow(() -> new BadRequestException("Request an OTP before verifying"));
-
-        if (loginOtp.getConsumedAt() != null) {
-            throw new BadRequestException("This OTP has already been used");
-        }
-        if (loginOtp.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("OTP expired. Please request a new code");
-        }
-        if (!loginOtp.getOtpCode().equals(request.otpCode())) {
-            throw new BadRequestException("Invalid OTP code");
-        }
-
-        User user = userRepository.findByEmail(email)
-                .map(existingUser -> {
-                    if (existingUser.getRole() == Role.ROLE_ADMIN) {
-                        throw new BadRequestException("Use admin login for administrator access");
-                    }
-                    return existingUser;
-                })
-                .orElseGet(() -> userRepository.save(User.builder()
-                        .fullName("")
-                        .email(email)
-                        .role(Role.ROLE_CUSTOMER)
-                        .walletBalance(BigDecimal.ZERO)
-                        .createdAt(LocalDateTime.now())
-                        .build()));
-
-        cartRepository.findByUserId(user.getId())
-                .orElseGet(() -> cartRepository.save(Cart.builder().user(user).build()));
-        wishlistRepository.findByUserId(user.getId())
-                .orElseGet(() -> wishlistRepository.save(Wishlist.builder().user(user).build()));
-
-        loginOtp.setConsumedAt(LocalDateTime.now());
-        loginOtpRepository.save(loginOtp);
 
         String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
         return buildAuthResponse(user, token, true);
