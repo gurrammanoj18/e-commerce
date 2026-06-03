@@ -9,7 +9,13 @@ public interface BannerService {
 
     List<BannerResponse> getAllBanners();
 
+    List<BannerResponse> getHomepageBanners();
+
+    List<BannerResponse> getSeasonalPicks();
+
     BannerResponse createBanner(AdminBannerRequest request);
+
+    BannerResponse createSeasonalPick(AdminBannerRequest request);
 
     BannerResponse updateBanner(Long id, AdminBannerRequest request);
 

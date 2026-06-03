@@ -11,6 +11,8 @@ interface PincodeServiceCheckerProps {
   onClose: () => void;
 }
 
+const PINCODE_CHECKER_SESSION_KEY = "voltmart-pincode-checker-shown";
+
 const PincodeServiceChecker: React.FC<PincodeServiceCheckerProps> = ({ open, onClose }) => {
   const [pincode, setPincode] = useState("");
   const [checking, setChecking] = useState(false);
@@ -21,10 +23,17 @@ const PincodeServiceChecker: React.FC<PincodeServiceCheckerProps> = ({ open, onC
       return;
     }
 
+    if (window.sessionStorage.getItem(PINCODE_CHECKER_SESSION_KEY) === "true") {
+      onClose();
+      return;
+    }
+
+    window.sessionStorage.setItem(PINCODE_CHECKER_SESSION_KEY, "true");
+
     setPincode("");
     setChecking(false);
     setResult(null);
-  }, [open]);
+  }, [onClose, open]);
 
   if (!open) {
     return null;

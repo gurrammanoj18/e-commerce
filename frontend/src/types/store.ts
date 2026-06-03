@@ -298,6 +298,7 @@ export interface CategoryPayload {
 export interface Banner {
   id: number;
   imageUrl: string;
+  placement?: "HOMEPAGE" | "SEASONAL_PICK" | string;
 }
 
 export interface BannerPayload {

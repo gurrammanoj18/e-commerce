@@ -3,9 +3,11 @@ C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecomme
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\config\DataSeeder.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\config\SecurityConfig.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\controller\AccountController.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\controller\admin\AdminBrandLogoController.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\controller\admin\AdminDashboardController.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\controller\AuthController.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\controller\BannerController.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\controller\BrandLogoController.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\controller\CartController.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\controller\CategoryController.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\controller\OrderController.java
@@ -26,6 +28,8 @@ C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecomme
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\auth\ProfileCompletionRequest.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\banner\AdminBannerRequest.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\banner\BannerResponse.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\brandlogo\BrandLogoRequest.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\brandlogo\BrandLogoResponse.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\bulk\BulkInquiryLineItemRequest.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\bulk\BulkInquiryLineItemResponse.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\bulk\BulkInquiryUpdateRequest.java
@@ -69,6 +73,7 @@ C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecomme
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\dto\wishlist\WishlistResponse.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\EcommerceBackendApplication.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\Banner.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\BrandLogo.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\BulkOrderInquiry.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\BulkOrderInquiryLineItem.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\entity\Cart.java
@@ -104,6 +109,7 @@ C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecomme
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\exception\ResourceNotFoundException.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\mapper\EntityMapper.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\repository\BannerRepository.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\repository\BrandLogoRepository.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\repository\BulkOrderInquiryLineItemRepository.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\repository\BulkOrderInquiryRepository.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\repository\CartItemRepository.java
@@ -129,6 +135,7 @@ C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecomme
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\AdminService.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\AuthService.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\BannerService.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\BrandLogoService.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\BulkOrderService.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\CartService.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\CategoryService.java
@@ -137,6 +144,7 @@ C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecomme
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\impl\AdminServiceImpl.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\impl\AuthServiceImpl.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\impl\BannerServiceImpl.java
+C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\impl\BrandLogoServiceImpl.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\impl\BulkOrderServiceImpl.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\impl\CartServiceImpl.java
 C:\Users\mani manoj\Desktop\E-commerce\backend\src\main\java\com\voltmart\ecommerce\service\impl\CategoryServiceImpl.java

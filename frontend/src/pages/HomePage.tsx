@@ -7,7 +7,7 @@ import ProductCard from "../components/product/ProductCard";
 import LoadingState from "../components/shared/LoadingState";
 import { useProducts } from "../contexts/ProductContext";
 import { Banner, BrandLogo, Product } from "../types/store";
-import { fetchBanners } from "../services/bannerService";
+import { fetchBanners, fetchSeasonalPicks } from "../services/bannerService";
 import { fetchBrandLogos } from "../services/brandLogoService";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import bannerOne from "../assets/banners/ban1.png";
@@ -116,25 +116,21 @@ const promoBanners = [bannerOne, bannerTwo, bannerThree];
 const seasonalModules = [
   {
     title: "Summer Cooling Picks",
-    copy: "Fans, extension boards, coolers, and wiring essentials for hot-weather demand.",
     to: "/products?discover=1&promo=summer",
     image: promoSummer,
   },
   {
     title: "Monsoon Protection",
-    copy: "Waterproof tape, sealants, outdoor switches, pipe fittings, and safety consumables.",
     to: "/products?discover=1&promo=monsoon",
     image: promoMonsoon,
   },
   {
     title: "Festival Lighting",
-    copy: "LED bulbs, holders, extension boards, decorative lighting, and quick replacements.",
     to: "/products?discover=1&promo=lighting",
     image: promoLighting,
   },
   {
     title: "Contractor Bulk Deals",
-    copy: "Fast-moving project stock for electricians, plumbers, fabricators, and site teams.",
     to: "/products?discover=1&promo=contractor-deals",
     image: promoContractorDeals,
   },
@@ -252,27 +248,33 @@ const BrandSection: React.FC = () => {
   );
 };
 
-const SeasonalModulesSection: React.FC = () => (
-  <section className="shell section home-seasonal-section">
-    <div className="section-heading">
-      <div>
-        <span className="eyebrow">Seasonal picks</span>
-        <h2>Clickable promotional banners</h2>
+const SeasonalModulesSection: React.FC<{ seasonalPicks: Banner[] }> = ({ seasonalPicks }) => {
+  const modules = seasonalPicks.length
+    ? seasonalPicks.map((banner) => ({
+        title: `Seasonal pick ${banner.id}`,
+        to: "/products?discover=1",
+        image: banner.imageUrl,
+      }))
+    : seasonalModules;
+
+  return (
+    <section className="shell section home-seasonal-section">
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">Seasonal picks</span>
+          <h2>Clickable promotional banners</h2>
+        </div>
       </div>
-    </div>
-    <div className="home-seasonal-grid">
-      {seasonalModules.map((module) => (
-        <Link key={module.title} className="home-seasonal-card home-seasonal-card--banner" to={module.to}>
-          <img src={module.image} alt={module.title} loading="lazy" />
-          <div className="home-seasonal-card__overlay">
-            <strong>{module.title}</strong>
-            <span>{module.copy}</span>
-          </div>
-        </Link>
-      ))}
-    </div>
-  </section>
-);
+      <div className="home-seasonal-grid">
+        {modules.map((module) => (
+          <Link key={module.title} className="home-seasonal-card home-seasonal-card--banner" to={module.to}>
+            <img src={module.image} alt={module.title} loading="lazy" />
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+};
 
 const MidPageBannerCarousel: React.FC<{ banners: string[] }> = ({ banners }) => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -503,19 +505,25 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
 const HomePage: React.FC = () => {
   const { bestSellerProducts, categories, loading, products } = useProducts();
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [seasonalPicks, setSeasonalPicks] = useState<Banner[]>([]);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadBanners = async () => {
       try {
-        const response = await fetchBanners();
+        const [bannerResponse, seasonalResponse] = await Promise.all([
+          fetchBanners(),
+          fetchSeasonalPicks(),
+        ]);
         if (isMounted) {
-          setBanners(response);
+          setBanners(bannerResponse);
+          setSeasonalPicks(seasonalResponse);
         }
       } catch {
         if (isMounted) {
           setBanners([]);
+          setSeasonalPicks([]);
         }
       }
     };
@@ -613,7 +621,7 @@ const HomePage: React.FC = () => {
         />
       ))}
 
-      <SeasonalModulesSection />
+      <SeasonalModulesSection seasonalPicks={seasonalPicks} />
 
       {resolvedHomepageSections.slice(5).map((section) => (
         <ProductCarouselSection

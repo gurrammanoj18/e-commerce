@@ -128,6 +128,25 @@ export const deleteAdminBanner = async (id: number) => {
   await api.delete(`/admin/banners/${id}`);
 };
 
+export const fetchAdminSeasonalPicks = async () => {
+  const response = await api.get<Banner[]>("/admin/seasonal-picks");
+  return response.data;
+};
+
+export const createAdminSeasonalPick = async (payload: BannerPayload) => {
+  const response = await api.post<Banner>("/admin/seasonal-picks", payload);
+  return response.data;
+};
+
+export const updateAdminSeasonalPick = async (id: number, payload: BannerPayload) => {
+  const response = await api.put<Banner>(`/admin/seasonal-picks/${id}`, payload);
+  return response.data;
+};
+
+export const deleteAdminSeasonalPick = async (id: number) => {
+  await api.delete(`/admin/seasonal-picks/${id}`);
+};
+
 export const fetchAdminBrandLogos = async () => {
   const response = await api.get<BrandLogo[]>("/admin/brand-logos");
   return response.data;

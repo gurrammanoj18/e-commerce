@@ -35,6 +35,7 @@ import { optimizeImageFile } from "../utils/imageUpload";
 type AdminView = "dashboard" | "inventory" | "orders";
 type AdminOrderDeliveryFilter = "HOME_DELIVERY" | "STORE_PICKUP";
 type AdminOrdersMode = "today" | "users";
+type UserOrderAnalysisPeriod = "all" | "month" | "week";
 type InventorySectionMode = "form" | "list";
 
 interface ProductFormState {
@@ -86,6 +87,11 @@ const PROMO_TAG_OPTIONS = [
   { label: "Monsoon", value: "monsoon" },
   { label: "Lighting", value: "lighting" },
   { label: "Contractor Deals", value: "contractor-deals" },
+];
+const USER_ORDER_ANALYSIS_OPTIONS: Array<{ label: string; value: UserOrderAnalysisPeriod }> = [
+  { label: "All time", value: "all" },
+  { label: "Monthly", value: "month" },
+  { label: "Weekly", value: "week" },
 ];
 
 const createEmptyFormState = (): ProductFormState => ({
@@ -243,6 +249,30 @@ const formatDateTime = (value: string) =>
     minute: "2-digit",
   });
 
+const getStartOfDay = (date: Date) => {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  return start;
+};
+
+const isOrderInAnalysisPeriod = (order: Order, period: UserOrderAnalysisPeriod) => {
+  if (period === "all") {
+    return true;
+  }
+
+  const orderDate = new Date(order.createdAt);
+  const now = new Date();
+
+  if (period === "month") {
+    return orderDate.getFullYear() === now.getFullYear() && orderDate.getMonth() === now.getMonth();
+  }
+
+  const today = getStartOfDay(now);
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay());
+  return orderDate >= startOfWeek && orderDate <= now;
+};
+
 const getCurrentView = (pathname: string): AdminView => {
   if (pathname.includes("/inventory")) {
     return "inventory";
@@ -277,6 +307,8 @@ const AdminDashboardPage: React.FC = () => {
   const [activeOrderDeliveryFilter, setActiveOrderDeliveryFilter] =
     useState<AdminOrderDeliveryFilter>("HOME_DELIVERY");
   const [ordersMode, setOrdersMode] = useState<AdminOrdersMode>("today");
+  const [userOrderAnalysisPeriod, setUserOrderAnalysisPeriod] =
+    useState<UserOrderAnalysisPeriod>("all");
   const [inventorySectionMode, setInventorySectionMode] =
     useState<InventorySectionMode>("form");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -672,7 +704,26 @@ const AdminDashboardPage: React.FC = () => {
       return contactMatch || nameMatch;
     }),
   }));
-  const selectedUserOrders = ordersByUser.find((entry) => entry.user.id === selectedUserId) ?? null;
+  const scopedOrdersByUser = ordersByUser.map((entry) => ({
+    ...entry,
+    scopedOrders: entry.orders.filter((order) =>
+      isOrderInAnalysisPeriod(order, userOrderAnalysisPeriod),
+    ),
+  }));
+  const selectedUserOrders = scopedOrdersByUser.find((entry) => entry.user.id === selectedUserId) ?? null;
+  const selectedUserScopedOrders = selectedUserOrders?.scopedOrders || [];
+  const selectedUserTotalBuy = selectedUserScopedOrders.reduce(
+    (total, order) => total + order.totalAmount,
+    0,
+  );
+  const selectedUserUnits = selectedUserScopedOrders.reduce(
+    (total, order) =>
+      total + order.items.reduce((itemTotal, item) => itemTotal + item.quantity, 0),
+    0,
+  );
+  const selectedUserAverageOrderValue = selectedUserScopedOrders.length
+    ? selectedUserTotalBuy / selectedUserScopedOrders.length
+    : 0;
 
   const renderDashboardView = () => (
     <>
@@ -1386,8 +1437,27 @@ const AdminDashboardPage: React.FC = () => {
                   <h2>All users</h2>
                 </div>
               </div>
+              <div className="admin-order-filter-group" aria-label="User order analysis period" style={{ marginBottom: 16 }}>
+                {USER_ORDER_ANALYSIS_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={
+                      userOrderAnalysisPeriod === option.value
+                        ? "admin-order-filter-button is-active"
+                        : "admin-order-filter-button"
+                    }
+                    onClick={() => {
+                      setUserOrderAnalysisPeriod(option.value);
+                      setExpandedOrderId(null);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
               <div className="admin-user-list">
-                {ordersByUser.map(({ user: adminUser, orders: userOrders }, index) => (
+                {scopedOrdersByUser.map(({ user: adminUser, scopedOrders }, index) => (
                   <button
                     key={adminUser.id}
                     type="button"
@@ -1403,7 +1473,7 @@ const AdminDashboardPage: React.FC = () => {
                       <strong>{adminUser.fullName}</strong>
                       <span>{adminUser.email || adminUser.phoneNumber || "No contact info"}</span>
                     </div>
-                    <span>{userOrders.length} orders</span>
+                    <span>{scopedOrders.length} orders</span>
                   </button>
                 ))}
               </div>
@@ -1429,18 +1499,19 @@ const AdminDashboardPage: React.FC = () => {
                     </div>
                     <div>
                       <span>Total orders</span>
-                      <strong>{selectedUserOrders.orders.length}</strong>
+                      <strong>{selectedUserScopedOrders.length}</strong>
                     </div>
                     <div>
                       <span>Total buy</span>
-                      <strong>
-                        {formatCurrency(
-                          selectedUserOrders.orders.reduce(
-                            (total, order) => total + order.totalAmount,
-                            0,
-                          ),
-                        )}
-                      </strong>
+                      <strong>{formatCurrency(selectedUserTotalBuy)}</strong>
+                    </div>
+                    <div>
+                      <span>Product units</span>
+                      <strong>{selectedUserUnits}</strong>
+                    </div>
+                    <div>
+                      <span>Average order</span>
+                      <strong>{formatCurrency(selectedUserAverageOrderValue)}</strong>
                     </div>
                   </div>
                   <div className="admin-table">
@@ -1454,7 +1525,13 @@ const AdminDashboardPage: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedUserOrders.orders.map((order) => (
+                        {selectedUserScopedOrders.length ? selectedUserScopedOrders
+                          .slice()
+                          .sort(
+                            (left, right) =>
+                              new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+                          )
+                          .map((order) => (
                           <tr key={order.id}>
                             <td>
                               <strong>{order.orderNumber.slice(0, 8)}</strong>
@@ -1464,7 +1541,15 @@ const AdminDashboardPage: React.FC = () => {
                             <td>{order.status}</td>
                             <td>{formatCurrency(order.totalAmount)}</td>
                           </tr>
-                        ))}
+                        )) : (
+                          <tr>
+                            <td colSpan={4}>
+                              <div className="admin-empty-note">
+                                No orders found for this user in the selected analysis period.
+                              </div>
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>

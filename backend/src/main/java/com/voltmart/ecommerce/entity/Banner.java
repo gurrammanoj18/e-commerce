@@ -18,4 +18,8 @@ public class Banner {
 
     @Column(columnDefinition = "text", nullable = false)
     private String imageUrl;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private String placement = "HOMEPAGE";
 }

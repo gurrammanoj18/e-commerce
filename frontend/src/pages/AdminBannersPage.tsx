@@ -6,9 +6,13 @@ import AdminWorkspaceNav from "../components/admin/AdminWorkspaceNav";
 import { useAuth } from "../contexts/AuthContext";
 import {
   createAdminBanner,
+  createAdminSeasonalPick,
   deleteAdminBanner,
+  deleteAdminSeasonalPick,
   fetchAdminBanners,
+  fetchAdminSeasonalPicks,
   updateAdminBanner,
+  updateAdminSeasonalPick,
 } from "../services/adminService";
 import { Banner, BannerPayload } from "../types/store";
 import { optimizeImageFile } from "../utils/imageUpload";
@@ -23,9 +27,13 @@ const AdminBannersPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [seasonalPicks, setSeasonalPicks] = useState<Banner[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingSeasonalId, setEditingSeasonalId] = useState<number | null>(null);
   const [formState, setFormState] = useState<BannerPayload>(emptyBanner);
+  const [seasonalFormState, setSeasonalFormState] = useState<BannerPayload>(emptyBanner);
   const [uploading, setUploading] = useState(false);
+  const [uploadingSeasonal, setUploadingSeasonal] = useState(false);
 
   const handleAdminRequestError = useCallback((error: unknown, fallback: string) => {
     if (error instanceof AxiosError && error.response?.status === 401) {
@@ -52,8 +60,12 @@ const AdminBannersPage: React.FC = () => {
 
   const loadBanners = useCallback(async () => {
     try {
-      const response = await fetchAdminBanners();
-      setBanners(response);
+      const [bannerResponse, seasonalResponse] = await Promise.all([
+        fetchAdminBanners(),
+        fetchAdminSeasonalPicks(),
+      ]);
+      setBanners(bannerResponse);
+      setSeasonalPicks(seasonalResponse);
     } catch (error) {
       handleAdminRequestError(error, "Unable to load banners right now.");
     }
@@ -213,6 +225,170 @@ const AdminBannersPage: React.FC = () => {
                   </td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="store-card admin-panel admin-panel--full">
+        <div className="admin-panel__heading">
+          <div>
+            <span className="eyebrow">Seasonal picks</span>
+            <h2>{editingSeasonalId ? "Edit seasonal pick image" : "Upload seasonal pick image"}</h2>
+          </div>
+        </div>
+        <form
+          className="form-grid"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            try {
+              if (editingSeasonalId) {
+                await updateAdminSeasonalPick(editingSeasonalId, seasonalFormState);
+                toast.success("Seasonal pick image updated");
+              } else {
+                await createAdminSeasonalPick(seasonalFormState);
+                toast.success("Seasonal pick image created");
+              }
+              setEditingSeasonalId(null);
+              setSeasonalFormState(emptyBanner);
+              await loadBanners();
+            } catch (error) {
+              handleAdminRequestError(error, "Unable to save seasonal pick right now.");
+            }
+          }}
+        >
+          <label className="form-grid__wide">
+            Seasonal pick image
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) {
+                  return;
+                }
+                setUploadingSeasonal(true);
+                try {
+                  const imageUrl = await optimizeImageFile(file);
+                  setSeasonalFormState((current) => ({ ...current, imageUrl }));
+                } catch {
+                  toast.error("Unable to prepare selected seasonal pick image.");
+                } finally {
+                  setUploadingSeasonal(false);
+                  event.target.value = "";
+                }
+              }}
+              required={!seasonalFormState.imageUrl}
+            />
+          </label>
+          {seasonalFormState.imageUrl ? (
+            <div className="form-grid__wide admin-image-preview-grid">
+              <div className="admin-image-preview-card">
+                <img src={seasonalFormState.imageUrl} alt="Seasonal pick preview" />
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() => setSeasonalFormState((current) => ({ ...current, imageUrl: "" }))}
+                >
+                  Remove image
+                </button>
+              </div>
+            </div>
+          ) : null}
+          <div className="admin-form-actions">
+            <button className="button" type="submit" disabled={uploadingSeasonal}>
+              {editingSeasonalId ? "Update seasonal pick" : "Create seasonal pick"}
+            </button>
+            {editingSeasonalId ? (
+              <button
+                className="link-button"
+                type="button"
+                onClick={() => {
+                  setEditingSeasonalId(null);
+                  setSeasonalFormState(emptyBanner);
+                }}
+              >
+                Cancel edit
+              </button>
+            ) : null}
+          </div>
+        </form>
+      </section>
+
+      <section className="store-card admin-panel admin-panel--full">
+        <div className="admin-panel__heading">
+          <div>
+            <span className="eyebrow">Seasonal picks list</span>
+            <h2>Homepage seasonal images</h2>
+          </div>
+        </div>
+        <div className="admin-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Image</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {seasonalPicks.length ? seasonalPicks.map((banner) => (
+                <tr key={banner.id}>
+                  <td>
+                    {banner.imageUrl ? (
+                      <img
+                        src={banner.imageUrl}
+                        alt={`Seasonal pick ${banner.id}`}
+                        style={{ width: "100%", maxWidth: 260, height: 120, objectFit: "cover", borderRadius: 8, display: "block" }}
+                      />
+                    ) : (
+                      "No image"
+                    )}
+                  </td>
+                  <td>
+                    <div className="admin-table-actions">
+                      <button
+                        className="link-button"
+                        type="button"
+                        onClick={() => {
+                          setEditingSeasonalId(banner.id);
+                          setSeasonalFormState({
+                            imageUrl: banner.imageUrl || "",
+                          });
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="link-button admin-danger-button"
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await deleteAdminSeasonalPick(banner.id);
+                            setSeasonalPicks((current) => current.filter((item) => item.id !== banner.id));
+                            if (editingSeasonalId === banner.id) {
+                              setEditingSeasonalId(null);
+                              setSeasonalFormState(emptyBanner);
+                            }
+                            toast.success("Seasonal pick image deleted");
+                            await loadBanners();
+                          } catch (error) {
+                            handleAdminRequestError(error, "Unable to delete seasonal pick right now.");
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={2}>
+                    <div className="admin-empty-note">No seasonal pick images have been added yet.</div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

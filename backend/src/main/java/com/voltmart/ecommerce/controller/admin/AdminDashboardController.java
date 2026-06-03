@@ -131,7 +131,7 @@ public class AdminDashboardController {
 
     @GetMapping("/banners")
     public List<BannerResponse> getBanners() {
-        return bannerService.getAllBanners();
+        return bannerService.getHomepageBanners();
     }
 
     @PostMapping("/banners")
@@ -148,6 +148,28 @@ public class AdminDashboardController {
     @DeleteMapping("/banners/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteBanner(@PathVariable Long id) {
+        bannerService.deleteBanner(id);
+    }
+
+    @GetMapping("/seasonal-picks")
+    public List<BannerResponse> getSeasonalPicks() {
+        return bannerService.getSeasonalPicks();
+    }
+
+    @PostMapping("/seasonal-picks")
+    @ResponseStatus(HttpStatus.CREATED)
+    public BannerResponse createSeasonalPick(@Valid @RequestBody AdminBannerRequest request) {
+        return bannerService.createSeasonalPick(request);
+    }
+
+    @PutMapping("/seasonal-picks/{id}")
+    public BannerResponse updateSeasonalPick(@PathVariable Long id, @Valid @RequestBody AdminBannerRequest request) {
+        return bannerService.updateBanner(id, request);
+    }
+
+    @DeleteMapping("/seasonal-picks/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSeasonalPick(@PathVariable Long id) {
         bannerService.deleteBanner(id);
     }
 

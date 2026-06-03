@@ -223,7 +223,8 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
         jdbcTemplate.execute("""
                 create table if not exists banner (
                     id bigserial primary key,
-                    image_url text not null
+                    image_url text not null,
+                    placement varchar(50) not null default 'HOMEPAGE'
                 )
                 """);
         jdbcTemplate.execute("""
@@ -233,6 +234,15 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
         jdbcTemplate.execute("""
                 alter table if exists banner
                 alter column image_url type text
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists banner
+                add column if not exists placement varchar(50) not null default 'HOMEPAGE'
+                """);
+        jdbcTemplate.execute("""
+                update banner
+                set placement = 'HOMEPAGE'
+                where placement is null or placement = ''
                 """);
         jdbcTemplate.execute("""
                 alter table if exists banner

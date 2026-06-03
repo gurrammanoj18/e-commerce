@@ -6,6 +6,7 @@ com\voltmart\ecommerce\dto\wallet\WalletRedeemRequest.class
 com\voltmart\ecommerce\service\impl\WalletServiceImpl$1.class
 com\voltmart\ecommerce\service\AuthService.class
 com\voltmart\ecommerce\entity\SavedForLaterItem$SavedForLaterItemBuilder.class
+com\voltmart\ecommerce\service\impl\BrandLogoServiceImpl.class
 com\voltmart\ecommerce\dto\wallet\WalletResponse.class
 com\voltmart\ecommerce\dto\category\CategoryRequest.class
 com\voltmart\ecommerce\service\SaveForLaterService.class
@@ -65,6 +66,7 @@ com\voltmart\ecommerce\security\JwtAuthenticationFilter.class
 com\voltmart\ecommerce\entity\enums\ReturnRequestStatus.class
 com\voltmart\ecommerce\service\WhatsappNotificationService.class
 com\voltmart\ecommerce\dto\banner\BannerResponse.class
+com\voltmart\ecommerce\controller\admin\AdminBrandLogoController.class
 com\voltmart\ecommerce\dto\account\UserAddressResponse.class
 com\voltmart\ecommerce\dto\wishlist\WishlistItemRequest.class
 com\voltmart\ecommerce\entity\Cart.class
@@ -95,6 +97,7 @@ com\voltmart\ecommerce\entity\WalletCoupon$WalletCouponBuilder.class
 com\voltmart\ecommerce\entity\CartItem.class
 com\voltmart\ecommerce\service\BulkOrderService.class
 com\voltmart\ecommerce\service\ReturnRequestService.class
+com\voltmart\ecommerce\repository\BrandLogoRepository.class
 com\voltmart\ecommerce\service\impl\AdminServiceImpl.class
 com\voltmart\ecommerce\service\impl\CurrentUserServiceImpl.class
 com\voltmart\ecommerce\service\impl\ServiceRequestServiceImpl.class
@@ -112,6 +115,7 @@ com\voltmart\ecommerce\service\impl\BannerServiceImpl.class
 com\voltmart\ecommerce\dto\order\OrderItemResponse.class
 com\voltmart\ecommerce\entity\WalletCouponRedemption.class
 com\voltmart\ecommerce\service\CartService.class
+com\voltmart\ecommerce\service\BrandLogoService.class
 com\voltmart\ecommerce\controller\WishlistController.class
 com\voltmart\ecommerce\entity\WishlistItem$WishlistItemBuilder.class
 com\voltmart\ecommerce\config\AppProperties$Store.class
@@ -147,6 +151,8 @@ com\voltmart\ecommerce\repository\CartItemRepository.class
 com\voltmart\ecommerce\entity\enums\OrderStatus.class
 com\voltmart\ecommerce\entity\UserAddress.class
 com\voltmart\ecommerce\service\CategoryService.class
+com\voltmart\ecommerce\dto\brandlogo\BrandLogoRequest.class
+com\voltmart\ecommerce\entity\BrandLogo$BrandLogoBuilder.class
 com\voltmart\ecommerce\dto\bulk\BulkInquiryUpdateRequest.class
 com\voltmart\ecommerce\repository\WalletTransactionRepository.class
 com\voltmart\ecommerce\entity\enums\DeliveryMode.class
@@ -178,6 +184,7 @@ com\voltmart\ecommerce\service\WalletService.class
 com\voltmart\ecommerce\repository\ReturnRequestRepository.class
 com\voltmart\ecommerce\service\CurrentUserService.class
 com\voltmart\ecommerce\entity\Category$CategoryBuilder.class
+com\voltmart\ecommerce\entity\BrandLogo.class
 com\voltmart\ecommerce\entity\SavedForLaterItem.class
 com\voltmart\ecommerce\service\impl\EmailNotificationServiceImpl$1.class
 com\voltmart\ecommerce\dto\wishlist\WishlistResponse.class
@@ -186,6 +193,7 @@ com\voltmart\ecommerce\service\impl\ReturnRequestServiceImpl$1.class
 com\voltmart\ecommerce\mapper\EntityMapper.class
 com\voltmart\ecommerce\entity\CartItem$CartItemBuilder.class
 com\voltmart\ecommerce\entity\enums\ReturnRequestType.class
+com\voltmart\ecommerce\controller\BrandLogoController.class
 com\voltmart\ecommerce\service\impl\OrderServiceImpl.class
 com\voltmart\ecommerce\config\AppProperties$Google.class
 com\voltmart\ecommerce\service\impl\ReturnRequestServiceImpl.class
@@ -193,5 +201,6 @@ com\voltmart\ecommerce\dto\common\ApiResponse.class
 com\voltmart\ecommerce\service\OrderService.class
 com\voltmart\ecommerce\dto\cart\CartItemRequest.class
 com\voltmart\ecommerce\entity\WalletTransaction.class
+com\voltmart\ecommerce\dto\brandlogo\BrandLogoResponse.class
 com\voltmart\ecommerce\entity\enums\BulkQuoteStatus.class
 com\voltmart\ecommerce\dto\order\OrderResponse.class

@@ -18,6 +18,11 @@ public class BannerController {
 
     @GetMapping
     public List<BannerResponse> getBanners() {
-        return bannerService.getAllBanners();
+        return bannerService.getHomepageBanners();
+    }
+
+    @GetMapping("/seasonal-picks")
+    public List<BannerResponse> getSeasonalPicks() {
+        return bannerService.getSeasonalPicks();
     }
 }

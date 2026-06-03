@@ -35,6 +35,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = "voltmart-auth-user";
 const TOKEN_STORAGE_KEY = "voltmart-token";
+const DELIVERY_PROMPT_SESSION_PREFIX = "voltmart-delivery-prompt-shown";
 
 const decodeJwtPayload = (token: string) => {
   try {
@@ -73,6 +74,22 @@ const getDisplayName = (user: AuthUser | null) => {
 
 const shouldRequireCustomerName = (user: AuthUser | null) =>
   Boolean(user?.role === "ROLE_CUSTOMER" && (!getDisplayName(user) || !user.phoneNumber?.trim()));
+
+const getDeliveryPromptSessionKey = (user: AuthUser) =>
+  `${DELIVERY_PROMPT_SESSION_PREFIX}:${user.email || user.phoneNumber || user.id || "customer"}`;
+
+const hasSeenDeliveryPromptThisSession = (user: AuthUser) =>
+  window.sessionStorage.getItem(getDeliveryPromptSessionKey(user)) === "true";
+
+const markDeliveryPromptSeenThisSession = (user: AuthUser) => {
+  window.sessionStorage.setItem(getDeliveryPromptSessionKey(user), "true");
+};
+
+const shouldShowDeliveryPromptThisSession = (user: AuthUser, requireProfile: boolean) =>
+  user.role === "ROLE_CUSTOMER" &&
+  !requireProfile &&
+  !window.location.pathname.startsWith("/admin") &&
+  !hasSeenDeliveryPromptThisSession(user);
 
 const restrictLettersOnly = (value: string) => value.replace(/[^A-Za-z\s.'-]/g, "");
 const restrictDigitsOnly = (value: string, maxLength = 10) =>
@@ -162,13 +179,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const requireProfile = shouldRequireCustomerName(parsedUser);
+      const shouldPromptDelivery = shouldShowDeliveryPromptThisSession(parsedUser, requireProfile);
+      if (shouldPromptDelivery) {
+        markDeliveryPromptSeenThisSession(parsedUser);
+      }
       setUser(parsedUser);
       setToken(storedToken);
       setApiAuthToken(storedToken);
       setShowProfileCompletionModal(requireProfile);
-      setShowDeliveryPreferenceModal(
-        parsedUser.role === "ROLE_CUSTOMER" && !requireProfile && !isAdminArea,
-      );
+      setShowDeliveryPreferenceModal(shouldPromptDelivery && !isAdminArea);
     } catch {
       window.localStorage.removeItem(AUTH_STORAGE_KEY);
       window.localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -206,12 +225,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         nextUser &&
         nextToken &&
         nextUser.role === "ROLE_CUSTOMER" &&
-        !window.location.pathname.startsWith("/admin"),
+        !window.location.pathname.startsWith("/admin") &&
+        !hasSeenDeliveryPromptThisSession(nextUser),
     );
     const shouldDelayDeliveryPreference = false;
 
     setShowProfileCompletionModal(shouldRequireProfileCompletion);
     setShowDeliveryPreferenceModal(shouldPromptDeliveryPreference && !shouldDelayDeliveryPreference);
+    if (shouldPromptDeliveryPreference && nextUser) {
+      markDeliveryPromptSeenThisSession(nextUser);
+    }
     setPendingDeliveryPreferencePrompt(shouldDelayDeliveryPreference);
     setDeliveryPreferenceError("");
     setApiAuthToken(nextToken);
@@ -229,14 +252,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    if (!pendingDeliveryPreferencePrompt || isAdminSession) {
+    if (!pendingDeliveryPreferencePrompt || isAdminSession || !user) {
       return;
     }
 
+    if (hasSeenDeliveryPromptThisSession(user)) {
+      setPendingDeliveryPreferencePrompt(false);
+      return;
+    }
+
+    markDeliveryPromptSeenThisSession(user);
     setShowDeliveryPreferenceModal(true);
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
-  }, [isAdminSession, pendingDeliveryPreferencePrompt]);
+  }, [isAdminSession, pendingDeliveryPreferencePrompt, user]);
 
   useEffect(() => {
     if (!isAdminSession) {
@@ -303,9 +332,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         requireProfileCompletion: response.requiresProfileCompletion,
       });
       setShowProfileCompletionModal(false);
-      setShowDeliveryPreferenceModal(
-        response.user.role === "ROLE_CUSTOMER" && !response.requiresProfileCompletion,
+      const shouldPromptDelivery = shouldShowDeliveryPromptThisSession(
+        response.user,
+        response.requiresProfileCompletion,
       );
+      if (shouldPromptDelivery) {
+        markDeliveryPromptSeenThisSession(response.user);
+      }
+      setShowDeliveryPreferenceModal(shouldPromptDelivery);
       return {};
     } catch (error) {
       return {
@@ -334,6 +368,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         preferredDeliveryMode: mode,
       });
       persistAuth(response.user, response.token);
+      markDeliveryPromptSeenThisSession(response.user);
       setShowDeliveryPreferenceModal(false);
       setPendingDeliveryPreferencePrompt(false);
       return {};
