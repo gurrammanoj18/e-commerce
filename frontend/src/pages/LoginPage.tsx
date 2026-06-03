@@ -116,6 +116,13 @@ const LoginPage: React.FC = () => {
 
   return (
     <section className="shell section page-section auth-page">
+      <div className="auth-page__product-backdrop" aria-hidden="true">
+        <img className="auth-page__product auth-page__product--laptop" src="/catalog/pulse-laptop.webp" alt="" />
+        <img className="auth-page__product auth-page__product--headset" src="/catalog/sonic-headset.webp" alt="" />
+        <img className="auth-page__product auth-page__product--keyboard" src="/catalog/vector-keyboard.webp" alt="" />
+        <img className="auth-page__product auth-page__product--monitor" src="/catalog/lumen-monitor.webp" alt="" />
+        <img className="auth-page__product auth-page__product--speaker" src="/catalog/forge-speaker.webp" alt="" />
+      </div>
       <div className="auth-card">
         <div className="auth-card__brand">
           <span className="eyebrow">VoltMart account</span>
