@@ -53,23 +53,68 @@ const App: React.FC = () => {
                   <Routes>
                     <Route path="login" element={<LoginPage />} />
                     <Route
-                      element={
-                        <ProtectedRoute customerOnly>
-                          <Layout />
-                        </ProtectedRoute>
-                      }
+                      element={<Layout />}
                     >
                       <Route index element={<HomePage />} />
                       <Route path="about" element={<AboutPage />} />
                       <Route path="products" element={<ProductsPage />} />
                       <Route path="products/:slug" element={<ProductDetailsPage />} />
-                      <Route path="wishlist" element={<WishlistPage />} />
-                      <Route path="cart" element={<CartPage />} />
-                      <Route path="checkout" element={<CheckoutPage />} />
-                      <Route path="orders" element={<OrdersPage />} />
-                      <Route path="profile" element={<ProfilePage />} />
-                      <Route path="address" element={<AddressPage />} />
-                      <Route path="wallet" element={<WalletPage />} />
+                      <Route
+                        path="wishlist"
+                        element={
+                          <ProtectedRoute customerOnly>
+                            <WishlistPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="cart"
+                        element={
+                          <ProtectedRoute customerOnly>
+                            <CartPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="checkout"
+                        element={
+                          <ProtectedRoute customerOnly>
+                            <CheckoutPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="orders"
+                        element={
+                          <ProtectedRoute customerOnly>
+                            <OrdersPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="profile"
+                        element={
+                          <ProtectedRoute customerOnly>
+                            <ProfilePage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="address"
+                        element={
+                          <ProtectedRoute customerOnly>
+                            <AddressPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="wallet"
+                        element={
+                          <ProtectedRoute customerOnly>
+                            <WalletPage />
+                          </ProtectedRoute>
+                        }
+                      />
                       <Route path="services" element={<ServicesPage />} />
                       <Route path="help-center" element={<HelpCenterPage />} />
                       <Route path="terms" element={<TermsPage />} />
