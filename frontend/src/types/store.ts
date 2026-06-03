@@ -3,7 +3,6 @@ export interface ProductApiShape {
   slug: string;
   name: string;
   brand: string;
-  brandLogoUrl?: string | null;
   category: string;
   categorySlug: string;
   subcategory: string;
@@ -61,7 +60,6 @@ export interface Product {
   slug: string;
   name: string;
   brand: string;
-  brandLogoUrl?: string | null;
   category: string;
   categorySlug: string;
   subcategory: string;
@@ -263,7 +261,6 @@ export interface AdminProductPayload {
   slug: string;
   name: string;
   brand: string;
-  brandLogoUrl?: string | null;
   categoryId: number;
   price: number;
   originalPrice: number;
@@ -303,6 +300,21 @@ export interface Banner {
 
 export interface BannerPayload {
   imageUrl: string;
+}
+
+export interface BrandLogo {
+  id: number;
+  brandName: string;
+  logoUrl: string;
+  displayOrder: number;
+  active: boolean;
+}
+
+export interface BrandLogoPayload {
+  brandName: string;
+  logoUrl: string;
+  displayOrder: number;
+  active: boolean;
 }
 
 export type HomepageSectionType = "KEYWORDS" | "BEST_SELLERS" | "RECENTLY_ADDED" | "FEATURED";

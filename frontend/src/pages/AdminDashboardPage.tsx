@@ -41,7 +41,6 @@ interface ProductFormState {
   slug: string;
   name: string;
   brand: string;
-  brandLogoUrl: string;
   categoryId: string;
   subcategoryId: string;
   price: string;
@@ -78,7 +77,6 @@ const createEmptyFormState = (): ProductFormState => ({
   slug: "",
   name: "",
   brand: "",
-  brandLogoUrl: "",
   categoryId: "",
   subcategoryId: "",
   price: "",
@@ -139,7 +137,6 @@ const buildProductPayload = (form: ProductFormState): AdminProductPayload => ({
   slug: slugify(form.slug || form.name),
   name: form.name.trim(),
   brand: form.brand.trim(),
-  brandLogoUrl: form.brandLogoUrl.trim() || null,
   categoryId: Number(form.subcategoryId || form.categoryId),
   price: Number(form.price),
   originalPrice: Number(form.originalPrice),
@@ -177,7 +174,6 @@ const createFormStateFromProduct = (
     slug: product.slug,
     name: product.name,
     brand: product.brand,
-    brandLogoUrl: product.brandLogoUrl ?? "",
     categoryId: matchedCategory?.id ? String(matchedCategory.id) : "",
     subcategoryId: matchedSubcategory?.id ? String(matchedSubcategory.id) : "",
     price: String(product.price),
@@ -246,7 +242,6 @@ const AdminDashboardPage: React.FC = () => {
   const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
-  const [uploadingBrandLogo, setUploadingBrandLogo] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [activeOrderDeliveryFilter, setActiveOrderDeliveryFilter] =
     useState<AdminOrderDeliveryFilter>("HOME_DELIVERY");
@@ -399,30 +394,6 @@ const AdminDashboardPage: React.FC = () => {
       setUploadingImages(false);
       event.target.value = "";
     }
-  };
-
-  const handleBrandLogoUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    setUploadingBrandLogo(true);
-    try {
-      const uploadedLogo = await optimizeImageFile(file);
-      handleProductFormChange("brandLogoUrl", uploadedLogo);
-    } catch (error) {
-      toast.error(extractErrorMessage(error, "Unable to prepare selected brand logo."));
-    } finally {
-      setUploadingBrandLogo(false);
-      event.target.value = "";
-    }
-  };
-
-  const handleRemoveBrandLogo = () => {
-    handleProductFormChange("brandLogoUrl", "");
   };
 
   const handleRemoveProductImage = (imageToRemove: string) => {
@@ -829,31 +800,6 @@ const AdminDashboardPage: React.FC = () => {
               />
             </label>
             <label>
-              Brand logo URL
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleBrandLogoUpload}
-                disabled={uploadingBrandLogo}
-              />
-              <span className="admin-field-hint">
-                Upload a logo from your device, or paste a logo URL below.
-              </span>
-              <input
-                value={productForm.brandLogoUrl}
-                onChange={(event) => handleProductFormChange("brandLogoUrl", event.target.value)}
-                placeholder="https://example.com/brand-logo.png"
-              />
-              {productForm.brandLogoUrl ? (
-                <div className="admin-brand-logo-preview">
-                  <img src={productForm.brandLogoUrl} alt="Brand logo preview" />
-                  <button className="link-button" type="button" onClick={handleRemoveBrandLogo}>
-                    Remove logo
-                  </button>
-                </div>
-              ) : null}
-            </label>
-            <label>
               Category
               <select
                 value={productForm.categoryId}
@@ -1127,10 +1073,7 @@ const AdminDashboardPage: React.FC = () => {
                     <td>{index + 1}</td>
                     <td>
                       <strong>{product.name}</strong>
-                      <div className="admin-product-brand-line">
-                        {product.brandLogoUrl ? <img src={product.brandLogoUrl} alt="" /> : null}
-                        <span>{product.brand}</span>
-                      </div>
+                      <div>{product.brand}</div>
                     </td>
                     <td>{product.category}</td>
                     <td>{product.subcategory}</td>

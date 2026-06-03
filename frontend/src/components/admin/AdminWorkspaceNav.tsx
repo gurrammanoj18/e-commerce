@@ -10,6 +10,7 @@ const adminNavItems = [
   { to: "/admin/returns", label: "Returns" },
   { to: "/admin/categories", label: "Categories" },
   { to: "/admin/banners", label: "Banners" },
+  { to: "/admin/brand-logos", label: "Brand logos" },
   { to: "/admin/homepage-sections", label: "Homepage sections" },
   { to: "/admin/services", label: "Services" },
   { to: "/admin/wallet", label: "Wallet" },

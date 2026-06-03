@@ -34,24 +34,6 @@
   font-weight: 700;
 }
 
-.admin-product-brand-line {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-  color: #64748b;
-  font-size: 0.86rem;
-}
-
-.admin-product-brand-line img {
-  width: 28px;
-  height: 28px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  object-fit: contain;
-  background: #fff;
-}
-
 .admin-brand-logo-preview {
   display: flex;
   align-items: center;

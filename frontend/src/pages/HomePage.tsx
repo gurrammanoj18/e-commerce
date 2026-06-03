@@ -6,20 +6,14 @@ import CategoryCard from "../components/product/CategoryCard";
 import ProductCard from "../components/product/ProductCard";
 import LoadingState from "../components/shared/LoadingState";
 import { useProducts } from "../contexts/ProductContext";
-import { Banner, HomepageSection, Product } from "../types/store";
+import { Banner, BrandLogo, HomepageSection, Product } from "../types/store";
 import { fetchBanners } from "../services/bannerService";
 import { fetchHomepageSections } from "../services/homepageSectionService";
+import { fetchBrandLogos } from "../services/brandLogoService";
+import { resolveMediaUrl } from "../utils/mediaUrl";
 import bannerOne from "../assets/banners/ban1.png";
 import bannerTwo from "../assets/banners/ban2.png";
 import bannerThree from "../assets/banners/ban4.png";
-import anchorLogo from "../assets/brands/anchor.jpg";
-import finolexLogo from "../assets/brands/finolex.jpg";
-import gmLogo from "../assets/brands/gm.png";
-import godrejLogo from "../assets/brands/godrej.jpg";
-import havellsLogo from "../assets/brands/havells.jpg";
-import legrandLogo from "../assets/brands/legrand.jpg";
-import philipsLogo from "../assets/brands/philips.jpg";
-import polycabLogo from "../assets/brands/polycab.jpg";
 
 const WhyShopIconBoxes = () => (
   <svg viewBox="0 0 64 64" aria-hidden="true">
@@ -106,22 +100,6 @@ interface ProductCarouselSectionProps {
 }
 
 const promoBanners = [bannerOne, bannerTwo, bannerThree];
-
-const defaultBrandLogos: Record<string, string> = {
-  Anchor: anchorLogo,
-  GM: gmLogo,
-  Havells: havellsLogo,
-  Polycab: polycabLogo,
-  Finolex: finolexLogo,
-  Legrand: legrandLogo,
-  Philips: philipsLogo,
-  Godrej: godrejLogo,
-};
-
-const brandShowcase = Object.entries(defaultBrandLogos).map(([name, logoUrl]) => ({
-  name,
-  logoUrl,
-}));
 
 const seasonalModules = [
   {
@@ -258,30 +236,36 @@ const parseKeywords = (value?: string | null) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-const BrandSection: React.FC<{ products: Product[] }> = ({ products }) => {
-  const brands = Array.from(
-    products.reduce((brandMap, product) => {
-      if (!product.brand || brandMap.has(product.brand)) {
-        return brandMap;
+const BrandSection: React.FC = () => {
+  const [brandLogos, setBrandLogos] = useState<BrandLogo[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadBrandLogos = async () => {
+      try {
+        const response = await fetchBrandLogos();
+        if (isMounted) {
+          setBrandLogos(response);
+        }
+      } catch {
+        if (isMounted) {
+          setBrandLogos([]);
+        }
       }
-      brandMap.set(product.brand, {
-        name: product.brand,
-        logoUrl: defaultBrandLogos[product.brand] || product.brandLogoUrl || "",
-      });
-      return brandMap;
-    }, new Map<string, { name: string; logoUrl: string }>(brandShowcase.map((brand) => [brand.name, brand])))
-  )
-    .map(([, brand]) => brand)
-    .sort((left, right) => {
-      const preferred = Object.keys(defaultBrandLogos);
-      const leftIndex = preferred.indexOf(left.name);
-      const rightIndex = preferred.indexOf(right.name);
-      if (leftIndex !== -1 || rightIndex !== -1) {
-        return (leftIndex === -1 ? preferred.length : leftIndex) - (rightIndex === -1 ? preferred.length : rightIndex);
-      }
-      return left.name.localeCompare(right.name);
-    })
-    .slice(0, 12);
+    };
+
+    void loadBrandLogos();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const brands = brandLogos
+    .filter((brand) => brand.active && brand.logoUrl)
+    .slice()
+    .sort((left, right) => left.displayOrder - right.displayOrder);
 
   return (
     <section className="shell section home-brand-section">
@@ -294,16 +278,12 @@ const BrandSection: React.FC<{ products: Product[] }> = ({ products }) => {
       <div className="home-brand-grid">
         {brands.map((brand) => (
           <Link
-            key={brand.name}
+            key={brand.id}
             className="home-brand-card"
-            to={`/products?discover=1&brand=${encodeURIComponent(brand.name)}`}
+            to={`/products?discover=1&brand=${encodeURIComponent(brand.brandName)}`}
           >
-            {brand.logoUrl ? (
-              <img src={brand.logoUrl} alt={`${brand.name} logo`} loading="lazy" />
-            ) : (
-              <strong>{brand.name.slice(0, 2).toUpperCase()}</strong>
-            )}
-            <span>{brand.name}</span>
+            <img src={resolveMediaUrl(brand.logoUrl)} alt={`${brand.brandName} logo`} loading="lazy" />
+            <span>{brand.brandName}</span>
           </Link>
         ))}
       </div>
@@ -679,7 +659,7 @@ const HomePage: React.FC = () => {
         />
       ))}
 
-      <BrandSection products={products} />
+      <BrandSection />
 
       {resolvedHomepageSections.slice(2, 5).map((section) => (
         <ProductCarouselSection

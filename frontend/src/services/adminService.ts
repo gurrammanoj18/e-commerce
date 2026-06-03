@@ -4,6 +4,8 @@ import {
   Banner,
   BannerPayload,
   BulkInquiry,
+  BrandLogo,
+  BrandLogoPayload,
   CategoryPayload,
   AdminUser,
   CategorySummary,
@@ -126,6 +128,25 @@ export const updateAdminBanner = async (id: number, payload: BannerPayload) => {
 
 export const deleteAdminBanner = async (id: number) => {
   await api.delete(`/admin/banners/${id}`);
+};
+
+export const fetchAdminBrandLogos = async () => {
+  const response = await api.get<BrandLogo[]>("/admin/brand-logos");
+  return response.data;
+};
+
+export const createAdminBrandLogo = async (payload: BrandLogoPayload) => {
+  const response = await api.post<BrandLogo>("/admin/brand-logos", payload);
+  return response.data;
+};
+
+export const updateAdminBrandLogo = async (id: number, payload: BrandLogoPayload) => {
+  const response = await api.put<BrandLogo>(`/admin/brand-logos/${id}`, payload);
+  return response.data;
+};
+
+export const deleteAdminBrandLogo = async (id: number) => {
+  await api.delete(`/admin/brand-logos/${id}`);
 };
 
 export const fetchAdminHomepageSections = async () => {

@@ -271,6 +271,31 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 drop column if exists updated_at
                 """);
         jdbcTemplate.execute("""
+                create table if not exists brand_logo (
+                    id bigserial primary key,
+                    brand_name varchar(255) not null unique,
+                    logo_url text not null,
+                    display_order integer not null default 0,
+                    active boolean not null default true
+                )
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists brand_logo
+                add column if not exists brand_name varchar(255)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists brand_logo
+                add column if not exists logo_url text
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists brand_logo
+                add column if not exists display_order integer not null default 0
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists brand_logo
+                add column if not exists active boolean not null default true
+                """);
+        jdbcTemplate.execute("""
                 create table if not exists homepage_section (
                     id bigserial primary key,
                     section_key varchar(255) not null unique,

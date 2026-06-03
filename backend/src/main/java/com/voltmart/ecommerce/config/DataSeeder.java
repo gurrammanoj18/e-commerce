@@ -39,6 +39,7 @@ public class DataSeeder implements CommandLineRunner {
     private final OrderItemRepository orderItemRepository;
     private final WishlistItemRepository wishlistItemRepository;
     private final ServiceablePincodeRepository serviceablePincodeRepository;
+    private final BrandLogoRepository brandLogoRepository;
     private final HomepageSectionRepository homepageSectionRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -47,6 +48,7 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) {
         seedUsers();
         seedServiceablePincodes();
+        seedBrandLogos();
         seedHomepageSections();
         removeLegacyCatalog();
         Map<String, Category> categories = seedCategories();
@@ -173,6 +175,27 @@ public class DataSeeder implements CommandLineRunner {
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
                         .build()));
+    }
+
+    private void seedBrandLogos() {
+        seedBrandLogo("Anchor", "/brand-logos/anchor-p.jpg", 10);
+        seedBrandLogo("GM", "/brand-logos/gm.png", 20);
+        seedBrandLogo("Havells", "/brand-logos/havells.jpg", 30);
+        seedBrandLogo("Polycab", "/brand-logos/poly.jpg", 40);
+        seedBrandLogo("Finolex", "/brand-logos/finolex.jpg", 50);
+        seedBrandLogo("Legrand", "/brand-logos/legrand.jpg", 60);
+        seedBrandLogo("Philips", "/brand-logos/philips.jpg", 70);
+        seedBrandLogo("Godrej", "/brand-logos/godrej.jpg", 80);
+    }
+
+    private void seedBrandLogo(String brandName, String logoUrl, int displayOrder) {
+        BrandLogo logo = brandLogoRepository.findByBrandNameIgnoreCase(brandName)
+                .orElseGet(() -> BrandLogo.builder().brandName(brandName).build());
+        logo.setBrandName(brandName);
+        logo.setLogoUrl(logoUrl);
+        logo.setDisplayOrder(displayOrder);
+        logo.setActive(true);
+        brandLogoRepository.save(logo);
     }
 
     private void seedHomepageSections() {
