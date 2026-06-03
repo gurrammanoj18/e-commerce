@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/pages/LoginPage.css";
 import "../styles/shared/LoadingState.css";
-import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
+import voltmartLogo from "../assets/voltmart-logo-black.png";
 
 declare global {
   interface Window {
@@ -24,23 +24,32 @@ declare global {
   }
 }
 
+let initializedGoogleClientId: string | null = null;
+let activeGoogleLogin: ((credential: string) => Promise<{ error?: string }>) | null = null;
+let activeGoogleErrorHandler: ((message: string) => void) | null = null;
+
 const LoginPage: React.FC = () => {
-  const { isAuthenticated, requestOtp, verifyOtp, googleLogin } = useAuth();
+  const { isAdmin, isAuthenticated, googleLogin } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+  const googleLoginRef = useRef(googleLogin);
   const googleClientId =
     window.__APP_CONFIG__?.REACT_APP_GOOGLE_CLIENT_ID ||
     process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   useEffect(() => {
+    googleLoginRef.current = googleLogin;
+    activeGoogleLogin = googleLogin;
+    activeGoogleErrorHandler = setError;
+  }, [googleLogin]);
+
+  useEffect(() => {
     if (isAuthenticated) {
-      navigate("/", { replace: true });
+      navigate(isAdmin ? "/admin/dashboard" : "/", { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAdmin, isAuthenticated, navigate]);
 
   useEffect(() => {
     if (!googleClientId) {
@@ -57,16 +66,25 @@ const LoginPage: React.FC = () => {
         return;
       }
 
+      setGoogleReady(true);
       container.innerHTML = "";
-      window.google.accounts.id.initialize({
-        client_id: googleClientId,
-        callback: async ({ credential }) => {
-          const result = await googleLogin(credential);
-          if (result.error) {
-            setError(result.error);
-          }
-        },
-      });
+      if (initializedGoogleClientId !== googleClientId) {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async ({ credential }) => {
+            setSigningIn(true);
+            setError("");
+            const result = activeGoogleLogin
+              ? await activeGoogleLogin(credential)
+              : await googleLoginRef.current(credential);
+            if (result.error) {
+              activeGoogleErrorHandler?.(result.error);
+              setSigningIn(false);
+            }
+          },
+        });
+        initializedGoogleClientId = googleClientId;
+      }
       window.google.accounts.id.renderButton(container, {
         theme: "outline",
         size: "large",
@@ -95,90 +113,50 @@ const LoginPage: React.FC = () => {
     return () => {
       script.onload = null;
     };
-  }, [googleClientId, googleLogin, navigate]);
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (submitting) {
-      return;
-    }
-    setError("");
-    setSubmitting(true);
-
-    try {
-      if (!otpSent) {
-        if (!email.trim()) {
-          setError("Enter your email address to receive an OTP.");
-          return;
-        }
-        const result = await requestOtp(email);
-        if (result.error || !result.data) {
-          setError(result.error || "Unable to send OTP right now.");
-          return;
-        }
-
-        setEmail(result.data.email);
-        setOtpSent(true);
-        toast.success(result.data.message);
-        return;
-      }
-
-      const result = await verifyOtp(email, otpCode);
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
-
-      toast.success("Logged in successfully");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  }, [googleClientId]);
 
   return (
     <section className="shell section page-section auth-page">
-      <form className="store-card auth-card" onSubmit={handleSubmit}>
-        <span className="eyebrow">Login</span>
-        <h1>Email OTP login</h1>
-        <p>Use your email to access saved carts, checkout faster, and track orders.</p>
-        <label>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            disabled={otpSent}
-            placeholder="you@example.com"
-          />
-        </label>
-        {otpSent ? (
-          <label>
-            OTP
-            <input
-              inputMode="numeric"
-              maxLength={6}
-              value={otpCode}
-              onChange={(event) => setOtpCode(event.target.value)}
-            />
-          </label>
-        ) : null}
-        {error ? <p className="form-error">{error}</p> : null}
-        <button className="button" type="submit" disabled={submitting}>
-          {submitting ? (
-            <span className="button-loading">
-              <span className="button-loading__spinner" aria-hidden="true" />
-              {otpSent ? "Verifying..." : "Sending..."}
-            </span>
-          ) : otpSent ? "Verify OTP" : "Send OTP"}
-        </button>
-        {otpSent ? <p>Check your email inbox for the OTP code.</p> : null}
-        {googleClientId ? (
-          <>
-            <p style={{ textAlign: "center", margin: "0.75rem 0" }}>or</p>
-            <div id="google-signin-button" />
-          </>
-        ) : null}
-      </form>
+      <div className="auth-page__product-backdrop" aria-hidden="true">
+        <img className="auth-page__product auth-page__product--laptop" src="/catalog/pulse-laptop.webp" alt="" />
+        <img className="auth-page__product auth-page__product--headset" src="/catalog/sonic-headset.webp" alt="" />
+        <img className="auth-page__product auth-page__product--keyboard" src="/catalog/vector-keyboard.webp" alt="" />
+        <img className="auth-page__product auth-page__product--monitor" src="/catalog/lumen-monitor.webp" alt="" />
+        <img className="auth-page__product auth-page__product--speaker" src="/catalog/forge-speaker.webp" alt="" />
+      </div>
+      <div className="auth-card">
+        <img className="auth-card__logo" src={voltmartLogo} alt="VoltMart" />
+        <div className="auth-card__brand">
+          <span className="eyebrow">VoltMart account</span>
+          <h1>Sign in to continue shopping</h1>
+          <p>Access saved carts, order tracking, wallet rewards, and faster checkout with your Google account.</p>
+        </div>
+        <div className="auth-card__google">
+          {error ? <p className="form-error">{error}</p> : null}
+          {googleClientId ? (
+            <>
+              {!googleReady ? (
+                <div className="auth-card__google-loading" role="status">
+                  <span className="auth-card__spinner" aria-hidden="true" />
+                  Preparing secure login...
+                </div>
+              ) : null}
+              <div className="auth-card__google-button">
+                <div id="google-signin-button" aria-hidden={signingIn} />
+                {signingIn ? (
+                  <div className="auth-card__signin-overlay" role="status">
+                    <span className="auth-card__spinner" aria-hidden="true" />
+                    Signing you in...
+                  </div>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <p className="form-error">Google login is not configured.</p>
+          )}
+        </div>
+        <p className="auth-card__note">Use the same Google account whenever you shop on VoltMart.</p>
+      </div>
     </section>
   );
 };
