@@ -1144,6 +1144,11 @@
     margin-left: auto;
   }
 
+  .cart-pill--address,
+  .cart-pill--wallet {
+    display: none;
+  }
+
   .site-category-strip--mobile {
     width: 100%;
     flex: 0 0 100%;
