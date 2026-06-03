@@ -52,6 +52,7 @@ const LoginPage: React.FC = () => {
         return;
       }
 
+      const isMobile = window.innerWidth <= 520;
       container.innerHTML = "";
       window.google.accounts.id.initialize({
         client_id: googleClientId,
@@ -64,10 +65,10 @@ const LoginPage: React.FC = () => {
       });
       window.google.accounts.id.renderButton(container, {
         theme: "outline",
-        size: "large",
+        size: isMobile ? "medium" : "large",
         shape: "pill",
         text: "continue_with",
-        width: "320",
+        width: isMobile ? "240" : "320",
       });
     };
 
