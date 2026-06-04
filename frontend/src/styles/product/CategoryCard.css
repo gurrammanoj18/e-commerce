@@ -125,8 +125,8 @@
   }
 
   .services-page .category-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px 6px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 7px;
   }
 
   .categories-page .category-card,
