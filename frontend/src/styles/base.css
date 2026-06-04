@@ -194,3 +194,31 @@ img {
     white-space: normal;
   }
 }
+
+@media (max-width: 320px) {
+  .shell {
+    width: min(1200px, calc(100% - 20px));
+  }
+
+  .app-main--home,
+  .app-main--page {
+    padding-top: 118px;
+  }
+
+  .app-tagline {
+    padding-top: 3px;
+  }
+
+  .app-tagline .eyebrow {
+    font-size: 0.6rem;
+    line-height: 1.2;
+  }
+
+  .section {
+    padding-top: 6px;
+  }
+
+  .page-section {
+    padding-bottom: 56px;
+  }
+}
