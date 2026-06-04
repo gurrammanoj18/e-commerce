@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { AxiosError } from "axios";
 import "../styles/shared/DeliveryPreferenceModal.css";
 import "../styles/shared/LoadingState.css";
@@ -204,7 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(false);
   }, []);
 
-  const persistAuth = (
+  const persistAuth = useCallback((
     nextUser: AuthUser | null,
     nextToken: string | null,
     options?: {
@@ -255,7 +255,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
     window.localStorage.removeItem(TOKEN_STORAGE_KEY);
     setApiAuthToken(null);
-  };
+  }, []);
 
   useEffect(() => {
     if (!pendingDeliveryPreferencePrompt || isAdminSession || !user) {
@@ -419,7 +419,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     const currentUser = user;
     persistAuth(null, null);
     setShowDeliveryPreferenceModal(false);
@@ -431,7 +431,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       window.sessionStorage.removeItem(getDeliveryPromptSessionKey(currentUser));
     }
     window.sessionStorage.removeItem(PINCODE_CHECKER_LOGIN_KEY);
-  };
+  }, [persistAuth, user]);
 
   return (
     <AuthContext.Provider
