@@ -28,6 +28,7 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [signingIn, setSigningIn] = useState(false);
+  const [googleButtonReady, setGoogleButtonReady] = useState(false);
   const googleClientId =
     window.__APP_CONFIG__?.REACT_APP_GOOGLE_CLIENT_ID ||
     process.env.REACT_APP_GOOGLE_CLIENT_ID;
@@ -74,6 +75,7 @@ const LoginPage: React.FC = () => {
         text: "continue_with",
         width: isMobile ? "240" : "320",
       });
+      setGoogleButtonReady(true);
     };
 
     if (existingScript) {
@@ -105,8 +107,14 @@ const LoginPage: React.FC = () => {
         <p>Sign in to access saved carts, checkout faster, and track orders.</p>
         {error ? <p className="form-error">{error}</p> : null}
         {googleClientId ? (
-          <div className="auth-card__google-button" aria-busy={signingIn}>
+          <div className="auth-card__google-button" aria-busy={signingIn || !googleButtonReady}>
             <div id="google-signin-button" />
+            {!googleButtonReady && !signingIn ? (
+              <div className="auth-card__signin-overlay">
+                <span className="auth-card__spinner" aria-hidden="true" />
+                Preparing Google...
+              </div>
+            ) : null}
             {signingIn ? (
               <div className="auth-card__signin-overlay">
                 <span className="auth-card__spinner" aria-hidden="true" />

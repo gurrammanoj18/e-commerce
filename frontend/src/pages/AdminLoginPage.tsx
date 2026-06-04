@@ -13,6 +13,7 @@ const AdminLoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const redirectTo =
     (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ??
     "/admin/dashboard";
@@ -25,24 +26,33 @@ const AdminLoginPage: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submitting) {
+      return;
+    }
+
     setError("");
+    setSubmitting(true);
 
-    const result = await adminLogin(email, password);
-    if (result.error) {
-      setError(result.error);
-      return;
+    try {
+      const result = await adminLogin(email, password);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      const storedUser = window.localStorage.getItem(AUTH_STORAGE_KEY);
+      const nextUser = storedUser ? (JSON.parse(storedUser) as { role?: string }) : null;
+
+      if (nextUser?.role !== "ROLE_ADMIN") {
+        logout();
+        setError("This account does not have admin access.");
+        return;
+      }
+
+      toast.success("Admin login successful");
+    } finally {
+      setSubmitting(false);
     }
-
-    const storedUser = window.localStorage.getItem(AUTH_STORAGE_KEY);
-    const nextUser = storedUser ? (JSON.parse(storedUser) as { role?: string }) : null;
-
-    if (nextUser?.role !== "ROLE_ADMIN") {
-      logout();
-      setError("This account does not have admin access.");
-      return;
-    }
-
-    toast.success("Admin login successful");
   };
 
   return (
@@ -64,8 +74,15 @@ const AdminLoginPage: React.FC = () => {
           />
         </label>
         {error ? <p className="form-error">{error}</p> : null}
-        <button className="button" type="submit">
-          Login to admin
+        <button className="button" type="submit" disabled={submitting}>
+          {submitting ? (
+            <span className="button-loading">
+              <span className="button-loading__spinner" aria-hidden="true" />
+              Opening admin...
+            </span>
+          ) : (
+            "Login to admin"
+          )}
         </button>
         <p>
           Looking for the storefront? <Link to="/login">Go to website</Link>
