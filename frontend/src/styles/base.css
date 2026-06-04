@@ -170,7 +170,21 @@ img {
   transform: translateY(-2px);
 }
 
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .app-main--home {
+    padding-top: 117px;
+  }
+
+  .app-main--page {
+    padding-top: 99px;
+  }
+}
+
 @media (min-width: 821px) and (max-width: 1024px) {
+  .app-main--home {
+    padding-top: 122px;
+  }
+
   .app-main--page {
     padding-top: 94px;
   }
