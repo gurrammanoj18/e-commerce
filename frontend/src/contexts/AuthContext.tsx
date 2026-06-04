@@ -321,10 +321,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const adminLogin = async (email: string, password: string) => {
-    const processingId = startProcessing({
-      title: "Opening admin portal",
-      message: "Authenticating your credentials and loading admin access...",
-    });
     try {
       const response = await adminLoginRequest({ email, password });
       persistAuth(response.user, response.token, {
@@ -336,8 +332,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return {
         error: extractErrorMessage(error, "Unable to log in right now."),
       };
-    } finally {
-      stopProcessing(processingId);
     }
   };
 

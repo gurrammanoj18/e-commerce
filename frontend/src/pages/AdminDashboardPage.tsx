@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -312,6 +312,8 @@ const AdminDashboardPage: React.FC = () => {
   const [inventorySectionMode, setInventorySectionMode] =
     useState<InventorySectionMode>("form");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const loadInFlightRef = useRef(false);
+  const lastLoadErrorToastAtRef = useRef(0);
 
   const handleAdminRequestError = useCallback((error: unknown, fallback: string) => {
     if (error instanceof AxiosError && error.response?.status === 401) {
@@ -319,7 +321,7 @@ const AdminDashboardPage: React.FC = () => {
       logout();
       navigate("/admin/login", {
         replace: true,
-        state: { from: location, adminOnly: true },
+        state: { from: { pathname: location.pathname }, adminOnly: true },
       });
       return;
     }
@@ -329,19 +331,25 @@ const AdminDashboardPage: React.FC = () => {
       logout();
       navigate("/admin/login", {
         replace: true,
-        state: { from: location, adminOnly: true },
+        state: { from: { pathname: location.pathname }, adminOnly: true },
       });
       return;
     }
 
     toast.error(extractErrorMessage(error, fallback));
-  }, [location, logout, navigate]);
+  }, [location.pathname, logout, navigate]);
 
   const loadAdminData = useCallback(async (options?: { silent?: boolean }) => {
     if (!isAdmin) {
       setLoading(false);
       return;
     }
+
+    if (loadInFlightRef.current) {
+      return;
+    }
+
+    loadInFlightRef.current = true;
 
     if (!options?.silent) {
       setLoading(true);
@@ -364,11 +372,16 @@ const AdminDashboardPage: React.FC = () => {
       setCategories(categoryData);
       setReturnRequests(returnRequestData);
     } catch (error) {
-      handleAdminRequestError(error, "Could not load admin workspace.");
+      const now = Date.now();
+      if (now - lastLoadErrorToastAtRef.current > 4000) {
+        lastLoadErrorToastAtRef.current = now;
+        handleAdminRequestError(error, "Could not load admin workspace.");
+      }
     } finally {
       if (!options?.silent) {
         setLoading(false);
       }
+      loadInFlightRef.current = false;
     }
   }, [handleAdminRequestError, isAdmin]);
 
@@ -377,7 +390,7 @@ const AdminDashboardPage: React.FC = () => {
       setLoading(false);
       navigate("/admin/login", {
         replace: true,
-        state: { from: location, adminOnly: true },
+        state: { from: { pathname: location.pathname }, adminOnly: true },
       });
       return;
     }
@@ -391,7 +404,7 @@ const AdminDashboardPage: React.FC = () => {
     return () => {
       window.clearInterval(refreshTimer);
     };
-  }, [isAdmin, loadAdminData, location, navigate]);
+  }, [isAdmin, loadAdminData, location.pathname, navigate]);
 
   const resetProductForm = () => {
     setEditingProductId(null);

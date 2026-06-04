@@ -18,6 +18,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { isAuthenticated, isAdmin, loading } = useAuth();
 
   if (loading) {
+    if (adminOnly) {
+      return null;
+    }
+
     return <PageLoader />;
   }
 
