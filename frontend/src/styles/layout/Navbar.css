@@ -1042,7 +1042,7 @@
   }
 
   .site-nav__mobile-switch {
-    min-width: 154px;
+    min-width: 96px;
     background: #111827;
   }
 
@@ -1337,6 +1337,48 @@
 
   .site-nav {
     gap: 3px;
+  }
+
+  .site-nav__links {
+    width: 84vw;
+    padding: 14px 10px 16px;
+  }
+
+  .site-nav__mobile-drawer {
+    gap: 14px;
+  }
+
+  .site-nav__mobile-drawer-top {
+    gap: 6px;
+    padding-bottom: 8px;
+  }
+
+  .site-nav__mobile-drawer-top strong {
+    font-size: 1rem;
+    line-height: 1.1;
+  }
+
+  .site-nav__mobile-drawer-actions {
+    gap: 5px;
+  }
+
+  .site-nav__mobile-logout {
+    min-width: 66px;
+    min-height: 30px;
+    padding: 0 8px;
+    border-radius: 7px;
+    font-size: 0.7rem;
+    line-height: 1;
+  }
+
+  .site-nav__mobile-switch {
+    min-width: 66px;
+  }
+
+  .site-nav__mobile-close {
+    width: 30px;
+    height: 30px;
+    font-size: 1.05rem;
   }
 
   .site-nav__utility {

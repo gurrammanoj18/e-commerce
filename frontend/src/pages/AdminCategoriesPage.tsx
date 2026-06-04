@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AxiosError } from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import AdminWorkspaceNav from "../components/admin/AdminWorkspaceNav";
 import { useAuth } from "../contexts/AuthContext";
-import { useProcessing } from "../contexts/ProcessingContext";
 import {
   createAdminCategory,
   deleteAdminCategory,
@@ -47,11 +46,15 @@ const AdminCategoriesPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { startProcessing, stopProcessing } = useProcessing();
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [formState, setFormState] = useState(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [deletingCategoryId, setDeletingCategoryId] = useState<number | null>(null);
+  const didInitialLoadRef = useRef(false);
+  const loadInFlightRef = useRef(false);
+  const lastLoadErrorToastAtRef = useRef(0);
 
   const handleAdminRequestError = useCallback((error: unknown, fallback: string) => {
     if (error instanceof AxiosError && error.response?.status === 401) {
@@ -59,7 +62,7 @@ const AdminCategoriesPage: React.FC = () => {
       logout();
       navigate("/admin/login", {
         replace: true,
-        state: { from: location, adminOnly: true },
+        state: { from: { pathname: location.pathname }, adminOnly: true },
       });
       return;
     }
@@ -70,24 +73,34 @@ const AdminCategoriesPage: React.FC = () => {
     }
 
     toast.error(extractErrorMessage(error, fallback));
-  }, [location, logout, navigate]);
+  }, [location.pathname, logout, navigate]);
 
   const loadCategories = useCallback(async () => {
-    const processingId = startProcessing({
-      title: "Loading categories",
-      message: "Fetching category data and navbar visibility settings...",
-    });
+    if (loadInFlightRef.current) {
+      return;
+    }
+
+    loadInFlightRef.current = true;
     try {
       const response = await fetchAdminCategories();
       setCategories(response);
     } catch (error) {
-      handleAdminRequestError(error, "Unable to load categories right now.");
+      const now = Date.now();
+      if (now - lastLoadErrorToastAtRef.current > 4000) {
+        lastLoadErrorToastAtRef.current = now;
+        handleAdminRequestError(error, "Unable to load categories right now.");
+      }
     } finally {
-      stopProcessing(processingId);
+      loadInFlightRef.current = false;
     }
-  }, [handleAdminRequestError, startProcessing, stopProcessing]);
+  }, [handleAdminRequestError]);
 
   useEffect(() => {
+    if (didInitialLoadRef.current) {
+      return;
+    }
+
+    didInitialLoadRef.current = true;
     void loadCategories();
   }, [loadCategories]);
 
@@ -157,10 +170,7 @@ const AdminCategoriesPage: React.FC = () => {
                 showInNavbar: formState.showInNavbar,
               };
 
-              const processingId = startProcessing({
-                title: editingId ? "Updating category" : "Creating category",
-                message: "Saving the category and refreshing navigation...",
-              });
+              setSavingCategory(true);
               try {
                 if (editingId) {
                   await updateAdminCategory(editingId, payload);
@@ -176,7 +186,7 @@ const AdminCategoriesPage: React.FC = () => {
               } catch (error) {
                 handleAdminRequestError(error, "Unable to save category right now.");
               } finally {
-                stopProcessing(processingId);
+                setSavingCategory(false);
               }
             }}
           >
@@ -237,8 +247,13 @@ const AdminCategoriesPage: React.FC = () => {
               </div>
             ) : null}
             <div className="admin-form-actions">
-              <button className="button" type="submit" disabled={uploadingImage}>
-                {uploadingImage ? (
+              <button className="button" type="submit" disabled={uploadingImage || savingCategory}>
+                {savingCategory ? (
+                  <span className="button-loading">
+                    <span className="button-loading__spinner" aria-hidden="true" />
+                    Saving...
+                  </span>
+                ) : uploadingImage ? (
                   <span className="button-loading">
                     <span className="button-loading__spinner" aria-hidden="true" />
                     Preparing image...
@@ -319,10 +334,12 @@ const AdminCategoriesPage: React.FC = () => {
                         <button
                           className="link-button admin-danger-button"
                           type="button"
+                          disabled={deletingCategoryId === category.id}
                           onClick={async () => {
                             if (!category.id) {
                               return;
                             }
+                            setDeletingCategoryId(category.id);
                             try {
                               await deleteAdminCategory(category.id);
                               toast.success("Category deleted");
@@ -330,10 +347,12 @@ const AdminCategoriesPage: React.FC = () => {
                               window.dispatchEvent(new Event("catalog:categories-updated"));
                             } catch (error) {
                               handleAdminRequestError(error, "Unable to delete category right now.");
+                            } finally {
+                              setDeletingCategoryId(null);
                             }
                           }}
                         >
-                          Delete
+                          {deletingCategoryId === category.id ? "Deleting..." : "Delete"}
                         </button>
                       </div>
                     </td>

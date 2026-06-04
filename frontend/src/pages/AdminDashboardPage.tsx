@@ -255,23 +255,26 @@ const getStartOfDay = (date: Date) => {
   return start;
 };
 
-const isOrderInAnalysisPeriod = (order: Order, period: UserOrderAnalysisPeriod) => {
+const isDateInAnalysisPeriod = (value: string, period: UserOrderAnalysisPeriod) => {
   if (period === "all") {
     return true;
   }
 
-  const orderDate = new Date(order.createdAt);
+  const targetDate = new Date(value);
   const now = new Date();
 
   if (period === "month") {
-    return orderDate.getFullYear() === now.getFullYear() && orderDate.getMonth() === now.getMonth();
+    return targetDate.getFullYear() === now.getFullYear() && targetDate.getMonth() === now.getMonth();
   }
 
   const today = getStartOfDay(now);
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - today.getDay());
-  return orderDate >= startOfWeek && orderDate <= now;
+  return targetDate >= startOfWeek && targetDate <= now;
 };
+
+const isOrderInAnalysisPeriod = (order: Order, period: UserOrderAnalysisPeriod) =>
+  isDateInAnalysisPeriod(order.createdAt, period);
 
 const getCurrentView = (pathname: string): AdminView => {
   if (pathname.includes("/inventory")) {
@@ -622,35 +625,50 @@ const AdminDashboardPage: React.FC = () => {
   const todaysUniqueCustomers = new Set(
     todaysOrders.map((order) => order.email || order.phone || order.shippingName),
   ).size;
-  const allTimeProductUnits = orders.reduce(
+  const userAnalysisOrders = orders.filter((order) =>
+    isOrderInAnalysisPeriod(order, userOrderAnalysisPeriod),
+  );
+  const userAnalysisLabel =
+    USER_ORDER_ANALYSIS_OPTIONS.find((option) => option.value === userOrderAnalysisPeriod)?.label ||
+    "All time";
+  const userAnalysisProductUnits = userAnalysisOrders.reduce(
     (sum, order) =>
       sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
     0,
   );
-  const allTimeAverageOrderValue = orders.length ? totalRevenue / orders.length : 0;
-  const allTimeDeliveredOrders = orders.filter(
+  const userAnalysisOrderValue = userAnalysisOrders.reduce(
+    (sum, order) => sum + order.totalAmount,
+    0,
+  );
+  const userAnalysisAverageOrderValue = userAnalysisOrders.length
+    ? userAnalysisOrderValue / userAnalysisOrders.length
+    : 0;
+  const userAnalysisDeliveredOrders = userAnalysisOrders.filter(
     (order) => order.status === "DELIVERED",
   ).length;
-  const allTimeOpenOrders = orders.filter((order) =>
+  const userAnalysisOpenOrders = userAnalysisOrders.filter((order) =>
     ["CONFIRMED", "PROCESSING", "SHIPPED"].includes(order.status),
   ).length;
-  const allTimeUniqueCustomers = new Set(
-    orders.map((order) => order.email || order.phone || order.shippingName),
+  const userAnalysisUniqueCustomers = new Set(
+    userAnalysisOrders.map((order) => order.email || order.phone || order.shippingName),
   ).size;
   const salesSnapshot = ordersMode === "users"
     ? {
-        eyebrow: "All-time analysis",
+        eyebrow: `${userAnalysisLabel} analysis`,
         title: "Sales snapshot",
-        ordersLabel: "All-time orders",
-        orderCount: orders.length,
+        ordersLabel: `${userAnalysisLabel} orders`,
+        orderCount: userAnalysisOrders.length,
         orderScope: "All delivery modes",
-        productUnits: allTimeProductUnits,
-        orderValue: totalRevenue,
-        averageOrderValue: allTimeAverageOrderValue,
-        openOrders: allTimeOpenOrders,
-        deliveredOrders: allTimeDeliveredOrders,
-        uniqueCustomers: allTimeUniqueCustomers,
-        valueHint: "Total revenue till now",
+        productUnits: userAnalysisProductUnits,
+        orderValue: userAnalysisOrderValue,
+        averageOrderValue: userAnalysisAverageOrderValue,
+        openOrders: userAnalysisOpenOrders,
+        deliveredOrders: userAnalysisDeliveredOrders,
+        uniqueCustomers: userAnalysisUniqueCustomers,
+        valueHint:
+          userOrderAnalysisPeriod === "all"
+            ? "Total revenue till now"
+            : `Revenue from ${userAnalysisLabel.toLowerCase()} orders`,
       }
     : {
         eyebrow: "Today analysis",
@@ -666,16 +684,18 @@ const AdminDashboardPage: React.FC = () => {
         uniqueCustomers: todaysUniqueCustomers,
         valueHint: "Revenue from today's orders",
       };
-  const scopedPulseOrders = ordersMode === "users" ? orders : todaysOrders;
+  const scopedPulseOrders = ordersMode === "users" ? userAnalysisOrders : todaysOrders;
   const scopedPulseReturns = ordersMode === "users"
-    ? returnRequests
+    ? returnRequests.filter((request) =>
+        isDateInAnalysisPeriod(request.createdAt, userOrderAnalysisPeriod),
+      )
     : returnRequests.filter((request) => {
         const today = new Date();
         const requestDate = new Date(request.createdAt);
         return requestDate.toDateString() === today.toDateString();
       });
   const opsPulse = {
-    eyebrow: ordersMode === "users" ? "All-time pulse" : "Ops pulse",
+    eyebrow: ordersMode === "users" ? `${userAnalysisLabel} pulse` : "Ops pulse",
     totalOrders: scopedPulseOrders.length,
     delivered: scopedPulseOrders.filter((order) => order.status === "DELIVERED").length,
     cancelled: scopedPulseOrders.filter((order) => order.status === "CANCELLED").length,

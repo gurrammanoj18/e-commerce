@@ -181,25 +181,6 @@ const Navbar: React.FC = () => {
         <div className={`site-nav__links ${isMenuOpen ? "is-open" : ""}`}>
           <NavLink
             className={({ isActive }) =>
-              `site-nav__desktop-link ${isActive ? "active" : ""}`.trim()
-            }
-            to="/"
-            end
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Home
-          </NavLink>
-          <NavLink
-            className={({ isActive }) =>
-              `site-nav__desktop-link ${isActive ? "active" : ""}`.trim()
-            }
-            to="/bulk-order"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Bulk Orders
-          </NavLink>
-          <NavLink
-            className={({ isActive }) =>
               `site-nav__mobile-only ${isActive ? "active" : ""}`.trim()
             }
             to="/contact"
@@ -492,6 +473,14 @@ const Navbar: React.FC = () => {
             to="/services"
           >
             Services
+          </NavLink>
+          <NavLink
+            className={({ isActive }) =>
+              `site-category-strip__item ${isActive ? "is-active" : ""}`.trim()
+            }
+            to="/bulk-order"
+          >
+            Bulk Orders
           </NavLink>
         </div>
       </div>
