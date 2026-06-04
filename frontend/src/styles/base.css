@@ -172,21 +172,21 @@ img {
 
 @media (min-width: 1025px) and (max-width: 1440px) {
   .app-main--home {
-    padding-top: 117px;
+    padding-top: 122px;
   }
 
   .app-main--page {
-    padding-top: 99px;
+    padding-top: 94px;
   }
 }
 
 @media (min-width: 821px) and (max-width: 1024px) {
   .app-main--home {
-    padding-top: 117px;
+    padding-top: 122px;
   }
 
   .app-main--page {
-    padding-top: 99px;
+    padding-top: 94px;
   }
 }
 

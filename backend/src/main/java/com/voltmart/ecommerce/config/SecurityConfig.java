@@ -51,7 +51,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/error", "/health", "/health/**").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/auth/delivery-preference").authenticated()
                         .requestMatchers(
                         "/api/auth", "/api/auth/**",
