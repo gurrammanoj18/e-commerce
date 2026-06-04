@@ -37,7 +37,11 @@ const SiteEntryPrompt: React.FC = () => {
     setOpen(false);
   };
 
-  const chooseMode = (mode: "HOME_DELIVERY" | "STORE_PICKUP") => {
+  const chooseMode = (
+    mode: "HOME_DELIVERY" | "STORE_PICKUP",
+    event?: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    event?.stopPropagation();
     window.localStorage.setItem(GUEST_DELIVERY_MODE_KEY, mode);
     setDeliveryMode(mode);
     toast.success(mode === "HOME_DELIVERY" ? "Home delivery selected." : "Store pickup selected.");
@@ -95,14 +99,14 @@ const SiteEntryPrompt: React.FC = () => {
             <button
               type="button"
               className={`site-entry-prompt__mode ${deliveryMode === "STORE_PICKUP" ? "is-active" : ""}`}
-              onClick={() => chooseMode("STORE_PICKUP")}
+              onClick={(event) => chooseMode("STORE_PICKUP", event)}
             >
               Pick at store
             </button>
             <button
               type="button"
               className={`site-entry-prompt__mode site-entry-prompt__mode--primary ${deliveryMode === "HOME_DELIVERY" ? "is-active" : ""}`}
-              onClick={() => chooseMode("HOME_DELIVERY")}
+              onClick={(event) => chooseMode("HOME_DELIVERY", event)}
             >
               Home delivery
             </button>
@@ -149,11 +153,25 @@ const SiteEntryPrompt: React.FC = () => {
 
         <div className="site-entry-prompt__footer">
           {step === "pincode-check" ? (
-            <button type="button" className="link-button" onClick={() => setStep("delivery-mode")}>
+            <button
+              type="button"
+              className="link-button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setStep("delivery-mode");
+              }}
+            >
               Back
             </button>
           ) : null}
-          <button type="button" className="link-button" onClick={closePrompt}>
+          <button
+            type="button"
+            className="link-button"
+            onClick={(event) => {
+              event.stopPropagation();
+              closePrompt();
+            }}
+          >
             Skip for now
           </button>
         </div>

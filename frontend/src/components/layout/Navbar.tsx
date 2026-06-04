@@ -134,7 +134,7 @@ const Navbar: React.FC = () => {
       className={`delivery-switch ${switchingMode ? "is-switching" : ""}`}
       onClick={() => void handleToggleDeliveryMode()}
     >
-      Switch to {user.preferredDeliveryMode === "HOME_DELIVERY" ? "Store pickup" : "Home delivery"}
+      Switch to {user.preferredDeliveryMode === "HOME_DELIVERY" ? "store" : "Home delivery"}
     </button>
   ) : null;
 
@@ -214,7 +214,7 @@ const Navbar: React.FC = () => {
               onClick={() => void handleToggleDeliveryMode()}
             >
               Switch to{" "}
-              {user.preferredDeliveryMode === "HOME_DELIVERY" ? "Store pickup" : "Home delivery"}
+              {user.preferredDeliveryMode === "HOME_DELIVERY" ? "store" : "Home delivery"}
             </button>
           ) : null}
           <div className="site-nav__mobile-drawer">
@@ -228,7 +228,7 @@ const Navbar: React.FC = () => {
                     onClick={() => void handleToggleDeliveryMode()}
                   >
                     Switch to{" "}
-                    {user.preferredDeliveryMode === "HOME_DELIVERY" ? "Store pickup" : "Home delivery"}
+                    {user.preferredDeliveryMode === "HOME_DELIVERY" ? "store" : "Home delivery"}
                   </button>
                 ) : user ? (
                   <button
