@@ -32,6 +32,8 @@ const Navbar: React.FC = () => {
   );
   const profileImageUrl = user?.profileImageUrl?.trim();
   const isCustomer = user?.role === "ROLE_CUSTOMER";
+  const deliveryToggleLabel =
+    user?.preferredDeliveryMode === "HOME_DELIVERY" ? "Store" : "Delivery";
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 0);
@@ -134,7 +136,7 @@ const Navbar: React.FC = () => {
       className={`delivery-switch ${switchingMode ? "is-switching" : ""}`}
       onClick={() => void handleToggleDeliveryMode()}
     >
-      Switch to {user.preferredDeliveryMode === "HOME_DELIVERY" ? "store" : "Home delivery"}
+      {deliveryToggleLabel}
     </button>
   ) : null;
 
@@ -213,8 +215,7 @@ const Navbar: React.FC = () => {
               }`}
               onClick={() => void handleToggleDeliveryMode()}
             >
-              Switch to{" "}
-              {user.preferredDeliveryMode === "HOME_DELIVERY" ? "store" : "Home delivery"}
+              {deliveryToggleLabel}
             </button>
           ) : null}
           <div className="site-nav__mobile-drawer">
@@ -227,8 +228,7 @@ const Navbar: React.FC = () => {
                     className="site-nav__mobile-logout site-nav__mobile-switch"
                     onClick={() => void handleToggleDeliveryMode()}
                   >
-                    Switch to{" "}
-                    {user.preferredDeliveryMode === "HOME_DELIVERY" ? "store" : "Home delivery"}
+                    {deliveryToggleLabel}
                   </button>
                 ) : user ? (
                   <button

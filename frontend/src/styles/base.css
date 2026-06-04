@@ -182,11 +182,11 @@ img {
 
 @media (min-width: 821px) and (max-width: 1024px) {
   .app-main--home {
-    padding-top: 122px;
+    padding-top: 117px;
   }
 
   .app-main--page {
-    padding-top: 94px;
+    padding-top: 99px;
   }
 }
 
