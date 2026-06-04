@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { useAuth } from "../../contexts/AuthContext";
 import { checkPincodeServiceability } from "../../services/accountService";
 import { PincodeServiceabilityResult } from "../../types/store";
 import "../../styles/shared/SiteEntryPrompt.css";
@@ -10,6 +11,7 @@ const GUEST_DELIVERY_MODE_KEY = "voltmart-guest-delivery-mode";
 type EntryPromptStep = "delivery-mode" | "pincode-check";
 
 const SiteEntryPrompt: React.FC = () => {
+  const { isAuthenticated, loading } = useAuth();
   const [open, setOpen] = useState(() => window.sessionStorage.getItem(SITE_ENTRY_PROMPT_KEY) !== "true");
   const [step, setStep] = useState<EntryPromptStep>("delivery-mode");
   const [deliveryMode, setDeliveryMode] = useState<string | null>(null);
@@ -28,7 +30,20 @@ const SiteEntryPrompt: React.FC = () => {
     }
   }, [open]);
 
-  if (!open) {
+  useEffect(() => {
+    if (!open || loading || isAuthenticated) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isAuthenticated, loading, open]);
+
+  if (!open || loading || isAuthenticated || window.location.pathname.startsWith("/admin")) {
     return null;
   }
 

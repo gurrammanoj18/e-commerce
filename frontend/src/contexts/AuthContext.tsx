@@ -9,6 +9,7 @@ import {
   googleLogin as googleLoginRequest,
   updateDeliveryPreference as updateDeliveryPreferenceRequest,
 } from "../services/authService";
+import PincodeServiceChecker from "../components/shared/PincodeServiceChecker";
 
 import { useProcessing } from "./ProcessingContext";
 import { AuthUser, DeliveryMode } from "../types/store";
@@ -37,6 +38,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const AUTH_STORAGE_KEY = "voltmart-auth-user";
 const TOKEN_STORAGE_KEY = "voltmart-token";
 const DELIVERY_PROMPT_STORAGE_PREFIX = "voltmart-delivery-prompt-shown";
+const PINCODE_CHECKER_LOGIN_KEY = "voltmart-login-pincode-checker-shown";
 
 const decodeJwtPayload = (token: string) => {
   try {
@@ -80,10 +82,10 @@ const getDeliveryPromptSessionKey = (user: AuthUser) =>
   `${DELIVERY_PROMPT_STORAGE_PREFIX}:${user.email || user.phoneNumber || user.id || "customer"}`;
 
 const hasSeenDeliveryPromptThisSession = (user: AuthUser) =>
-  window.localStorage.getItem(getDeliveryPromptSessionKey(user)) === "true";
+  window.sessionStorage.getItem(getDeliveryPromptSessionKey(user)) === "true";
 
 const markDeliveryPromptSeenThisSession = (user: AuthUser) => {
-  window.localStorage.setItem(getDeliveryPromptSessionKey(user), "true");
+  window.sessionStorage.setItem(getDeliveryPromptSessionKey(user), "true");
 };
 
 const shouldShowDeliveryPromptThisSession = (user: AuthUser, requireProfile: boolean) =>
@@ -135,6 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDeliveryPreferenceModal, setShowDeliveryPreferenceModal] = useState(false);
+  const [showPincodeCheckerModal, setShowPincodeCheckerModal] = useState(false);
   const [showProfileCompletionModal, setShowProfileCompletionModal] = useState(false);
   const [pendingDeliveryPreferencePrompt, setPendingDeliveryPreferencePrompt] = useState(false);
   const [deliveryPreferenceError, setDeliveryPreferenceError] = useState("");
@@ -143,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const isAdminSession = user?.role === "ROLE_ADMIN";
   const isCustomerOnboardingBlocked = Boolean(
     user?.role === "ROLE_CUSTOMER" &&
-      (showProfileCompletionModal || showDeliveryPreferenceModal),
+      (showProfileCompletionModal || showDeliveryPreferenceModal || showPincodeCheckerModal),
   );
 
   useEffect(() => {
@@ -234,6 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setShowProfileCompletionModal(shouldRequireProfileCompletion);
     setShowDeliveryPreferenceModal(shouldPromptDeliveryPreference && !shouldDelayDeliveryPreference);
+    setShowPincodeCheckerModal(false);
     if (shouldPromptDeliveryPreference && nextUser) {
       markDeliveryPromptSeenThisSession(nextUser);
     }
@@ -265,6 +269,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     markDeliveryPromptSeenThisSession(user);
     setShowDeliveryPreferenceModal(true);
+    setShowPincodeCheckerModal(false);
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
   }, [isAdminSession, pendingDeliveryPreferencePrompt, user]);
@@ -275,9 +280,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     setShowDeliveryPreferenceModal(false);
+    setShowPincodeCheckerModal(false);
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
   }, [isAdminSession]);
+
+  useEffect(() => {
+    if (!isCustomerOnboardingBlocked) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isCustomerOnboardingBlocked]);
 
   const googleLogin = async (credential: string) => {
     const processingId = startProcessing({
@@ -342,6 +361,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         markDeliveryPromptSeenThisSession(response.user);
       }
       setShowDeliveryPreferenceModal(shouldPromptDelivery);
+      setShowPincodeCheckerModal(false);
       return {};
     } catch (error) {
       return {
@@ -374,6 +394,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       markDeliveryPromptSeenThisSession(response.user);
       setShowDeliveryPreferenceModal(false);
       setPendingDeliveryPreferencePrompt(false);
+      if (mode === "HOME_DELIVERY") {
+        window.sessionStorage.removeItem(PINCODE_CHECKER_LOGIN_KEY);
+        setShowPincodeCheckerModal(true);
+      } else {
+        setShowPincodeCheckerModal(false);
+      }
       return {};
     } catch (error) {
       if (isAuthorizationError(error)) {
@@ -382,6 +408,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         window.setTimeout(() => {
           persistAuth(null, null);
           setShowDeliveryPreferenceModal(false);
+          setShowPincodeCheckerModal(false);
           setPendingDeliveryPreferencePrompt(false);
         }, 900);
         return { error: message };
@@ -399,11 +426,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const logout = () => {
+    const currentUser = user;
     persistAuth(null, null);
     setShowDeliveryPreferenceModal(false);
+    setShowPincodeCheckerModal(false);
     setShowProfileCompletionModal(false);
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
+    if (currentUser) {
+      window.sessionStorage.removeItem(getDeliveryPromptSessionKey(currentUser));
+    }
+    window.sessionStorage.removeItem(PINCODE_CHECKER_LOGIN_KEY);
   };
 
   return (
@@ -476,6 +509,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             ) : null}
           </div>
         </div>
+      ) : null}
+      {showPincodeCheckerModal &&
+      !showProfileCompletionModal &&
+      !showDeliveryPreferenceModal &&
+      user?.role === "ROLE_CUSTOMER" ? (
+        <PincodeServiceChecker
+          open
+          storageKey={PINCODE_CHECKER_LOGIN_KEY}
+          onClose={() => setShowPincodeCheckerModal(false)}
+        />
       ) : null}
     </AuthContext.Provider>
   );

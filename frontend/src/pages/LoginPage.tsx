@@ -27,6 +27,7 @@ const LoginPage: React.FC = () => {
   const { isAuthenticated, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
   const googleClientId =
     window.__APP_CONFIG__?.REACT_APP_GOOGLE_CLIENT_ID ||
     process.env.REACT_APP_GOOGLE_CLIENT_ID;
@@ -57,9 +58,12 @@ const LoginPage: React.FC = () => {
       window.google.accounts.id.initialize({
         client_id: googleClientId,
         callback: async ({ credential }) => {
+          setError("");
+          setSigningIn(true);
           const result = await googleLogin(credential);
           if (result.error) {
             setError(result.error);
+            setSigningIn(false);
           }
         },
       });
@@ -101,7 +105,15 @@ const LoginPage: React.FC = () => {
         <p>Sign in to access saved carts, checkout faster, and track orders.</p>
         {error ? <p className="form-error">{error}</p> : null}
         {googleClientId ? (
-          <div id="google-signin-button" />
+          <div className="auth-card__google-button" aria-busy={signingIn}>
+            <div id="google-signin-button" />
+            {signingIn ? (
+              <div className="auth-card__signin-overlay">
+                <span className="auth-card__spinner" aria-hidden="true" />
+                Signing in...
+              </div>
+            ) : null}
+          </div>
         ) : (
           <p className="form-error">Google login is not configured yet.</p>
         )}

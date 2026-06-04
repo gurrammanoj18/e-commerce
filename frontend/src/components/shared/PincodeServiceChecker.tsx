@@ -9,11 +9,16 @@ import "../../styles/shared/PincodeServiceChecker.css";
 interface PincodeServiceCheckerProps {
   open: boolean;
   onClose: () => void;
+  storageKey?: string;
 }
 
 const PINCODE_CHECKER_SESSION_KEY = "voltmart-pincode-checker-shown";
 
-const PincodeServiceChecker: React.FC<PincodeServiceCheckerProps> = ({ open, onClose }) => {
+const PincodeServiceChecker: React.FC<PincodeServiceCheckerProps> = ({
+  open,
+  onClose,
+  storageKey = PINCODE_CHECKER_SESSION_KEY,
+}) => {
   const [pincode, setPincode] = useState("");
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<PincodeServiceabilityResult | null>(null);
@@ -23,17 +28,17 @@ const PincodeServiceChecker: React.FC<PincodeServiceCheckerProps> = ({ open, onC
       return;
     }
 
-    if (window.localStorage.getItem(PINCODE_CHECKER_SESSION_KEY) === "true") {
+    if (window.sessionStorage.getItem(storageKey) === "true") {
       onClose();
       return;
     }
 
-    window.localStorage.setItem(PINCODE_CHECKER_SESSION_KEY, "true");
+    window.sessionStorage.setItem(storageKey, "true");
 
     setPincode("");
     setChecking(false);
     setResult(null);
-  }, [onClose, open]);
+  }, [onClose, open, storageKey]);
 
   if (!open) {
     return null;
