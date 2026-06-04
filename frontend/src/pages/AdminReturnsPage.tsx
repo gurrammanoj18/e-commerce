@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
 import { toast } from "react-toastify";
 import AdminWorkspaceNav from "../components/admin/AdminWorkspaceNav";
 import { useAuth } from "../contexts/AuthContext";
-import { useProcessing } from "../contexts/ProcessingContext";
 import { fetchAdminReturnRequests, updateAdminReturnRequest } from "../services/returnService";
 import { ReturnRequest, ReturnRequestStatus, ReturnRequestType } from "../types/store";
 
@@ -69,13 +68,15 @@ const AdminReturnsPage: React.FC = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { startProcessing, stopProcessing } = useProcessing();
   const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [statusDrafts, setStatusDrafts] = useState<Record<number, ReturnRequestStatus>>({});
   const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({});
   const [activeTypeFilter, setActiveTypeFilter] = useState<"ALL" | ReturnRequestType>("ALL");
+  const didInitialLoadRef = useRef(false);
+  const loadInFlightRef = useRef(false);
+  const lastLoadErrorToastAtRef = useRef(0);
 
   const handleAdminRequestError = useCallback((error: unknown, fallback: string) => {
     if (error instanceof AxiosError && error.response?.status === 401) {
@@ -83,7 +84,7 @@ const AdminReturnsPage: React.FC = () => {
       logout();
       navigate("/admin/login", {
         replace: true,
-        state: { from: location, adminOnly: true },
+        state: { from: { pathname: location.pathname }, adminOnly: true },
       });
       return;
     }
@@ -95,13 +96,16 @@ const AdminReturnsPage: React.FC = () => {
         ? error.message
         : fallback;
     toast.error(message);
-  }, [location, logout, navigate]);
+  }, [location.pathname, logout, navigate]);
 
   const loadData = useCallback(async () => {
-    const processingId = startProcessing({
-      title: "Loading return requests",
-      message: "Fetching return and replacement operations...",
-    });
+    if (loadInFlightRef.current) {
+      return;
+    }
+
+    loadInFlightRef.current = true;
+    setLoading(true);
+
     try {
       const response = await fetchAdminReturnRequests();
       setReturnRequests(response);
@@ -112,14 +116,23 @@ const AdminReturnsPage: React.FC = () => {
         Object.fromEntries(response.map((request) => [request.id, request.adminNote || ""])),
       );
     } catch (error) {
-      handleAdminRequestError(error, "Unable to load return requests.");
+      const now = Date.now();
+      if (now - lastLoadErrorToastAtRef.current > 4000) {
+        lastLoadErrorToastAtRef.current = now;
+        handleAdminRequestError(error, "Unable to load return requests.");
+      }
     } finally {
       setLoading(false);
-      stopProcessing(processingId);
+      loadInFlightRef.current = false;
     }
-  }, [handleAdminRequestError, startProcessing, stopProcessing]);
+  }, [handleAdminRequestError]);
 
   useEffect(() => {
+    if (didInitialLoadRef.current) {
+      return;
+    }
+
+    didInitialLoadRef.current = true;
     void loadData();
   }, [loadData]);
 
@@ -144,10 +157,6 @@ const AdminReturnsPage: React.FC = () => {
     }
 
     setSavingId(requestId);
-    const processingId = startProcessing({
-      title: "Saving return request",
-      message: "Updating the return workflow...",
-    });
     try {
       const updated = await updateAdminReturnRequest(requestId, {
         status: statusDrafts[requestId],
@@ -161,7 +170,6 @@ const AdminReturnsPage: React.FC = () => {
       handleAdminRequestError(error, "Unable to update the return request.");
     } finally {
       setSavingId(null);
-      stopProcessing(processingId);
     }
   };
 
