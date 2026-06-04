@@ -111,6 +111,7 @@ com\voltmart\ecommerce\entity\WalletCoupon.class
 com\voltmart\ecommerce\controller\AuthController.class
 com\voltmart\ecommerce\service\impl\UserAddressServiceImpl.class
 com\voltmart\ecommerce\dto\common\PagedResponse.class
+com\voltmart\ecommerce\controller\HealthController.class
 com\voltmart\ecommerce\service\impl\BannerServiceImpl.class
 com\voltmart\ecommerce\dto\order\OrderItemResponse.class
 com\voltmart\ecommerce\entity\WalletCouponRedemption.class

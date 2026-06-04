@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/auth/delivery-preference").authenticated()
                         .requestMatchers(
                         "/api/auth", "/api/auth/**",
+                        "/api/health", "/api/health/**",
                         "/api/banners", "/api/banners/**",
                         "/api/brand-logos", "/api/brand-logos/**",
                         "/api/products", "/api/products/**",
