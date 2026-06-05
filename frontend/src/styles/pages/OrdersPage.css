@@ -594,6 +594,12 @@
   }
 }
 
+@media (min-width: 821px) {
+  .orders-page {
+    padding-top: 14px;
+  }
+}
+
 @media (max-width: 640px) {
   .orders-page {
     padding-top: 0;

@@ -6,6 +6,7 @@ import constructorImage from "../assets/services/constructor.png";
 import carpenterImage from "../assets/services/carpenter.png";
 import cleaningImage from "../assets/services/cleaning.png";
 import appliancesRepairImage from "../assets/services/appliances-repair.png";
+import "../styles/pages/AccountPageSpacing.css";
 
 const services = [
   {

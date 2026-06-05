@@ -16,7 +16,7 @@
 
 .section-heading h2,
 .page-header h1 {
-  margin: 12px 0 0;
+  margin: 10px 0 0;
 }
 
 .section-heading p {
@@ -48,7 +48,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
   margin: 0 0 14px;
 }
 
@@ -112,10 +112,15 @@
     align-items: start;
   }
 
+  .section-heading {
+    gap: 0;
+  }
+
   .section-heading h2,
   .section-heading h1,
   .page-header h1 {
-    font-size: 1.02rem;
+    margin-top: 8px;
+    font-size: 16px;
     line-height: 1.15;
   }
 
@@ -127,12 +132,13 @@
 
   .section-heading .eyebrow,
   .page-header .eyebrow {
-    font-size: 0.68rem;
+    font-size: 10px;
+    line-height: 1.2;
     letter-spacing: 0.1em;
   }
 
   .services-page__header {
-    gap: 6px;
+    gap: 8px;
     margin: 0 0 12px;
   }
 

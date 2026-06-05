@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "../../styles/product/FiltersSidebar.css";
 import {
   CategorySummary,
@@ -36,6 +36,7 @@ interface FiltersSidebarProps {
   onReset: () => void;
   onApply: () => void;
   showCategoryFilter?: boolean;
+  initialSection?: "category" | "brand" | "price" | "availability" | "discount";
 }
 
 const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
@@ -58,10 +59,15 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   onReset,
   onApply,
   showCategoryFilter = true,
+  initialSection = "category",
 }) => {
   const [activeSection, setActiveSection] = useState<"category" | "brand" | "price" | "availability" | "discount">(
-    "category"
+    initialSection
   );
+
+  useEffect(() => {
+    setActiveSection(initialSection);
+  }, [initialSection]);
 
   const categoryOptions = categories.flatMap((category) => [
     {

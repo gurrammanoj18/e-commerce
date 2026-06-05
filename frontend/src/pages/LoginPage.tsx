@@ -38,9 +38,11 @@ const LoginPage: React.FC = () => {
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [signingInWithGoogle, setSigningInWithGoogle] = useState(false);
   const [googleButtonReady, setGoogleButtonReady] = useState(false);
-  const googleClientId =
+  const googleClientId = (
     window.__APP_CONFIG__?.REACT_APP_GOOGLE_CLIENT_ID ||
-    process.env.REACT_APP_GOOGLE_CLIENT_ID;
+    process.env.REACT_APP_GOOGLE_CLIENT_ID ||
+    ""
+  ).trim();
 
   const otpRequested = Boolean(verifiedPhoneNumber);
   const canRequestOtp = phoneNumber.length === 10 && !requestingOtp;
@@ -61,6 +63,7 @@ const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (!googleClientId) {
+      setGoogleButtonReady(false);
       return;
     }
 
@@ -79,6 +82,10 @@ const LoginPage: React.FC = () => {
       window.google.accounts.id.initialize({
         client_id: googleClientId,
         callback: async ({ credential }) => {
+          if (!credential) {
+            setError("Google did not return a sign-in credential. Please try again.");
+            return;
+          }
           setError("");
           setSigningInWithGoogle(true);
           const result = await googleLogin(credential);
@@ -112,10 +119,15 @@ const LoginPage: React.FC = () => {
     script.async = true;
     script.defer = true;
     script.onload = renderGoogleButton;
+    script.onerror = () => {
+      setError("Unable to load Google sign-in. Please use OTP login or try again later.");
+      setGoogleButtonReady(false);
+    };
     document.body.appendChild(script);
 
     return () => {
       script.onload = null;
+      script.onerror = null;
     };
   }, [googleClientId, googleLogin]);
 
@@ -181,23 +193,33 @@ const LoginPage: React.FC = () => {
 
         {error ? <p className="form-error">{error}</p> : null}
 
-        {googleClientId ? (
-          <div className="auth-card__google-button" aria-busy={signingInWithGoogle || !googleButtonReady}>
-            <div id="google-signin-button" />
-            {!googleButtonReady && !signingInWithGoogle ? (
-              <div className="auth-card__signin-overlay">
-                <span className="auth-card__spinner" aria-hidden="true" />
-                Preparing Google...
-              </div>
-            ) : null}
-            {signingInWithGoogle ? (
-              <div className="auth-card__signin-overlay">
-                <span className="auth-card__spinner" aria-hidden="true" />
-                Signing in...
-              </div>
-            ) : null}
-          </div>
-        ) : null}
+        <div className="auth-card__google-button" aria-busy={signingInWithGoogle || Boolean(googleClientId && !googleButtonReady)}>
+          {googleClientId ? (
+            <>
+              <div id="google-signin-button" />
+              {!googleButtonReady && !signingInWithGoogle ? (
+                <div className="auth-card__signin-overlay">
+                  <span className="auth-card__spinner" aria-hidden="true" />
+                  Preparing Google...
+                </div>
+              ) : null}
+              {signingInWithGoogle ? (
+                <div className="auth-card__signin-overlay">
+                  <span className="auth-card__spinner" aria-hidden="true" />
+                  Signing in...
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <button
+              className="auth-card__google-fallback"
+              type="button"
+              disabled
+            >
+              Google login not configured
+            </button>
+          )}
+        </div>
 
         <div className="auth-card__divider">
           <span>or login with OTP</span>

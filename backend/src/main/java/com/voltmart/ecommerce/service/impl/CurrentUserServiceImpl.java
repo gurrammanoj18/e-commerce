@@ -17,7 +17,8 @@ public class CurrentUserServiceImpl implements CurrentUserService {
     @Override
     public User getCurrentUser() {
         String loginIdentifier = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmailOrPhoneNumber(loginIdentifier, loginIdentifier)
+        String normalizedLoginIdentifier = loginIdentifier == null ? "" : loginIdentifier.trim();
+        return userRepository.findByEmailIgnoreCaseOrPhoneNumber(normalizedLoginIdentifier, normalizedLoginIdentifier)
                 .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
     }
 }

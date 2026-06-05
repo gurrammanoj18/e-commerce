@@ -6,7 +6,7 @@
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.8fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 44px;
 }
 
@@ -35,21 +35,6 @@
   margin: 0 0 12px;
   color: rgba(255, 245, 245, 0.92);
   line-height: 1.55;
-}
-
-.footer-column--about p {
-  max-width: 520px;
-}
-
-.footer-column--about p a {
-  display: inline;
-  margin: 0;
-  color: #fff;
-  font-weight: 800;
-}
-
-.footer-social-title {
-  margin-top: 34px;
 }
 
 .footer-socials {
@@ -128,7 +113,4 @@
     font-size: 0.76rem;
   }
 
-  .footer-column--about {
-    grid-column: 1 / -1;
-  }
 }

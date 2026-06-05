@@ -128,7 +128,7 @@ const buildSectionLink = (section: HomeSectionDefinition) => {
   const params = new URLSearchParams({
     discover: "1",
     view: "collection",
-    title: section.eyebrow,
+    title: section.title,
   });
 
   if (section.tags?.[0]) {
@@ -171,7 +171,7 @@ const homeSections: HomeSectionDefinition[] = [
   {
     sectionKey: "hard-to-find",
     eyebrow: "Hard-to-Find Products",
-    title: "Rare essentials that make VoltMart useful",
+    title: "Hard-to-Find Products",
     tags: ["hard-to-find-products"],
     displayOrder: 10,
     maxProducts: 8,
@@ -179,7 +179,7 @@ const homeSections: HomeSectionDefinition[] = [
   {
     sectionKey: "everyday-essentials",
     eyebrow: "Everyday Essentials",
-    title: "Fast-moving items customers use regularly",
+    title: "Everyday Essentials",
     tags: ["everyday-essentials"],
     displayOrder: 20,
     maxProducts: 8,
@@ -187,7 +187,7 @@ const homeSections: HomeSectionDefinition[] = [
   {
     sectionKey: "electrical-essentials",
     eyebrow: "Electrical Essentials",
-    title: "Switches, sockets, wires, MCBs, and power basics",
+    title: "Electrical Essentials",
     tags: ["electrical-essentials"],
     displayOrder: 30,
     maxProducts: 8,
@@ -195,7 +195,7 @@ const homeSections: HomeSectionDefinition[] = [
   {
     sectionKey: "hardware-tools",
     eyebrow: "Hardware & Tools",
-    title: "Locks, handles, hinges, fasteners, and tool kits",
+    title: "Hardware & Tools",
     tags: ["hardware-tools"],
     displayOrder: 40,
     maxProducts: 8,
@@ -203,7 +203,7 @@ const homeSections: HomeSectionDefinition[] = [
   {
     sectionKey: "plumbing-bathroom",
     eyebrow: "Plumbing & Bathroom",
-    title: "Pipes, taps, fittings, connectors, and shower sets",
+    title: "Plumbing & Bathroom",
     tags: ["plumbing-bathroom"],
     displayOrder: 50,
     maxProducts: 8,
@@ -211,14 +211,14 @@ const homeSections: HomeSectionDefinition[] = [
   {
     sectionKey: "recently-added",
     eyebrow: "Recently added products",
-    title: "Fresh arrivals ready for discovery",
+    title: "Recently Added",
     displayOrder: 70,
     maxProducts: 8,
   },
   {
     sectionKey: "best-selling",
     eyebrow: "Best-selling products",
-    title: "Proven performers that convert consistently",
+    title: "Best-Selling Products",
     displayOrder: 80,
     maxProducts: 8,
   },
@@ -260,7 +260,7 @@ const BrandSection: React.FC = () => {
       <div className="section-heading">
         <div>
           <span className="eyebrow">Shop by Brand</span>
-          <h2>Major brands customers ask for</h2>
+          <h2>Shop by Brand</h2>
         </div>
       </div>
       <div className="home-brand-grid">
@@ -293,7 +293,7 @@ const SeasonalModulesSection: React.FC<{ seasonalPicks: Banner[] }> = ({ seasona
       <div className="section-heading">
         <div>
           <span className="eyebrow">Seasonal picks</span>
-          <h2>Clickable promotional banners</h2>
+          <h2>Seasonal Picks</h2>
         </div>
       </div>
       <div className="home-seasonal-grid">
@@ -474,7 +474,7 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
       <div className="section-heading section-heading--carousel">
         <div>
           <span className="eyebrow">{eyebrow}</span>
-          <h2>{eyebrow}</h2>
+          <h2>{title}</h2>
         </div>
         <div className="home-product-section__actions">
           {!loading && productPages.length > 1 ? (

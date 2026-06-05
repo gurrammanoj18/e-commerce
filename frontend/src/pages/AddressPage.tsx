@@ -7,6 +7,7 @@ import {
   fetchAddresses,
   updateAddress,
 } from "../services/accountService";
+import "../styles/pages/AccountPageSpacing.css";
 import "../styles/pages/AddressPage.css";
 import { PincodeServiceabilityResult, UserAddress } from "../types/store";
 
@@ -172,7 +173,7 @@ const AddressPage: React.FC = () => {
   };
 
   return (
-    <section className="shell section page-section">
+      <section className="shell section page-section address-page">
       <div className="page-header">
         <span className="eyebrow">Address</span>
         <h1>Saved addresses</h1>

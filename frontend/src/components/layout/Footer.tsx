@@ -20,7 +20,6 @@ const Footer: React.FC = () => {
 
         <div className="footer-column">
           <h3>QUICK LINKS</h3>
-          <Link to="/about">About VoltMart</Link>
           <Link to="/contact">Contact Us</Link>
           <Link to="/contact">Support</Link>
           <a href="https://wa.me/919398546891" target="_blank" rel="noreferrer">
@@ -33,21 +32,8 @@ const Footer: React.FC = () => {
           <Link to="/buying-guides">Buying Guides</Link>
         </div>
 
-        <div className="footer-column footer-column--about">
-          <h3>ABOUT VOLTMART</h3>
-          <p>
-            VoltMart is a practical ecommerce destination for appliances,
-            electricals, tools, hardware, lighting, bathroom, plumbing, and
-            kitchen essentials.
-          </p>
-          <p>
-            We help homeowners, technicians, contractors, and everyday shoppers
-            discover dependable products with category-first browsing, trusted
-            quality, and a smoother online buying experience.{" "}
-            <Link to="/products">READ MORE</Link>
-          </p>
-
-          <h3 className="footer-social-title">CONNECT WITH US</h3>
+        <div className="footer-column">
+          <h3>CONNECT WITH US</h3>
           <div className="footer-socials" aria-label="Social links">
             <a href="https://facebook.com" target="_blank" rel="noreferrer" aria-label="Facebook">
               f

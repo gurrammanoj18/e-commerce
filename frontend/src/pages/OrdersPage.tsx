@@ -495,7 +495,7 @@ const OrdersPage: React.FC = () => {
 
   if (loading) {
     return (
-      <section className="shell section page-section">
+      <section className="shell section page-section orders-page">
         <div className="store-card empty-state">
           <h1>Loading your orders...</h1>
         </div>
@@ -505,7 +505,7 @@ const OrdersPage: React.FC = () => {
 
   if (error) {
     return (
-      <section className="shell section page-section">
+      <section className="shell section page-section orders-page">
         <div className="store-card empty-state">
           <h1>Order history unavailable</h1>
           <p>{error}</p>
@@ -516,7 +516,7 @@ const OrdersPage: React.FC = () => {
 
   if (!orders.length) {
     return (
-      <section className="shell section page-section">
+      <section className="shell section page-section orders-page">
         <div className="store-card empty-state">
           <h1>No orders yet</h1>
           <p>Your future purchases will show up here with status and item details.</p>

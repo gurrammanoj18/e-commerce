@@ -63,7 +63,7 @@ const CartPage: React.FC = () => {
 
   if (!items.length && !savedItems.length) {
     return (
-      <section className="shell section page-section">
+      <section className="shell section page-section cart-page">
         <div className="store-card empty-state">
           <h1>Your cart is empty</h1>
           <p>Add products from the catalog to review quantities and pricing.</p>
@@ -76,7 +76,7 @@ const CartPage: React.FC = () => {
   }
 
   return (
-    <section className="shell section page-section">
+    <section className="shell section page-section cart-page">
       <div className="section-heading">
         <div>
           <span className="eyebrow">Shopping cart</span>

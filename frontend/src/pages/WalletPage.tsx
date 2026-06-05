@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { fetchWallet, redeemWalletCode } from "../services/accountService";
+import "../styles/pages/AccountPageSpacing.css";
 import { WalletSummary } from "../types/store";
 import { formatCurrency } from "../utils/currency";
 
@@ -45,7 +46,7 @@ const WalletPage: React.FC = () => {
   };
 
   return (
-    <section className="shell section page-section">
+    <section className="shell section page-section wallet-page">
       <div className="page-header">
         <span className="eyebrow">Wallet</span>
         <h1>Your wallet and reward balance</h1>

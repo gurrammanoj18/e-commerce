@@ -296,6 +296,9 @@ const Navbar: React.FC = () => {
               <Link to="/services" onClick={() => setIsMenuOpen(false)}>
                 VoltMart Services
               </Link>
+              <Link to="/about" onClick={() => setIsMenuOpen(false)}>
+                About VoltMart
+              </Link>
             </div>
 
             <div className="site-nav__mobile-drawer-section">
@@ -445,14 +448,24 @@ const Navbar: React.FC = () => {
                       <span>Wallet</span>
                       <span aria-hidden="true">›</span>
                     </Link>
+                    <Link to="/about" onClick={() => setIsProfileOpen(false)}>
+                      <span>About VoltMart</span>
+                      <span aria-hidden="true">›</span>
+                    </Link>
                     <button type="button" onClick={handleLogout}>
                       <span>Logout</span>
                     </button>
                   </>
                 ) : (
-                  <button type="button" onClick={handleCustomerLogin}>
-                    <span>Customer login</span>
-                  </button>
+                  <>
+                    <Link to="/about" onClick={() => setIsProfileOpen(false)}>
+                      <span>About VoltMart</span>
+                      <span aria-hidden="true">›</span>
+                    </Link>
+                    <button type="button" onClick={handleCustomerLogin}>
+                      <span>Customer login</span>
+                    </button>
+                  </>
                 )}
               </div>
             </div>

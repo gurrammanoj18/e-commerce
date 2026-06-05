@@ -1,5 +1,10 @@
 @import "../shared/PageChrome.css";
 
+.cart-page,
+.wishlist-page {
+  padding-top: 4px;
+}
+
 .cart-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
@@ -111,6 +116,13 @@
   }
 }
 
+@media (min-width: 821px) {
+  .cart-page,
+  .wishlist-page {
+    padding-top: 14px;
+  }
+}
+
 @media (max-width: 820px) {
   .cart-layout {
     grid-template-columns: 1fr;
@@ -128,6 +140,11 @@
 }
 
 @media (max-width: 560px) {
+  .cart-page,
+  .wishlist-page {
+    padding-top: 0;
+  }
+
   .cart-layout {
     gap: 16px;
   }

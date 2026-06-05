@@ -1,0 +1,24 @@
+.wallet-page,
+.address-page,
+.services-page,
+.bulk-order-page {
+  padding-top: 4px;
+}
+
+@media (min-width: 821px) {
+  .wallet-page,
+  .address-page,
+  .services-page,
+  .bulk-order-page {
+    padding-top: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .wallet-page,
+  .address-page,
+  .services-page,
+  .bulk-order-page {
+    padding-top: 0;
+  }
+}

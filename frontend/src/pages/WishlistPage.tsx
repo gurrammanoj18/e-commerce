@@ -33,7 +33,7 @@ const WishlistPage: React.FC = () => {
 
   if (!items.length) {
     return (
-      <section className="shell section page-section">
+      <section className="shell section page-section wishlist-page">
         <div className="store-card empty-state">
           <h1>Your wishlist is empty</h1>
           <p>Save products here so you can revisit and compare them later.</p>
@@ -46,7 +46,7 @@ const WishlistPage: React.FC = () => {
   }
 
   return (
-    <section className="shell section page-section">
+    <section className="shell section page-section wishlist-page">
       <div className="section-heading">
         <div>
           <span className="eyebrow">Wishlist</span>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "../styles/pages/BulkOrderPage.css";
+import "../styles/pages/AccountPageSpacing.css";
 import "../styles/shared/LoadingState.css";
 import { toast } from "react-toastify";
 import { submitBulkOrder } from "../services/supportService";
@@ -65,7 +66,7 @@ const BulkOrderPage: React.FC = () => {
   };
 
   return (
-    <section className="shell section page-section">
+    <section className="shell section page-section bulk-order-page">
       <div className="page-header">
         <span className="eyebrow">Bulk Orders</span>
         <h1>Send your bulk requirement</h1>

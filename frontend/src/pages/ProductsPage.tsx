@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import "../styles/pages/ProductsPage.css";
 import FiltersSidebar from "../components/product/FiltersSidebar";
 import ProductCard from "../components/product/ProductCard";
@@ -7,6 +7,8 @@ import LoadingState from "../components/shared/LoadingState";
 import Pagination from "../components/shared/Pagination";
 import { useProducts } from "../contexts/ProductContext";
 import { ProductAvailabilityFilter, ProductSort } from "../types/store";
+
+type FilterSection = "category" | "brand" | "price" | "availability" | "discount";
 
 const toDisplayLabel = (value: string) =>
   value
@@ -40,6 +42,7 @@ const ProductsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const appliedQuerySignature = useRef("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeFilterSection, setActiveFilterSection] = useState<FilterSection>("category");
   const [draftFilters, setDraftFilters] = useState({
     category: "All",
     brand: "All",
@@ -48,16 +51,15 @@ const ProductsPage: React.FC = () => {
     sortBy: "featured" as ProductSort,
     priceRange: { min: 0, max: 250000 },
   });
+  const hasProductDiscoveryParams =
+    searchParams.get("discover") === "1" ||
+    Boolean(searchParams.get("search")) ||
+    Boolean(searchParams.get("category")) ||
+    Boolean(searchParams.get("brand")) ||
+    Boolean(searchParams.get("promo")) ||
+    Boolean(searchParams.get("view"));
 
-  const isDiscoverMode = useMemo(
-    () =>
-      searchParams.get("discover") === "1" ||
-      Boolean(searchParams.get("search")) ||
-      Boolean(searchParams.get("category")) ||
-      Boolean(searchParams.get("brand")) ||
-      Boolean(searchParams.get("promo")),
-    [searchParams],
-  );
+  const isDiscoverMode = useMemo(() => hasProductDiscoveryParams, [hasProductDiscoveryParams]);
   const isCollectionMode = searchParams.get("view") === "collection";
   const collectionTitle = useMemo(() => {
     const title =
@@ -69,6 +71,17 @@ const ProductsPage: React.FC = () => {
 
     return `Buy ${toDisplayLabel(title)} Online`;
   }, [searchParams]);
+
+  const collectionFilterChips = useMemo(
+    () =>
+      categories
+        .flatMap((category) =>
+          category.subcategories?.length ? category.subcategories : [category]
+        )
+        .filter((category) => category.slug || category.name)
+        .slice(0, 5),
+    [categories]
+  );
 
   useEffect(() => {
     const nextSearch = searchParams.get("search") ?? "";
@@ -142,6 +155,11 @@ const ProductsPage: React.FC = () => {
     setSearchParams(nextParams);
   };
 
+  const openFilters = (section: FilterSection = "category") => {
+    setActiveFilterSection(section);
+    setIsFilterOpen(true);
+  };
+
   const applyDraftFilters = () => {
     setSelectedCategory(draftFilters.category);
     setSelectedBrand(draftFilters.brand);
@@ -151,6 +169,76 @@ const ProductsPage: React.FC = () => {
     setPriceRange(draftFilters.priceRange);
     setIsFilterOpen(false);
   };
+
+  const resetCurrentFilters = () => {
+    setDraftFilters({
+      category: "All",
+      brand: "All",
+      availability: "all" as ProductAvailabilityFilter,
+      minimumDiscount: 0,
+      sortBy: "featured" as ProductSort,
+      priceRange: { min: 0, max: maxCatalogPrice || 250000 },
+    });
+    resetFilters();
+
+    if (!isCollectionMode) {
+      setSearchParams(new URLSearchParams({ discover: "1" }));
+      return;
+    }
+
+    const nextParams = new URLSearchParams({ discover: "1", view: "collection" });
+    const title = searchParams.get("title");
+
+    if (title) {
+      nextParams.set("title", title);
+    }
+
+    setSearchParams(nextParams);
+  };
+
+  const renderFiltersDrawer = () => (
+    <div className={`products-filter-panel ${isFilterOpen ? "is-open" : ""}`}>
+      <FiltersSidebar
+        brands={availableBrands}
+        selectedBrand={draftFilters.brand}
+        onBrandChange={(value) =>
+          setDraftFilters((current) => ({ ...current, brand: value }))
+        }
+        categories={categories}
+        selectedCategory={draftFilters.category}
+        onCategoryChange={(value) => {
+          setDraftFilters((current) => ({ ...current, category: value }));
+          updateDiscoverParams({ category: value, promo: null });
+        }}
+        availabilityFilter={draftFilters.availability}
+        onAvailabilityChange={(value) =>
+          setDraftFilters((current) => ({ ...current, availability: value }))
+        }
+        minimumDiscount={draftFilters.minimumDiscount}
+        onMinimumDiscountChange={(value) =>
+          setDraftFilters((current) => ({ ...current, minimumDiscount: value }))
+        }
+        sortBy={draftFilters.sortBy}
+        onSortChange={(value) =>
+          setDraftFilters((current) => ({ ...current, sortBy: value }))
+        }
+        priceRange={draftFilters.priceRange}
+        maxCatalogPrice={maxCatalogPrice}
+        onPriceRangeChange={(value) =>
+          setDraftFilters((current) => ({ ...current, priceRange: value }))
+        }
+        onClose={() => setIsFilterOpen(false)}
+        onReset={resetCurrentFilters}
+        onApply={applyDraftFilters}
+        showCategoryFilter
+        initialSection={activeFilterSection}
+      />
+    </div>
+  );
+
+  if (!hasProductDiscoveryParams) {
+    return <Navigate replace to="/products?discover=1&view=collection" />;
+  }
 
   return (
     <>
@@ -215,7 +303,7 @@ const ProductsPage: React.FC = () => {
             <button
               type="button"
               className="products-filter-toggle"
-              onClick={() => setIsFilterOpen((open) => !open)}
+              onClick={() => openFilters("category")}
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
                 <path
@@ -230,55 +318,7 @@ const ProductsPage: React.FC = () => {
           </div>
         ) : null}
 
-        {isDiscoverMode && !isCollectionMode ? (
-          <div className={`products-filter-panel ${isFilterOpen ? "is-open" : ""}`}>
-            <FiltersSidebar
-              brands={availableBrands}
-              selectedBrand={draftFilters.brand}
-              onBrandChange={(value) =>
-                setDraftFilters((current) => ({ ...current, brand: value }))
-              }
-              categories={categories}
-              selectedCategory={draftFilters.category}
-              onCategoryChange={(value) => {
-                setDraftFilters((current) => ({ ...current, category: value }));
-                updateDiscoverParams({ category: value });
-              }}
-              availabilityFilter={draftFilters.availability}
-              onAvailabilityChange={(value) =>
-                setDraftFilters((current) => ({ ...current, availability: value }))
-              }
-              minimumDiscount={draftFilters.minimumDiscount}
-              onMinimumDiscountChange={(value) =>
-                setDraftFilters((current) => ({ ...current, minimumDiscount: value }))
-              }
-              sortBy={draftFilters.sortBy}
-              onSortChange={(value) =>
-                setDraftFilters((current) => ({ ...current, sortBy: value }))
-              }
-              priceRange={draftFilters.priceRange}
-              maxCatalogPrice={maxCatalogPrice}
-              onPriceRangeChange={(value) =>
-                setDraftFilters((current) => ({ ...current, priceRange: value }))
-              }
-              onClose={() => setIsFilterOpen(false)}
-              onReset={() => {
-                setDraftFilters({
-                  category: "All",
-                  brand: "All",
-                  availability: "all" as ProductAvailabilityFilter,
-                  minimumDiscount: 0,
-                  sortBy: "featured" as ProductSort,
-                  priceRange: { min: 0, max: maxCatalogPrice || 250000 },
-                });
-                resetFilters();
-                setSearchParams(new URLSearchParams({ discover: "1" }));
-              }}
-              onApply={applyDraftFilters}
-              showCategoryFilter
-            />
-          </div>
-        ) : null}
+        {isDiscoverMode ? renderFiltersDrawer() : null}
 
         {loading ? (
           <LoadingState cardCount={8} />
@@ -286,6 +326,54 @@ const ProductsPage: React.FC = () => {
           <div className="products-collection-page">
             <div className="products-collection-page__header">
               <h1>{collectionTitle}</h1>
+            </div>
+            <div className="products-collection-toolbar" aria-label={`${collectionTitle} filters`}>
+              <button
+                type="button"
+                className="products-filter-toggle products-filter-toggle--icon"
+                onClick={() => openFilters("category")}
+                aria-label="Open filters"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M4 6h16M7 12h10M10 18h4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+              <button type="button" className="products-filter-chip" onClick={() => openFilters("category")}>
+                Type
+                <span aria-hidden="true">⌄</span>
+              </button>
+              <button type="button" className="products-filter-chip" onClick={() => openFilters("brand")}>
+                Brand
+                <span aria-hidden="true">⌄</span>
+              </button>
+              {collectionFilterChips.map((category) => {
+                const categoryValue = category.slug || category.name;
+                return (
+                  <button
+                    key={categoryValue}
+                    type="button"
+                    className={`products-filter-chip products-filter-chip--category ${
+                      draftFilters.category === categoryValue ? "is-active" : ""
+                    }`}
+                    onClick={() => {
+                      setDraftFilters((current) => ({ ...current, category: categoryValue }));
+                      updateDiscoverParams({ category: categoryValue, promo: null });
+                    }}
+                  >
+                    {category.image ? <img src={category.image} alt="" aria-hidden="true" /> : null}
+                    <span>{category.name}</span>
+                  </button>
+                );
+              })}
+              <button type="button" className="products-filter-chip" onClick={() => openFilters("price")}>
+                Price
+                <span aria-hidden="true">⌄</span>
+              </button>
             </div>
             <div className="product-grid products-collection-grid">
               {filteredProducts.map((product) => (
