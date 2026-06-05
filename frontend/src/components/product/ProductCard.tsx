@@ -18,6 +18,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { animateProductToTarget } = useCollectionAnimation();
   const [addingToCart, setAddingToCart] = useState(false);
+  const [optimisticQuantity, setOptimisticQuantity] = useState<number | null>(null);
   const [wishlistPending, setWishlistPending] = useState(false);
   const [hoverDirection, setHoverDirection] = useState<"left" | "right" | null>(
     null
@@ -58,6 +59,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
   const savedToWishlist = isInWishlist(product.id);
   const cartItem = items.find((item) => item.product.id === product.id);
   const cartQuantity = cartItem?.quantity ?? 0;
+  const visibleCartQuantity = optimisticQuantity ?? cartQuantity;
 
   const animateProduct = async (target: "cart" | "wishlist") => {
     if (!product.images[0] || !productImageRef.current) {
@@ -72,11 +74,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
   };
 
   const handleAddToCart = async () => {
+    setOptimisticQuantity(cartQuantity + 1);
     setAddingToCart(true);
     try {
-      await animateProduct("cart");
       await addToCart(product);
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      await animateProduct("cart");
     } finally {
+      setOptimisticQuantity(null);
       setAddingToCart(false);
     }
   };
@@ -174,21 +179,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
           </span>
         </div>
         <div className="product-card__footer">
-          {cartQuantity > 0 ? (
+          {visibleCartQuantity > 0 ? (
             <div className="product-card__quantity-control" aria-label={`${product.name} cart quantity`}>
               <button
                 type="button"
                 disabled={addingToCart}
-                onClick={() => void handleQuantityChange(cartQuantity - 1)}
+                onClick={() => void handleQuantityChange(visibleCartQuantity - 1)}
                 aria-label={`Reduce ${product.name} quantity`}
               >
                 -
               </button>
-              <span>{cartQuantity}</span>
+              <span>{visibleCartQuantity}</span>
               <button
                 type="button"
                 disabled={addingToCart}
-                onClick={() => void handleQuantityChange(cartQuantity + 1)}
+                onClick={() => void handleQuantityChange(visibleCartQuantity + 1)}
                 aria-label={`Increase ${product.name} quantity`}
               >
                 +

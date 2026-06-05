@@ -621,7 +621,7 @@ const HomePage: React.FC = () => {
 
   return (
     <>
-      <section className="shell section">
+      <section className="shell section home-category-section">
         <div className="section-heading">
           <div>
             <span className="eyebrow">Categories</span>

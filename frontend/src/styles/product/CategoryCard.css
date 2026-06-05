@@ -92,28 +92,28 @@
 @media (max-width: 560px) {
   .category-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px 6px;
+    gap: 6px 5px;
   }
 
   .category-card {
     border-width: 1px;
-    border-radius: 8px;
-    box-shadow: 0 8px 18px rgba(56, 25, 18, 0.1);
+    border-radius: 6px;
+    box-shadow: 0 6px 14px rgba(56, 25, 18, 0.09);
   }
 
   .category-card__media {
-    aspect-ratio: 1.65 / 1;
+    aspect-ratio: 1.48 / 1;
   }
 
   .category-card__content {
-    min-height: 26px;
-    padding: 4px 3px;
+    min-height: 22px;
+    padding: 3px 2px;
     gap: 0;
   }
 
   .category-card__content h3 {
     max-width: 100%;
-    font-size: 8px;
+    font-size: 7px;
     line-height: 1.05;
     overflow-wrap: anywhere;
     word-break: break-word;
