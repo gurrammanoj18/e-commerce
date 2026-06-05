@@ -498,8 +498,10 @@
 }
 
 .home-discovery-section {
-  width: min(1200px, calc(100% - 32px));
-  margin: 0 auto;
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
 }
 
 .home-why-shop-section {
@@ -614,9 +616,10 @@
   .home-seasonal-section,
   .home-product-section,
   .home-discovery-section {
-    width: min(1200px, calc(100% - 22px));
-    margin-left: auto;
-    margin-right: auto;
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
   }
 
   .home-why-shop-section {
@@ -811,7 +814,10 @@
   }
 
   .home-discovery-section {
-    width: min(1200px, calc(100% - 22px));
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
   }
 
   .home-why-shop-section {

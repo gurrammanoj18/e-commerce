@@ -42,7 +42,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
   return (
     <Link
       className="category-card"
-      to={`/products?${categoryParams.toString()}`}
+      to={categoryKey === "services" ? "/services" : `/products?${categoryParams.toString()}`}
     >
       <div className="category-card__media">
         <img src={categoryImage} alt={category.name} className="category-card__image" />
