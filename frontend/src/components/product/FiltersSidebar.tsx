@@ -36,7 +36,7 @@ interface FiltersSidebarProps {
   onReset: () => void;
   onApply: () => void;
   showCategoryFilter?: boolean;
-  initialSection?: "category" | "brand" | "price" | "availability" | "discount";
+  initialSection?: "category" | "brand" | "price" | "availability" | "sort" | "discount";
 }
 
 const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
@@ -61,7 +61,9 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   showCategoryFilter = true,
   initialSection = "category",
 }) => {
-  const [activeSection, setActiveSection] = useState<"category" | "brand" | "price" | "availability" | "discount">(
+  const [activeSection, setActiveSection] = useState<
+    "category" | "brand" | "price" | "availability" | "sort" | "discount"
+  >(
     initialSection
   );
 
@@ -208,6 +210,28 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
       );
     }
 
+    if (activeSection === "sort") {
+      return (
+        <div className="filters-sidebar__panel">
+          <h4>Sort by</h4>
+          <select
+            className="filters-sidebar__select"
+            value={sortBy}
+            onChange={(event) => onSortChange(event.target.value as ProductSort)}
+          >
+            <option value="featured">Featured</option>
+            <option value="rating">Top rated</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="discount-high">Highest discount</option>
+            <option value="name-asc">Name: A to Z</option>
+            <option value="name-desc">Name: Z to A</option>
+            <option value="newest">New arrivals</option>
+          </select>
+        </div>
+      );
+    }
+
     return renderChoiceList(
       "Category",
       [
@@ -233,9 +257,11 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     onCategoryChange,
     onMinimumDiscountChange,
     onPriceRangeChange,
+    onSortChange,
     priceRange,
     selectedBrand,
     selectedCategory,
+    sortBy,
   ]);
 
   return (
@@ -254,6 +280,7 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
             { key: "brand", label: "Brand" },
             { key: "price", label: "Price Range" },
             { key: "availability", label: "Colour" },
+            { key: "sort", label: "Sort by" },
             { key: "discount", label: "Minimum Discount" },
           ].map((item) => (
             <button
@@ -269,23 +296,6 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
         <div className="filters-sidebar__content">
           {currentOptions}
-          <div className="filters-group">
-            <label htmlFor="sortBy">Sort by</label>
-            <select
-              id="sortBy"
-              value={sortBy}
-              onChange={(event) => onSortChange(event.target.value as ProductSort)}
-            >
-              <option value="featured">Featured</option>
-              <option value="rating">Top rated</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-              <option value="discount-high">Highest discount</option>
-              <option value="name-asc">Name: A to Z</option>
-              <option value="name-desc">Name: Z to A</option>
-              <option value="newest">New arrivals</option>
-            </select>
-          </div>
         </div>
       </div>
 

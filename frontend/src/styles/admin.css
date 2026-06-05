@@ -7,6 +7,10 @@
   max-width: none;
 }
 
+.admin-app-shell main {
+  padding-left: 260px;
+}
+
 .admin-app-shell .page-section {
   padding-left: 28px;
   padding-right: 28px;

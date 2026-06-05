@@ -81,32 +81,6 @@ const whyShopItems = [
   },
 ];
 
-const getItemsPerPage = () => {
-  if (typeof window === "undefined") {
-    return 8;
-  }
-
-  if (window.innerWidth <= 560) {
-    return 5;
-  }
-
-  if (window.innerWidth <= 820) {
-    return 4;
-  }
-
-  return 8;
-};
-
-const chunkProducts = (products: Product[], size: number) => {
-  const pages: Product[][] = [];
-
-  for (let index = 0; index < products.length; index += size) {
-    pages.push(products.slice(index, index + size));
-  }
-
-  return pages;
-};
-
 interface ProductCarouselSectionProps {
   title: string;
   eyebrow: string;
@@ -417,58 +391,6 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
   loading,
   seeAllTo,
 }) => {
-  const [itemsPerPage, setItemsPerPage] = useState(() =>
-    typeof window === "undefined" ? 4 : getItemsPerPage()
-  );
-  const [activePage, setActivePage] = useState(0);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-
-  useEffect(() => {
-    const handleResize = () => setItemsPerPage(getItemsPerPage());
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    setTouchStartX(event.touches[0]?.clientX ?? null);
-  };
-
-  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (touchStartX === null || productPages.length <= 1) {
-      return;
-    }
-
-    const touchEndX = event.changedTouches[0]?.clientX ?? touchStartX;
-    const deltaX = touchEndX - touchStartX;
-
-    if (Math.abs(deltaX) < 45) {
-      setTouchStartX(null);
-      return;
-    }
-
-    setActivePage((currentPage) => {
-      if (deltaX < 0) {
-        return Math.min(currentPage + 1, productPages.length - 1);
-      }
-
-      return Math.max(currentPage - 1, 0);
-    });
-
-    setTouchStartX(null);
-  };
-
-  const productPages = useMemo(
-    () => chunkProducts(products, itemsPerPage),
-    [itemsPerPage, products]
-  );
-
-  useEffect(() => {
-    setActivePage((currentPage) =>
-      Math.min(currentPage, Math.max(productPages.length - 1, 0))
-    );
-  }, [productPages.length]);
-
   return (
     <section className="shell section home-product-section">
       <div className="section-heading section-heading--carousel">
@@ -477,33 +399,6 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
           <h2>{title}</h2>
         </div>
         <div className="home-product-section__actions">
-          {!loading && productPages.length > 1 ? (
-            <div className="carousel-controls" aria-label={`${title} controls`}>
-              <button
-                type="button"
-                className="carousel-controls__button"
-                onClick={() => setActivePage((page) => Math.max(page - 1, 0))}
-                disabled={activePage === 0}
-                aria-label={`Show previous ${title.toLowerCase()}`}
-              >
-                ←
-              </button>
-              <span className="carousel-controls__status">
-                {activePage + 1}/{productPages.length}
-              </span>
-              <button
-                type="button"
-                className="carousel-controls__button"
-                onClick={() =>
-                  setActivePage((page) => Math.min(page + 1, productPages.length - 1))
-                }
-                disabled={activePage === productPages.length - 1}
-                aria-label={`Show more ${title.toLowerCase()}`}
-              >
-                →
-              </button>
-            </div>
-          ) : null}
           <Link className="home-product-section__see-all" to={seeAllTo}>
             See All
             <span aria-hidden="true">›</span>
@@ -514,23 +409,10 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
         <LoadingState />
       ) : (
         <div className="home-carousel">
-          <div
-            className="home-carousel__viewport"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div
-              className="home-carousel__track"
-              style={{ transform: `translateX(-${activePage * 100}%)` }}
-            >
-              {productPages.map((page, pageIndex) => (
-                <div key={`${title}-${pageIndex}`} className="home-carousel__slide">
-                  <div className="product-grid product-grid--carousel">
-                    {page.map((product) => (
-                      <ProductCard key={product.id} product={product} compact />
-                    ))}
-                  </div>
-                </div>
+          <div className="home-carousel__viewport">
+            <div className="product-grid product-grid--carousel">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} compact />
               ))}
             </div>
           </div>
@@ -613,7 +495,7 @@ const HomePage: React.FC = () => {
 
           return {
             ...section,
-            products: (sectionProducts.length ? sectionProducts : fallbackProducts).slice(0, Math.max(1, section.maxProducts || 8)),
+            products: sectionProducts.length ? sectionProducts : fallbackProducts,
           };
         }),
     [bestSellerProducts, fallbackProducts, products, recentlyAddedProducts]

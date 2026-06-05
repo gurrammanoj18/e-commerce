@@ -77,6 +77,8 @@ img {
 }
 
 .app-main--home {
+  max-width: 100%;
+  overflow-x: hidden;
   padding-top: 132px;
 }
 

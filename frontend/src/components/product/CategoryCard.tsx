@@ -32,15 +32,17 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
   const categoryKey = category.slug ?? category.name.toLowerCase().replace(/\s+/g, "-");
   const categoryImage = category.image || categoryImageMap[categoryKey] || homeUtilityImage;
   const categoryTarget = category.slug ?? category.name;
+  const categoryParams = new URLSearchParams({
+    discover: "1",
+    view: "collection",
+    category: categoryTarget,
+    title: category.name,
+  });
 
   return (
     <Link
       className="category-card"
-      to={
-        categoryKey === "services"
-          ? "/services"
-          : `/products?category=${encodeURIComponent(categoryTarget)}`
-      }
+      to={`/products?${categoryParams.toString()}`}
     >
       <div className="category-card__media">
         <img src={categoryImage} alt={category.name} className="category-card__image" />

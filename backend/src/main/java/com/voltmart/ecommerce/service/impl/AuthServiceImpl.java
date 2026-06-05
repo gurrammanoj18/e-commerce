@@ -23,6 +23,7 @@ import com.voltmart.ecommerce.repository.WishlistRepository;
 import com.voltmart.ecommerce.security.JwtService;
 import com.voltmart.ecommerce.service.AuthService;
 import com.voltmart.ecommerce.service.CurrentUserService;
+import com.voltmart.ecommerce.service.Msg91OtpService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -55,6 +56,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final CurrentUserService currentUserService;
+    private final Msg91OtpService msg91OtpService;
 
     @Override
     public AuthResponse adminLogin(AuthRequest request) {
@@ -137,6 +139,16 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public OtpRequestResponse requestOtp(OtpRequest request) {
         String phoneNumber = normalizePhoneNumber(request.phoneNumber());
+        if (msg91OtpService.isEnabled()) {
+            msg91OtpService.sendOtp(phoneNumber);
+            return new OtpRequestResponse(
+                    phoneNumber,
+                    "OTP sent successfully.",
+                    OTP_EXPIRY_SECONDS,
+                    null
+            );
+        }
+
         String otp = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
 
         loginOtpRepository.save(LoginOtp.builder()
@@ -160,6 +172,11 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse verifyOtp(OtpVerifyRequest request) {
         String phoneNumber = normalizePhoneNumber(request.phoneNumber());
+        if (msg91OtpService.isEnabled()) {
+            msg91OtpService.verifyOtp(phoneNumber, request.otp());
+            return issueLoginForPhoneNumber(phoneNumber);
+        }
+
         LoginOtp loginOtp = loginOtpRepository
                 .findFirstByPhoneNumberAndConsumedFalseOrderByCreatedAtDesc(phoneNumber)
                 .orElseThrow(() -> new BadRequestException("Please request a fresh OTP."));
@@ -279,5 +296,30 @@ public class AuthServiceImpl implements AuthService {
 
     private String normalizePhoneNumber(String value) {
         return value == null ? "" : value.replaceAll("\\D", "");
+    }
+
+    private AuthResponse issueLoginForPhoneNumber(String phoneNumber) {
+        User user = userRepository.findByPhoneNumber(phoneNumber)
+                .map(existingUser -> {
+                    if (existingUser.getRole() == Role.ROLE_ADMIN) {
+                        throw new BadRequestException("Use admin login for administrator access.");
+                    }
+                    return existingUser;
+                })
+                .orElseGet(() -> userRepository.save(User.builder()
+                        .fullName("")
+                        .phoneNumber(phoneNumber)
+                        .role(Role.ROLE_CUSTOMER)
+                        .walletBalance(BigDecimal.ZERO)
+                        .createdAt(LocalDateTime.now())
+                        .build()));
+
+        cartRepository.findByUserId(user.getId())
+                .orElseGet(() -> cartRepository.save(Cart.builder().user(user).build()));
+        wishlistRepository.findByUserId(user.getId())
+                .orElseGet(() -> wishlistRepository.save(Wishlist.builder().user(user).build()));
+
+        String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
+        return buildAuthResponse(user, token, true);
     }
 }

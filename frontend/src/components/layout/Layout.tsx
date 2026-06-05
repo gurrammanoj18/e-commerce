@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Footer from "./Footer";
 import SiteEntryPrompt from "../shared/SiteEntryPrompt";
 import Navbar from "./Navbar";
@@ -20,9 +20,6 @@ const Layout: React.FC = () => {
       <main className={isHomePage ? "app-main app-main--home" : "app-main app-main--page"}>
         <Outlet />
       </main>
-      <Link className="floating-support-button" to="/contact" aria-label="Contact support">
-        Support
-      </Link>
       <Footer />
       <SiteEntryPrompt />
     </div>

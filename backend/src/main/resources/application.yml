@@ -77,6 +77,13 @@ app:
     api-key: ${APP_EMAIL_API_KEY:}
     api-url: ${APP_EMAIL_API_URL:https://api.brevo.com/v3/smtp/email}
 
+  msg91:
+    enabled: ${APP_MSG91_ENABLED:false}
+    auth-key: ${APP_MSG91_AUTH_KEY:}
+    template-id: ${APP_MSG91_TEMPLATE_ID:}
+    country-code: ${APP_MSG91_COUNTRY_CODE:91}
+    base-url: ${APP_MSG91_BASE_URL:https://control.msg91.com}
+
 logging:
   level:
     org.springframework.security: INFO

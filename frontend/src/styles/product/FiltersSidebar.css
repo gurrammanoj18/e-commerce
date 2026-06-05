@@ -88,9 +88,15 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
   padding: 20px 22px 22px;
   background: #fff;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.filters-sidebar__content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .filters-sidebar__panel {
@@ -133,7 +139,13 @@
   max-height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.filters-sidebar__choice-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .filters-sidebar__choice-row {
@@ -205,6 +217,15 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
+}
+
+.filters-sidebar__select {
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
 }
 
 .filters-caption {

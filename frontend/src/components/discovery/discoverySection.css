@@ -1,6 +1,7 @@
 .discovery-section {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .discovery-hero {
@@ -170,8 +171,7 @@
 
 @media (max-width: 720px) {
   .discovery-section {
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
+    width: 100%;
   }
 
   .discovery-hero {

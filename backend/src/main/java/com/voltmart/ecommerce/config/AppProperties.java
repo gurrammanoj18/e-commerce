@@ -18,6 +18,7 @@ public class AppProperties {
     private final Seed seed = new Seed();
     private final Whatsapp whatsapp = new Whatsapp();
     private final Email email = new Email();
+    private final Msg91 msg91 = new Msg91();
 
     @Getter
     @Setter
@@ -73,5 +74,15 @@ public class AppProperties {
         private String fromName = "VoltMart";
         private String apiKey;
         private String apiUrl = "https://api.brevo.com/v3/smtp/email";
+    }
+
+    @Getter
+    @Setter
+    public static class Msg91 {
+        private boolean enabled;
+        private String authKey;
+        private String templateId;
+        private String countryCode = "91";
+        private String baseUrl = "https://control.msg91.com";
     }
 }
