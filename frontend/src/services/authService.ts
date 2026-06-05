@@ -11,6 +11,21 @@ export const googleLogin = async (payload: { credential: string }) => {
   return response.data;
 };
 
+export const requestLoginOtp = async (payload: { phoneNumber: string }) => {
+  const response = await api.post<{
+    phoneNumber: string;
+    message: string;
+    expiresInSeconds: number;
+    demoOtp?: string;
+  }>("/auth/otp/request", payload);
+  return response.data;
+};
+
+export const verifyLoginOtp = async (payload: { phoneNumber: string; otp: string }) => {
+  const response = await api.post<AuthResponse>("/auth/otp/verify", payload);
+  return response.data;
+};
+
 export const completeProfile = async (payload: {
   fullName: string;
   phoneNumber: string;

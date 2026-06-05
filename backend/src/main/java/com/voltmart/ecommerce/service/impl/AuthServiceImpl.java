@@ -2,17 +2,22 @@ package com.voltmart.ecommerce.service.impl;
 
 import com.voltmart.ecommerce.dto.auth.AuthRequest;
 import com.voltmart.ecommerce.dto.auth.AuthResponse;
+import com.voltmart.ecommerce.config.AppProperties;
+import com.voltmart.ecommerce.dto.auth.GoogleAuthRequest;
+import com.voltmart.ecommerce.dto.auth.OtpRequest;
+import com.voltmart.ecommerce.dto.auth.OtpRequestResponse;
+import com.voltmart.ecommerce.dto.auth.OtpVerifyRequest;
 import com.voltmart.ecommerce.entity.Cart;
+import com.voltmart.ecommerce.entity.LoginOtp;
 import com.voltmart.ecommerce.entity.User;
 import com.voltmart.ecommerce.entity.Wishlist;
-import com.voltmart.ecommerce.config.AppProperties;
 import com.voltmart.ecommerce.dto.auth.DeliveryPreferenceRequest;
-import com.voltmart.ecommerce.dto.auth.GoogleAuthRequest;
 import com.voltmart.ecommerce.dto.auth.ProfileCompletionRequest;
 import com.voltmart.ecommerce.entity.enums.Role;
 import com.voltmart.ecommerce.exception.BadRequestException;
 import com.voltmart.ecommerce.mapper.EntityMapper;
 import com.voltmart.ecommerce.repository.CartRepository;
+import com.voltmart.ecommerce.repository.LoginOtpRepository;
 import com.voltmart.ecommerce.repository.UserRepository;
 import com.voltmart.ecommerce.repository.WishlistRepository;
 import com.voltmart.ecommerce.security.JwtService;
@@ -21,6 +26,7 @@ import com.voltmart.ecommerce.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,20 +34,26 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
+    private static final int OTP_EXPIRY_SECONDS = 300;
+    private static final int MAX_OTP_ATTEMPTS = 5;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
+    private final LoginOtpRepository loginOtpRepository;
     private final CartRepository cartRepository;
     private final WishlistRepository wishlistRepository;
     private final JwtService jwtService;
     private final EntityMapper entityMapper;
     private final AppProperties appProperties;
     private final AuthenticationManager authenticationManager;
+    private final PasswordEncoder passwordEncoder;
     private final CurrentUserService currentUserService;
 
     @Override
@@ -90,8 +102,8 @@ public class AuthServiceImpl implements AuthService {
         if (!"true".equalsIgnoreCase(String.valueOf(tokenInfo.get("email_verified")))) {
             throw new BadRequestException("Google account email is not verified.");
         }
+
         String googleEmail = tokenInfo.get("email") == null ? null : String.valueOf(tokenInfo.get("email"));
-        String googleName = tokenInfo.get("name") == null ? null : String.valueOf(tokenInfo.get("name"));
         if (!StringUtils.hasText(googleEmail)) {
             throw new BadRequestException("Google account did not provide an email address.");
         }
@@ -102,11 +114,87 @@ public class AuthServiceImpl implements AuthService {
                     if (existingUser.getRole() == Role.ROLE_ADMIN) {
                         throw new BadRequestException("Use admin login for administrator access.");
                     }
-                    return userRepository.save(existingUser);
+                    return existingUser;
                 })
                 .orElseGet(() -> userRepository.save(User.builder()
                         .fullName("")
                         .email(email)
+                        .role(Role.ROLE_CUSTOMER)
+                        .walletBalance(BigDecimal.ZERO)
+                        .createdAt(LocalDateTime.now())
+                        .build()));
+
+        cartRepository.findByUserId(user.getId())
+                .orElseGet(() -> cartRepository.save(Cart.builder().user(user).build()));
+        wishlistRepository.findByUserId(user.getId())
+                .orElseGet(() -> wishlistRepository.save(Wishlist.builder().user(user).build()));
+
+        String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
+        return buildAuthResponse(user, token, true);
+    }
+
+    @Override
+    @Transactional
+    public OtpRequestResponse requestOtp(OtpRequest request) {
+        String phoneNumber = normalizePhoneNumber(request.phoneNumber());
+        String otp = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
+
+        loginOtpRepository.save(LoginOtp.builder()
+                .phoneNumber(phoneNumber)
+                .otpHash(passwordEncoder.encode(otp))
+                .expiresAt(LocalDateTime.now().plusSeconds(OTP_EXPIRY_SECONDS))
+                .consumed(false)
+                .attemptCount(0)
+                .createdAt(LocalDateTime.now())
+                .build());
+
+        return new OtpRequestResponse(
+                phoneNumber,
+                "OTP generated successfully.",
+                OTP_EXPIRY_SECONDS,
+                otp
+        );
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse verifyOtp(OtpVerifyRequest request) {
+        String phoneNumber = normalizePhoneNumber(request.phoneNumber());
+        LoginOtp loginOtp = loginOtpRepository
+                .findFirstByPhoneNumberAndConsumedFalseOrderByCreatedAtDesc(phoneNumber)
+                .orElseThrow(() -> new BadRequestException("Please request a fresh OTP."));
+
+        if (loginOtp.getExpiresAt().isBefore(LocalDateTime.now())) {
+            loginOtp.setConsumed(true);
+            loginOtpRepository.save(loginOtp);
+            throw new BadRequestException("OTP expired. Please request a new one.");
+        }
+
+        if (loginOtp.getAttemptCount() >= MAX_OTP_ATTEMPTS) {
+            loginOtp.setConsumed(true);
+            loginOtpRepository.save(loginOtp);
+            throw new BadRequestException("Too many incorrect attempts. Please request a new OTP.");
+        }
+
+        if (!passwordEncoder.matches(request.otp(), loginOtp.getOtpHash())) {
+            loginOtp.setAttemptCount(loginOtp.getAttemptCount() + 1);
+            loginOtpRepository.save(loginOtp);
+            throw new BadRequestException("Invalid OTP.");
+        }
+
+        loginOtp.setConsumed(true);
+        loginOtpRepository.save(loginOtp);
+
+        User user = userRepository.findByPhoneNumber(phoneNumber)
+                .map(existingUser -> {
+                    if (existingUser.getRole() == Role.ROLE_ADMIN) {
+                        throw new BadRequestException("Use admin login for administrator access.");
+                    }
+                    return existingUser;
+                })
+                .orElseGet(() -> userRepository.save(User.builder()
+                        .fullName("")
+                        .phoneNumber(phoneNumber)
                         .role(Role.ROLE_CUSTOMER)
                         .walletBalance(BigDecimal.ZERO)
                         .createdAt(LocalDateTime.now())
@@ -187,5 +275,9 @@ public class AuthServiceImpl implements AuthService {
 
     private String trimToNull(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private String normalizePhoneNumber(String value) {
+        return value == null ? "" : value.replaceAll("\\D", "");
     }
 }

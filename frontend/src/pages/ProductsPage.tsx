@@ -8,6 +8,13 @@ import Pagination from "../components/shared/Pagination";
 import { useProducts } from "../contexts/ProductContext";
 import { ProductAvailabilityFilter, ProductSort } from "../types/store";
 
+const toDisplayLabel = (value: string) =>
+  value
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
 const ProductsPage: React.FC = () => {
   const {
     availableBrands,
@@ -51,13 +58,25 @@ const ProductsPage: React.FC = () => {
       Boolean(searchParams.get("promo")),
     [searchParams],
   );
+  const isCollectionMode = searchParams.get("view") === "collection";
+  const collectionTitle = useMemo(() => {
+    const title =
+      searchParams.get("title") ||
+      searchParams.get("category") ||
+      searchParams.get("promo") ||
+      searchParams.get("search") ||
+      "Products";
+
+    return `Buy ${toDisplayLabel(title)} Online`;
+  }, [searchParams]);
 
   useEffect(() => {
     const nextSearch = searchParams.get("search") ?? "";
     const nextCategory = searchParams.get("category") ?? "All";
     const nextBrand = searchParams.get("brand") ?? "All";
     const nextPromo = searchParams.get("promo") ?? "All";
-    const signature = `${isDiscoverMode}|${nextSearch}|${nextCategory}|${nextBrand}|${nextPromo}`;
+    const nextSort = (searchParams.get("sort") ?? "featured") as ProductSort;
+    const signature = `${isDiscoverMode}|${nextSearch}|${nextCategory}|${nextBrand}|${nextPromo}|${nextSort}`;
 
     if (appliedQuerySignature.current === signature) {
       return;
@@ -68,10 +87,12 @@ const ProductsPage: React.FC = () => {
       setSelectedCategory(nextCategory);
       setSelectedBrand(nextBrand);
       setSelectedPromoTag(nextPromo);
+      setSortBy(nextSort);
       setDraftFilters((current) => ({
         ...current,
         category: nextCategory,
         brand: nextBrand,
+        sortBy: nextSort,
       }));
     } else {
       resetFilters();
@@ -86,6 +107,7 @@ const ProductsPage: React.FC = () => {
     setSelectedBrand,
     setSelectedCategory,
     setSelectedPromoTag,
+    setSortBy,
   ]);
 
   useEffect(() => {
@@ -173,7 +195,7 @@ const ProductsPage: React.FC = () => {
         </>
       ) : null}
 
-      <section className="shell section page-section">
+      <section className={`shell section page-section ${isCollectionMode ? "page-section--collection" : ""}`}>
         {!isDiscoverMode ? (
           <div className="page-header">
             <span className="eyebrow">Product listing</span>
@@ -182,7 +204,7 @@ const ProductsPage: React.FC = () => {
           </div>
         ) : null}
 
-        {isDiscoverMode ? (
+        {isDiscoverMode && !isCollectionMode ? (
           <div className="products-filter-toggle-row">
             {draftFilters.category !== "All" ? (
               <div className="products-mobile-category-summary">
@@ -208,7 +230,7 @@ const ProductsPage: React.FC = () => {
           </div>
         ) : null}
 
-        {isDiscoverMode ? (
+        {isDiscoverMode && !isCollectionMode ? (
           <div className={`products-filter-panel ${isFilterOpen ? "is-open" : ""}`}>
             <FiltersSidebar
               brands={availableBrands}
@@ -260,6 +282,23 @@ const ProductsPage: React.FC = () => {
 
         {loading ? (
           <LoadingState cardCount={8} />
+        ) : isCollectionMode ? (
+          <div className="products-collection-page">
+            <div className="products-collection-page__header">
+              <h1>{collectionTitle}</h1>
+            </div>
+            <div className="product-grid products-collection-grid">
+              {filteredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} compact />
+              ))}
+            </div>
+            {!filteredProducts.length && (
+              <div className="store-card empty-state">
+                <h3>No products matched this collection.</h3>
+                <p>Try another product group from the home page.</p>
+              </div>
+            )}
+          </div>
         ) : isDiscoverMode ? (
           <div className="listing-layout">
             <div className="listing-layout__sidebar">

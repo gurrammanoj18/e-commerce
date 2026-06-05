@@ -896,6 +896,17 @@
   }
 }
 
+@media (min-width: 821px) and (max-width: 1440px) {
+  .floating-support-button {
+    left: 16px;
+    bottom: 16px;
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent-strong);
+    mix-blend-mode: normal;
+  }
+}
+
 @media (max-width: 820px) {
   .site-header--solid .site-nav__links a,
   .site-header--solid .site-nav__links .delivery-switch {

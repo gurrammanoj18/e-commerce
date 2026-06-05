@@ -4,6 +4,9 @@ import com.voltmart.ecommerce.dto.auth.AuthRequest;
 import com.voltmart.ecommerce.dto.auth.AuthResponse;
 import com.voltmart.ecommerce.dto.auth.DeliveryPreferenceRequest;
 import com.voltmart.ecommerce.dto.auth.GoogleAuthRequest;
+import com.voltmart.ecommerce.dto.auth.OtpRequest;
+import com.voltmart.ecommerce.dto.auth.OtpRequestResponse;
+import com.voltmart.ecommerce.dto.auth.OtpVerifyRequest;
 import com.voltmart.ecommerce.dto.auth.ProfileCompletionRequest;
 import com.voltmart.ecommerce.service.AuthService;
 import jakarta.validation.Valid;
@@ -25,6 +28,16 @@ public class AuthController {
     @PostMapping("/google")
     public AuthResponse googleLogin(@Valid @RequestBody GoogleAuthRequest request) {
         return authService.googleLogin(request);
+    }
+
+    @PostMapping("/otp/request")
+    public OtpRequestResponse requestOtp(@Valid @RequestBody OtpRequest request) {
+        return authService.requestOtp(request);
+    }
+
+    @PostMapping("/otp/verify")
+    public AuthResponse verifyOtp(@Valid @RequestBody OtpVerifyRequest request) {
+        return authService.verifyOtp(request);
     }
 
     @PatchMapping("/profile")

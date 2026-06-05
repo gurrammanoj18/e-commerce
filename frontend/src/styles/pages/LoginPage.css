@@ -115,7 +115,7 @@
   line-height: 1.6;
 }
 
-.auth-card__google {
+.auth-card__otp-form {
   display: grid;
   gap: 0.85rem;
 }
@@ -133,23 +133,19 @@
   min-height: 44px;
 }
 
-.auth-card__google-loading,
 .auth-card__signin-overlay {
+  position: absolute;
+  inset: 0;
   min-height: 46px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
-  color: #111827;
-  font-weight: 700;
-}
-
-.auth-card__signin-overlay {
-  position: absolute;
-  inset: 0;
   border: 1px solid rgba(17, 24, 39, 0.12);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.96);
+  color: #111827;
+  font-weight: 700;
   box-shadow: 0 12px 32px rgba(17, 24, 39, 0.12);
 }
 
@@ -160,6 +156,56 @@
   border-top-color: #ff7a00;
   border-radius: 50%;
   animation: auth-spin 0.8s linear infinite;
+}
+
+.auth-card__divider {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.auth-card__divider::before,
+.auth-card__divider::after {
+  content: "";
+  height: 1px;
+  background: rgba(17, 24, 39, 0.14);
+}
+
+.auth-card__otp-form label {
+  display: grid;
+  gap: 0.45rem;
+  color: #111827;
+  font-weight: 700;
+}
+
+.auth-card__otp-form input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid rgba(17, 24, 39, 0.16);
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+}
+
+.auth-card__otp-target,
+.auth-card__otp-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.auth-card__otp-target {
+  justify-content: space-between;
+  color: #4b5563;
+  font-weight: 700;
+}
+
+.auth-card__otp-actions {
+  flex-wrap: wrap;
 }
 
 .auth-card__note {
@@ -247,12 +293,11 @@
     line-height: 1.25;
   }
 
-  .auth-card__google {
+  .auth-card__otp-form {
     gap: 0.42rem;
   }
 
   .auth-card__google-button,
-  .auth-card__google-loading,
   .auth-card__signin-overlay {
     min-height: 38px;
     font-size: 0.72rem;
@@ -279,6 +324,20 @@
   .auth-card__spinner {
     width: 15px;
     height: 15px;
+  }
+
+  .auth-card__otp-form input,
+  .auth-card__otp-form .button,
+  .auth-card__otp-form .link-button {
+    min-height: 38px;
+    font-size: 0.72rem;
+  }
+
+  .auth-card__otp-target,
+  .auth-card__otp-actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.38rem;
   }
 
 }

@@ -10,10 +10,11 @@ import { formatCurrency } from "../../utils/currency";
 
 interface ProductCardProps {
   product: Product;
+  compact?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { addToCart } = useCart();
+const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) => {
+  const { addToCart, items, updateQuantity } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { animateProductToTarget } = useCollectionAnimation();
   const [addingToCart, setAddingToCart] = useState(false);
@@ -55,6 +56,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       ? "Low stock"
       : "In stock";
   const savedToWishlist = isInWishlist(product.id);
+  const cartItem = items.find((item) => item.product.id === product.id);
+  const cartQuantity = cartItem?.quantity ?? 0;
 
   const animateProduct = async (target: "cart" | "wishlist") => {
     if (!product.images[0] || !productImageRef.current) {
@@ -78,6 +81,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     }
   };
 
+  const handleQuantityChange = async (quantity: number) => {
+    setAddingToCart(true);
+    try {
+      await updateQuantity(product.id, quantity);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
   const handleToggleWishlist = async () => {
     setWishlistPending(true);
     try {
@@ -91,7 +103,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
 
   return (
-    <article className="store-card product-card">
+    <article className={`store-card product-card ${compact ? "product-card--compact" : ""}`}>
       <Link
         className="product-card__media"
         to={`/products/${product.slug}`}
@@ -162,13 +174,35 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </span>
         </div>
         <div className="product-card__footer">
-          <button
-            type="button"
-            disabled={product.availability === "out-of-stock" || addingToCart}
-            onClick={() => void handleAddToCart()}
-          >
-            {product.availability === "out-of-stock" ? "Unavailable" : "Add to cart"}
-          </button>
+          {cartQuantity > 0 ? (
+            <div className="product-card__quantity-control" aria-label={`${product.name} cart quantity`}>
+              <button
+                type="button"
+                disabled={addingToCart}
+                onClick={() => void handleQuantityChange(cartQuantity - 1)}
+                aria-label={`Reduce ${product.name} quantity`}
+              >
+                -
+              </button>
+              <span>{cartQuantity}</span>
+              <button
+                type="button"
+                disabled={addingToCart}
+                onClick={() => void handleQuantityChange(cartQuantity + 1)}
+                aria-label={`Increase ${product.name} quantity`}
+              >
+                +
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={product.availability === "out-of-stock" || addingToCart}
+              onClick={() => void handleAddToCart()}
+            >
+              {product.availability === "out-of-stock" ? "Unavailable" : compact ? "ADD" : "Add to cart"}
+            </button>
+          )}
           <button
             className="product-card__share"
             type="button"

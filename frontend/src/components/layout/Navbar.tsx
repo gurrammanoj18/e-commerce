@@ -246,9 +246,6 @@ const Navbar: React.FC = () => {
               <Link to="/" onClick={() => setIsMenuOpen(false)}>
                 Home
               </Link>
-              <Link to="/bulk-order" onClick={() => setIsMenuOpen(false)}>
-                Bulk Orders
-              </Link>
               {promoNavigationItems.length ? (
                 <>
                   <button
@@ -350,6 +347,14 @@ const Navbar: React.FC = () => {
                   to="/services"
                 >
                   Services
+                </NavLink>
+                <NavLink
+                  className={({ isActive }) =>
+                    `site-category-strip__item ${isActive ? "is-active" : ""}`.trim()
+                  }
+                  to="/bulk-order"
+                >
+                  Bulk Orders
                 </NavLink>
               </div>
             </div>

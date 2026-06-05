@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/pages/LoginPage.css";
 import "../styles/shared/LoadingState.css";
@@ -23,15 +23,35 @@ declare global {
   }
 }
 
+const digitsOnly = (value: string, maxLength: number) =>
+  value.replace(/\D/g, "").slice(0, maxLength);
+
 const LoginPage: React.FC = () => {
-  const { isAuthenticated, googleLogin } = useAuth();
+  const { googleLogin, isAuthenticated, requestLoginOtp, verifyLoginOtp } = useAuth();
   const navigate = useNavigate();
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otp, setOtp] = useState("");
+  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState("");
+  const [demoOtp, setDemoOtp] = useState("");
   const [error, setError] = useState("");
-  const [signingIn, setSigningIn] = useState(false);
+  const [requestingOtp, setRequestingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [signingInWithGoogle, setSigningInWithGoogle] = useState(false);
   const [googleButtonReady, setGoogleButtonReady] = useState(false);
   const googleClientId =
     window.__APP_CONFIG__?.REACT_APP_GOOGLE_CLIENT_ID ||
     process.env.REACT_APP_GOOGLE_CLIENT_ID;
+
+  const otpRequested = Boolean(verifiedPhoneNumber);
+  const canRequestOtp = phoneNumber.length === 10 && !requestingOtp;
+  const canVerifyOtp = otp.length === 6 && !verifyingOtp;
+  const maskedPhoneNumber = useMemo(
+    () =>
+      verifiedPhoneNumber
+        ? `${verifiedPhoneNumber.slice(0, 2)}******${verifiedPhoneNumber.slice(-2)}`
+        : "",
+    [verifiedPhoneNumber],
+  );
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -60,11 +80,11 @@ const LoginPage: React.FC = () => {
         client_id: googleClientId,
         callback: async ({ credential }) => {
           setError("");
-          setSigningIn(true);
+          setSigningInWithGoogle(true);
           const result = await googleLogin(credential);
           if (result.error) {
             setError(result.error);
-            setSigningIn(false);
+            setSigningInWithGoogle(false);
           }
         },
       });
@@ -97,33 +117,141 @@ const LoginPage: React.FC = () => {
     return () => {
       script.onload = null;
     };
-  }, [googleClientId, googleLogin, navigate]);
+  }, [googleClientId, googleLogin]);
+
+  const submitOtpRequest = async () => {
+    setError("");
+    setDemoOtp("");
+
+    if (phoneNumber.length !== 10) {
+      setError("Enter a valid 10 digit mobile number.");
+      return;
+    }
+
+    setRequestingOtp(true);
+    const result = await requestLoginOtp(phoneNumber);
+    setRequestingOtp(false);
+
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    setVerifiedPhoneNumber(result.data?.phoneNumber || phoneNumber);
+    setDemoOtp(result.data?.demoOtp || "");
+    setOtp("");
+  };
+
+  const handleRequestOtp = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await submitOtpRequest();
+  };
+
+  const handleVerifyOtp = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+
+    if (!verifiedPhoneNumber || otp.length !== 6) {
+      setError("Enter the 6 digit OTP.");
+      return;
+    }
+
+    setVerifyingOtp(true);
+    const result = await verifyLoginOtp(verifiedPhoneNumber, otp);
+    setVerifyingOtp(false);
+
+    if (result.error) {
+      setError(result.error);
+    }
+  };
+
+  const editPhoneNumber = () => {
+    setVerifiedPhoneNumber("");
+    setOtp("");
+    setDemoOtp("");
+    setError("");
+  };
 
   return (
     <section className="shell section page-section auth-page">
       <div className="store-card auth-card">
         <span className="eyebrow">Login</span>
-        <h1>Continue with Google</h1>
-        <p>Sign in to access saved carts, checkout faster, and track orders.</p>
+        <h1>Sign in to VoltMart</h1>
+        <p>Continue with Google or use your mobile number to get an OTP.</p>
+
         {error ? <p className="form-error">{error}</p> : null}
+
         {googleClientId ? (
-          <div className="auth-card__google-button" aria-busy={signingIn || !googleButtonReady}>
+          <div className="auth-card__google-button" aria-busy={signingInWithGoogle || !googleButtonReady}>
             <div id="google-signin-button" />
-            {!googleButtonReady && !signingIn ? (
+            {!googleButtonReady && !signingInWithGoogle ? (
               <div className="auth-card__signin-overlay">
                 <span className="auth-card__spinner" aria-hidden="true" />
                 Preparing Google...
               </div>
             ) : null}
-            {signingIn ? (
+            {signingInWithGoogle ? (
               <div className="auth-card__signin-overlay">
                 <span className="auth-card__spinner" aria-hidden="true" />
                 Signing in...
               </div>
             ) : null}
           </div>
+        ) : null}
+
+        <div className="auth-card__divider">
+          <span>or login with OTP</span>
+        </div>
+
+        {!otpRequested ? (
+          <form className="auth-card__otp-form" onSubmit={handleRequestOtp}>
+            <label>
+              Mobile number
+              <input
+                inputMode="numeric"
+                autoComplete="tel"
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(digitsOnly(event.target.value, 10))}
+                placeholder="Enter 10 digit mobile number"
+              />
+            </label>
+            <button className="button" type="submit" disabled={!canRequestOtp}>
+              {requestingOtp ? "Sending..." : "Send OTP"}
+            </button>
+          </form>
         ) : (
-          <p className="form-error">Google login is not configured yet.</p>
+          <form className="auth-card__otp-form" onSubmit={handleVerifyOtp}>
+            <div className="auth-card__otp-target">
+              <span>OTP sent to {maskedPhoneNumber}</span>
+              <button type="button" className="link-button" onClick={editPhoneNumber}>
+                Edit
+              </button>
+            </div>
+            <label>
+              OTP
+              <input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={otp}
+                onChange={(event) => setOtp(digitsOnly(event.target.value, 6))}
+                placeholder="Enter 6 digit OTP"
+              />
+            </label>
+            {demoOtp ? <p className="auth-card__note">Demo OTP: {demoOtp}</p> : null}
+            <div className="auth-card__otp-actions">
+              <button className="button" type="submit" disabled={!canVerifyOtp}>
+                {verifyingOtp ? "Verifying..." : "Verify OTP"}
+              </button>
+              <button
+                type="button"
+                className="link-button"
+                disabled={requestingOtp}
+                onClick={() => void submitOtpRequest()}
+              >
+                {requestingOtp ? "Sending..." : "Resend"}
+              </button>
+            </div>
+          </form>
         )}
       </div>
     </section>

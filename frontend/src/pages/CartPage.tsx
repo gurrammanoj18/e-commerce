@@ -99,6 +99,7 @@ const CartPage: React.FC = () => {
                   <div className="cart-item__meta">
                     <QuantitySelector
                       value={item.quantity}
+                      min={0}
                       onChange={(value) => void updateQuantity(item.product.id, value)}
                     />
                     <strong className="cart-item__price">

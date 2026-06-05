@@ -82,7 +82,19 @@ const whyShopItems = [
 ];
 
 const getItemsPerPage = () => {
-  return 4;
+  if (typeof window === "undefined") {
+    return 8;
+  }
+
+  if (window.innerWidth <= 560) {
+    return 5;
+  }
+
+  if (window.innerWidth <= 820) {
+    return 4;
+  }
+
+  return 8;
 };
 
 const chunkProducts = (products: Product[], size: number) => {
@@ -100,6 +112,7 @@ interface ProductCarouselSectionProps {
   eyebrow: string;
   products: Product[];
   loading: boolean;
+  seeAllTo: string;
 }
 
 interface HomeSectionDefinition {
@@ -110,6 +123,24 @@ interface HomeSectionDefinition {
   displayOrder: number;
   maxProducts: number;
 }
+
+const buildSectionLink = (section: HomeSectionDefinition) => {
+  const params = new URLSearchParams({
+    discover: "1",
+    view: "collection",
+    title: section.eyebrow,
+  });
+
+  if (section.tags?.[0]) {
+    params.set("promo", section.tags[0]);
+  } else if (section.sectionKey === "recently-added") {
+    params.set("sort", "newest");
+  } else if (section.sectionKey === "best-selling") {
+    params.set("sort", "featured");
+  }
+
+  return `/products?${params.toString()}`;
+};
 
 const promoBanners = [bannerOne, bannerTwo, bannerThree];
 
@@ -384,6 +415,7 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
   eyebrow,
   products,
   loading,
+  seeAllTo,
 }) => {
   const [itemsPerPage, setItemsPerPage] = useState(() =>
     typeof window === "undefined" ? 4 : getItemsPerPage()
@@ -438,39 +470,45 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
   }, [productPages.length]);
 
   return (
-    <section className="shell section">
+    <section className="shell section home-product-section">
       <div className="section-heading section-heading--carousel">
         <div>
           <span className="eyebrow">{eyebrow}</span>
-          <h2>{title}</h2>
+          <h2>{eyebrow}</h2>
         </div>
-        {!loading && productPages.length > 1 ? (
-          <div className="carousel-controls" aria-label={`${title} controls`}>
-            <button
-              type="button"
-              className="carousel-controls__button"
-              onClick={() => setActivePage((page) => Math.max(page - 1, 0))}
-              disabled={activePage === 0}
-              aria-label={`Show previous ${title.toLowerCase()}`}
-            >
-              ←
-            </button>
-            <span className="carousel-controls__status">
-              {activePage + 1}/{productPages.length}
-            </span>
-            <button
-              type="button"
-              className="carousel-controls__button"
-              onClick={() =>
-                setActivePage((page) => Math.min(page + 1, productPages.length - 1))
-              }
-              disabled={activePage === productPages.length - 1}
-              aria-label={`Show more ${title.toLowerCase()}`}
-            >
-              →
-            </button>
-          </div>
-        ) : null}
+        <div className="home-product-section__actions">
+          {!loading && productPages.length > 1 ? (
+            <div className="carousel-controls" aria-label={`${title} controls`}>
+              <button
+                type="button"
+                className="carousel-controls__button"
+                onClick={() => setActivePage((page) => Math.max(page - 1, 0))}
+                disabled={activePage === 0}
+                aria-label={`Show previous ${title.toLowerCase()}`}
+              >
+                ←
+              </button>
+              <span className="carousel-controls__status">
+                {activePage + 1}/{productPages.length}
+              </span>
+              <button
+                type="button"
+                className="carousel-controls__button"
+                onClick={() =>
+                  setActivePage((page) => Math.min(page + 1, productPages.length - 1))
+                }
+                disabled={activePage === productPages.length - 1}
+                aria-label={`Show more ${title.toLowerCase()}`}
+              >
+                →
+              </button>
+            </div>
+          ) : null}
+          <Link className="home-product-section__see-all" to={seeAllTo}>
+            See All
+            <span aria-hidden="true">›</span>
+          </Link>
+        </div>
       </div>
       {loading ? (
         <LoadingState />
@@ -489,7 +527,7 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
                 <div key={`${title}-${pageIndex}`} className="home-carousel__slide">
                   <div className="product-grid product-grid--carousel">
                     {page.map((product) => (
-                      <ProductCard key={product.id} product={product} />
+                      <ProductCard key={product.id} product={product} compact />
                     ))}
                   </div>
                 </div>
@@ -606,6 +644,7 @@ const HomePage: React.FC = () => {
           title={section.title}
           products={section.products}
           loading={loading}
+          seeAllTo={buildSectionLink(section)}
         />
       ))}
 
@@ -618,6 +657,7 @@ const HomePage: React.FC = () => {
           title={section.title}
           products={section.products}
           loading={loading}
+          seeAllTo={buildSectionLink(section)}
         />
       ))}
 
@@ -630,6 +670,7 @@ const HomePage: React.FC = () => {
           title={section.title}
           products={section.products}
           loading={loading}
+          seeAllTo={buildSectionLink(section)}
         />
       ))}
 

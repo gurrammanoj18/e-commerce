@@ -7,7 +7,9 @@ import {
   adminLogin as adminLoginRequest,
   completeProfile as completeProfileRequest,
   googleLogin as googleLoginRequest,
+  requestLoginOtp as requestLoginOtpRequest,
   updateDeliveryPreference as updateDeliveryPreferenceRequest,
+  verifyLoginOtp as verifyLoginOtpRequest,
 } from "../services/authService";
 import PincodeServiceChecker from "../components/shared/PincodeServiceChecker";
 
@@ -27,6 +29,8 @@ interface AuthContextValue {
   isAdmin: boolean;
   loading: boolean;
   googleLogin: (credential: string) => Promise<AuthActionResult>;
+  requestLoginOtp: (phoneNumber: string) => Promise<AuthActionResult<{ phoneNumber: string; demoOtp?: string }>>;
+  verifyLoginOtp: (phoneNumber: string, otp: string) => Promise<AuthActionResult>;
   adminLogin: (email: string, password: string) => Promise<AuthActionResult>;
   completeProfile: (payload: ProfileCompletionPayload) => Promise<AuthActionResult>;
   updateDeliveryPreference: (mode: DeliveryMode) => Promise<AuthActionResult>;
@@ -301,7 +305,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const googleLogin = async (credential: string) => {
     const processingId = startProcessing({
       title: "Signing you in",
-      message: "Verifying your account and preparing your session...",
+      message: "Verifying your Google account and preparing your session...",
     });
     try {
       const response = await googleLoginRequest({ credential });
@@ -314,6 +318,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (error) {
       return {
         error: extractErrorMessage(error, "Unable to log in with Google right now."),
+      };
+    } finally {
+      stopProcessing(processingId);
+    }
+  };
+
+  const requestLoginOtp = async (phoneNumber: string) => {
+    const processingId = startProcessing({
+      title: "Sending OTP",
+      message: "Preparing your secure login code...",
+    });
+    try {
+      const response = await requestLoginOtpRequest({ phoneNumber });
+      return {
+        data: {
+          phoneNumber: response.phoneNumber,
+          demoOtp: response.demoOtp,
+        },
+      };
+    } catch (error) {
+      return {
+        error: extractErrorMessage(error, "Unable to send OTP right now."),
+      };
+    } finally {
+      stopProcessing(processingId);
+    }
+  };
+
+  const verifyLoginOtp = async (phoneNumber: string, otp: string) => {
+    const processingId = startProcessing({
+      title: "Signing you in",
+      message: "Verifying your OTP and preparing your account...",
+    });
+    try {
+      const response = await verifyLoginOtpRequest({ phoneNumber, otp });
+      persistAuth(response.user, response.token, {
+        promptDeliveryPreference: true,
+        requireProfileCompletion: response.requiresProfileCompletion,
+      });
+
+      return {};
+    } catch (error) {
+      return {
+        error: extractErrorMessage(error, "Unable to verify OTP right now."),
       };
     } finally {
       stopProcessing(processingId);
@@ -442,6 +490,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAdmin: user?.role === "ROLE_ADMIN",
         loading,
         googleLogin,
+        requestLoginOtp,
+        verifyLoginOtp,
         adminLogin,
         completeProfile,
         updateDeliveryPreference,
