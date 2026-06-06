@@ -212,7 +212,7 @@
   height: 186px;
   min-height: 186px;
   padding: 0;
-  border: 1px solid #dfe5ee;
+  border: 0;
   border-radius: 8px;
   background: #fff;
   overflow: visible;
@@ -270,41 +270,47 @@
 
 .home-product-section .product-grid--carousel .product-card__pricing {
   order: -1;
-  display: block;
+  display: flex;
+  min-width: 0;
 }
 
 .home-product-section .product-grid--carousel .product-card__pricing > div {
-  align-items: center;
-  gap: 4px 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
 }
 
 .home-product-section .product-grid--carousel .product-card__pricing strong {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  padding: 2px 7px;
+  min-height: 26px;
+  padding: 2px 6px;
   border-radius: 6px;
   background: #168636;
   color: #fff;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 800;
   line-height: 1;
+  white-space: nowrap;
 }
 
-.home-product-section .product-grid--carousel .product-card__pricing span {
+.home-product-section .product-grid--carousel .product-card__original-price {
   color: #475569;
-  font-size: 1rem;
+  font-size: 0.74rem;
+  white-space: nowrap;
 }
 
 .home-product-section .product-grid--carousel .product-card__pricing em {
-  flex-basis: 100%;
+  display: inline-block;
   padding: 0;
   border-radius: 0;
   background: transparent;
   color: #168636;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 900;
   letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .home-product-section .product-grid--carousel .product-card__highlights {
@@ -662,6 +668,15 @@
     padding-top: 0;
   }
 
+  .home-category-section,
+  .home-brand-section,
+  .home-seasonal-section,
+  .home-why-shop-section {
+    box-sizing: border-box;
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+
   .home-category-section .section-heading {
     margin-bottom: 10px;
   }
@@ -756,17 +771,17 @@
   }
 
   .home-product-section .product-grid--carousel .product-card__pricing strong {
-    min-height: 28px;
-    padding: 2px 6px;
-    font-size: 0.94rem;
+    min-height: 24px;
+    padding: 2px 5px;
+    font-size: 0.82rem;
   }
 
-  .home-product-section .product-grid--carousel .product-card__pricing span {
-    font-size: 0.98rem;
+  .home-product-section .product-grid--carousel .product-card__original-price {
+    font-size: 0.68rem;
   }
 
   .home-product-section .product-grid--carousel .product-card__pricing em {
-    font-size: 0.72rem;
+    font-size: 0.62rem;
   }
 
   .home-product-section .product-grid--carousel .product-card__meta,

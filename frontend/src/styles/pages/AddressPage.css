@@ -123,6 +123,62 @@
   resize: vertical;
 }
 
+.address-label-group {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.address-label-group legend {
+  padding: 0;
+  font-weight: 700;
+}
+
+.address-label-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.address-label-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.address-label-option input {
+  margin: 0;
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  accent-color: var(--accent);
+}
+
+.address-label-option.is-selected,
+.address-label-option:hover {
+  border-color: transparent;
+  background: transparent;
+  transform: translateY(-1px);
+}
+
+.address-label-option--other {
+  min-width: 96px;
+}
+
+.address-label-input {
+  width: 100%;
+  min-height: 46px;
+}
+
 .address-form-card__actions {
   margin-top: 20px;
   align-items: center;
@@ -131,6 +187,21 @@
 @media (max-width: 980px) {
   .address-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1440px) {
+  .address-label-options {
+    gap: 8px;
+  }
+
+  .address-label-option {
+    padding: 6px 10px;
+    font-size: 0.82rem;
+  }
+
+  .address-label-option--other {
+    min-width: 84px;
   }
 }
 
@@ -149,5 +220,28 @@
 
   .address-detail-card__grid {
     grid-template-columns: 1fr;
+  }
+
+  .address-label-options {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .address-label-option {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding: 6px 8px;
+    font-size: 0.72rem;
+  }
+
+  .address-label-option input {
+    width: 11px;
+    height: 11px;
+    flex-basis: 11px;
+  }
+
+  .address-label-option--other {
+    min-width: 0;
   }
 }

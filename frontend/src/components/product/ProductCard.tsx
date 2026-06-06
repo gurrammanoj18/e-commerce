@@ -168,8 +168,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
 
         <div className="product-card__pricing">
           <div>
-            <strong>{formatCurrency(product.price)}</strong>
-            <span>{formatCurrency(product.originalPrice)}</span>
+            <span className="product-card__price-row">
+              <strong>{formatCurrency(product.price)}</strong>
+              <span className="product-card__original-price">{formatCurrency(product.originalPrice)}</span>
+            </span>
             <em>Save {product.discountPercentage}%</em>
           </div>
         </div>

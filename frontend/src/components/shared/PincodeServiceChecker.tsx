@@ -28,13 +28,6 @@ const PincodeServiceChecker: React.FC<PincodeServiceCheckerProps> = ({
       return;
     }
 
-    if (window.sessionStorage.getItem(storageKey) === "true") {
-      onClose();
-      return;
-    }
-
-    window.sessionStorage.setItem(storageKey, "true");
-
     setPincode("");
     setChecking(false);
     setResult(null);
@@ -95,8 +88,6 @@ const PincodeServiceChecker: React.FC<PincodeServiceCheckerProps> = ({
           </button>
         </div>
 
-        <p className="pincode-checker__hint">Home delivery is currently available for 500074 only.</p>
-
         {result ? (
           <div
             className={`pincode-checker__result ${
@@ -105,14 +96,31 @@ const PincodeServiceChecker: React.FC<PincodeServiceCheckerProps> = ({
           >
             <strong>{result.serviceable ? "Serviceable" : "Not serviceable"}</strong>
             <span>{result.message}</span>
+            {!result.serviceable ? (
+              <small className="pincode-checker__note">Please skip for now or try another pincode.</small>
+            ) : null}
           </div>
         ) : null}
 
         <div className="pincode-checker__footer">
-          <button type="button" className="link-button" onClick={onClose}>
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => {
+              window.sessionStorage.setItem(storageKey, "true");
+              onClose();
+            }}
+          >
             Skip
           </button>
-          <button type="button" className="link-button" onClick={onClose}>
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => {
+              window.sessionStorage.setItem(storageKey, "true");
+              onClose();
+            }}
+          >
             Close
           </button>
         </div>

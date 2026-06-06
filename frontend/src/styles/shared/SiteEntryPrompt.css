@@ -93,6 +93,14 @@
   font-weight: 600;
 }
 
+.site-entry-prompt__result-note {
+  display: block;
+  margin-top: 4px;
+  color: inherit;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
 .site-entry-prompt__result.is-serviceable {
   background: #ecfdf3;
   color: #166534;

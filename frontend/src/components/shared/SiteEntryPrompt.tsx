@@ -57,6 +57,7 @@ const SiteEntryPrompt: React.FC = () => {
     event?: React.MouseEvent<HTMLButtonElement>,
   ) => {
     event?.stopPropagation();
+    window.sessionStorage.setItem(SITE_ENTRY_PROMPT_KEY, "true");
     window.localStorage.setItem(GUEST_DELIVERY_MODE_KEY, mode);
     setDeliveryMode(mode);
     toast.success(mode === "HOME_DELIVERY" ? "Home delivery selected." : "Store pickup selected.");
@@ -80,7 +81,12 @@ const SiteEntryPrompt: React.FC = () => {
     setChecking(true);
     setResult(null);
     try {
-      setResult(await checkPincodeServiceability(normalized));
+      const response = await checkPincodeServiceability(normalized);
+      setResult(response);
+      if (response.serviceable) {
+        toast.success(response.message);
+        closePrompt();
+      }
     } catch {
       toast.error("Unable to check pincode serviceability right now.");
     } finally {
@@ -152,7 +158,6 @@ const SiteEntryPrompt: React.FC = () => {
                 </button>
               </div>
             </label>
-            <p className="site-entry-prompt__hint">Home delivery is currently available for pincode 500074 only.</p>
             {result ? (
               <div
                 className={`site-entry-prompt__result ${
@@ -161,6 +166,11 @@ const SiteEntryPrompt: React.FC = () => {
               >
                 <strong>{result.serviceable ? "Serviceable" : "Not serviceable"}</strong>
                 <span>{result.message}</span>
+                {!result.serviceable ? (
+                  <small className="site-entry-prompt__result-note">
+                    Please skip for now or try another pincode.
+                  </small>
+                ) : null}
               </div>
             ) : null}
           </div>

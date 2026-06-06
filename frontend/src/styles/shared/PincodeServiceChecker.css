@@ -61,6 +61,11 @@
   border-radius: 16px;
 }
 
+.pincode-checker__note {
+  color: inherit;
+  opacity: 0.9;
+}
+
 .pincode-checker__result.is-serviceable {
   background: #ecfdf3;
   color: #166534;

@@ -41,7 +41,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = "voltmart-auth-user";
 const TOKEN_STORAGE_KEY = "voltmart-token";
-const DELIVERY_PROMPT_STORAGE_PREFIX = "voltmart-delivery-prompt-shown";
+const PROFILE_COMPLETION_SKIP_STORAGE_PREFIX = "voltmart-profile-completion-skipped";
 const PINCODE_CHECKER_LOGIN_KEY = "voltmart-login-pincode-checker-shown";
 
 const decodeJwtPayload = (token: string) => {
@@ -82,21 +82,21 @@ const getDisplayName = (user: AuthUser | null) => {
 const shouldRequireCustomerName = (user: AuthUser | null) =>
   Boolean(user?.role === "ROLE_CUSTOMER" && (!getDisplayName(user) || !user.phoneNumber?.trim()));
 
-const getDeliveryPromptSessionKey = (user: AuthUser) =>
-  `${DELIVERY_PROMPT_STORAGE_PREFIX}:${user.email || user.phoneNumber || user.id || "customer"}`;
+const getProfileCompletionSkipSessionKey = (user: AuthUser) =>
+  `${PROFILE_COMPLETION_SKIP_STORAGE_PREFIX}:${user.email || user.phoneNumber || user.id || "customer"}`;
 
-const hasSeenDeliveryPromptThisSession = (user: AuthUser) =>
-  window.sessionStorage.getItem(getDeliveryPromptSessionKey(user)) === "true";
+const hasSkippedProfileCompletionThisSession = (user: AuthUser) =>
+  window.sessionStorage.getItem(getProfileCompletionSkipSessionKey(user)) === "true";
 
-const markDeliveryPromptSeenThisSession = (user: AuthUser) => {
-  window.sessionStorage.setItem(getDeliveryPromptSessionKey(user), "true");
+const markProfileCompletionSkippedThisSession = (user: AuthUser) => {
+  window.sessionStorage.setItem(getProfileCompletionSkipSessionKey(user), "true");
 };
 
-const shouldShowDeliveryPromptThisSession = (user: AuthUser, requireProfile: boolean) =>
+const shouldShowDeliveryPrompt = (user: AuthUser, requireProfile: boolean) =>
   user.role === "ROLE_CUSTOMER" &&
   !requireProfile &&
   !window.location.pathname.startsWith("/admin") &&
-  !hasSeenDeliveryPromptThisSession(user);
+  !user.preferredDeliveryMode;
 
 const restrictLettersOnly = (value: string) => value.replace(/[^A-Za-z\s.'-]/g, "");
 const restrictDigitsOnly = (value: string, maxLength = 10) =>
@@ -188,15 +188,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const requireProfile = shouldRequireCustomerName(parsedUser);
-      const shouldPromptDelivery = shouldShowDeliveryPromptThisSession(parsedUser, requireProfile);
-      if (shouldPromptDelivery) {
-        markDeliveryPromptSeenThisSession(parsedUser);
-      }
       setUser(parsedUser);
       setToken(storedToken);
       setApiAuthToken(storedToken);
-      setShowProfileCompletionModal(requireProfile);
-      setShowDeliveryPreferenceModal(shouldPromptDelivery && !isAdminArea);
+      setShowProfileCompletionModal(requireProfile && !hasSkippedProfileCompletionThisSession(parsedUser));
+      setShowDeliveryPreferenceModal(shouldShowDeliveryPrompt(parsedUser, requireProfile) && !isAdminArea);
     } catch {
       window.localStorage.removeItem(AUTH_STORAGE_KEY);
       window.localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -228,6 +224,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         nextToken &&
         (options?.requireProfileCompletion || shouldRequireCustomerName(nextUser)),
     );
+    const profileCompletionSkipped =
+      nextUser && hasSkippedProfileCompletionThisSession(nextUser) && shouldRequireProfileCompletion;
     const shouldPromptDeliveryPreference = Boolean(
       options?.promptDeliveryPreference &&
         !shouldRequireProfileCompletion &&
@@ -235,16 +233,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         nextToken &&
         nextUser.role === "ROLE_CUSTOMER" &&
         !window.location.pathname.startsWith("/admin") &&
-        !hasSeenDeliveryPromptThisSession(nextUser),
+        !nextUser.preferredDeliveryMode,
     );
     const shouldDelayDeliveryPreference = false;
 
-    setShowProfileCompletionModal(shouldRequireProfileCompletion);
+    setShowProfileCompletionModal(shouldRequireProfileCompletion && !profileCompletionSkipped);
     setShowDeliveryPreferenceModal(shouldPromptDeliveryPreference && !shouldDelayDeliveryPreference);
     setShowPincodeCheckerModal(false);
-    if (shouldPromptDeliveryPreference && nextUser) {
-      markDeliveryPromptSeenThisSession(nextUser);
-    }
     setPendingDeliveryPreferencePrompt(shouldDelayDeliveryPreference);
     setDeliveryPreferenceError("");
     setApiAuthToken(nextToken);
@@ -266,12 +261,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    if (hasSeenDeliveryPromptThisSession(user)) {
-      setPendingDeliveryPreferencePrompt(false);
-      return;
-    }
-
-    markDeliveryPromptSeenThisSession(user);
     setShowDeliveryPreferenceModal(true);
     setShowPincodeCheckerModal(false);
     setPendingDeliveryPreferencePrompt(false);
@@ -395,14 +384,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         requireProfileCompletion: response.requiresProfileCompletion,
       });
       setShowProfileCompletionModal(false);
-      const shouldPromptDelivery = shouldShowDeliveryPromptThisSession(
-        response.user,
-        response.requiresProfileCompletion,
-      );
-      if (shouldPromptDelivery) {
-        markDeliveryPromptSeenThisSession(response.user);
-      }
-      setShowDeliveryPreferenceModal(shouldPromptDelivery);
+      setShowDeliveryPreferenceModal(shouldShowDeliveryPrompt(response.user, response.requiresProfileCompletion));
       setShowPincodeCheckerModal(false);
       return {};
     } catch (error) {
@@ -413,6 +395,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       stopProcessing(processingId);
     }
   };
+
+  const skipProfileCompletion = useCallback(() => {
+    if (!user) {
+      return;
+    }
+
+    markProfileCompletionSkippedThisSession(user);
+    setShowProfileCompletionModal(false);
+    setPendingDeliveryPreferencePrompt(false);
+    setShowDeliveryPreferenceModal(user.role === "ROLE_CUSTOMER" && !user.preferredDeliveryMode);
+  }, [user]);
 
   const updateDeliveryPreference = async (mode: DeliveryMode) => {
     setDeliveryPreferenceError("");
@@ -433,7 +426,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         preferredDeliveryMode: mode,
       });
       persistAuth(response.user, response.token);
-      markDeliveryPromptSeenThisSession(response.user);
       setShowDeliveryPreferenceModal(false);
       setPendingDeliveryPreferencePrompt(false);
       if (mode === "HOME_DELIVERY") {
@@ -494,6 +486,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         verifyLoginOtp,
         adminLogin,
         completeProfile,
+        skipProfileCompletion,
         updateDeliveryPreference,
         logout,
       }}
@@ -505,7 +498,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         {children}
       </div>
       {showProfileCompletionModal && user?.role === "ROLE_CUSTOMER" ? (
-        <ProfileCompletionModal onSubmit={completeProfile} />
+        <ProfileCompletionModal onSubmit={completeProfile} onSkip={skipProfileCompletion} />
       ) : null}
       {showDeliveryPreferenceModal && !showProfileCompletionModal && user?.role === "ROLE_CUSTOMER" ? (
         <div className="delivery-preference-modal" role="dialog" aria-modal="true">
@@ -570,7 +563,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
 const ProfileCompletionModal: React.FC<{
   onSubmit: (payload: ProfileCompletionPayload) => Promise<AuthActionResult>;
-}> = ({ onSubmit }) => {
+  onSkip: () => void;
+}> = ({ onSubmit, onSkip }) => {
   const { user } = useAuth();
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || "");
@@ -677,9 +671,9 @@ const ProfileCompletionModal: React.FC<{
               type="button"
               className="delivery-preference-modal__button delivery-preference-modal__button--icon"
               disabled={saving || uploadingImage}
-              onClick={() => void submitProfile(true)}
+              onClick={onSkip}
             >
-              <span>Skip optional</span>
+              <span>Skip for now</span>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>

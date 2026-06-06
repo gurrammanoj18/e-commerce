@@ -10,6 +10,7 @@ import {
 import "../styles/pages/AccountPageSpacing.css";
 import "../styles/pages/AddressPage.css";
 import { PincodeServiceabilityResult, UserAddress } from "../types/store";
+import { storeSelectedAddress } from "../utils/selectedAddress";
 
 interface AddressFormState {
   label: string;
@@ -20,6 +21,21 @@ interface AddressFormState {
   postalCode: string;
   defaultAddress: boolean;
 }
+
+type AddressLabelMode = "home" | "office" | "other";
+
+const ADDRESS_LABEL_OPTIONS: Array<{ value: Exclude<AddressLabelMode, "other">; label: string }> = [
+  { value: "home", label: "Home" },
+  { value: "office", label: "Office" },
+];
+
+const resolveLabelMode = (label: string): AddressLabelMode => {
+  const normalized = label.trim().toLowerCase();
+  if (normalized === "home" || normalized === "office") {
+    return normalized;
+  }
+  return "other";
+};
 
 const createEmptyAddress = (userName = "", phone = ""): AddressFormState => ({
   label: "",
@@ -45,6 +61,8 @@ const AddressPage: React.FC = () => {
   const { user } = useAuth();
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<number | "new" | null>(null);
+  const [labelMode, setLabelMode] = useState<AddressLabelMode>("home");
+  const [customLabel, setCustomLabel] = useState("");
   const [formState, setFormState] = useState<AddressFormState>(
     createEmptyAddress(user?.fullName || "", user?.phoneNumber || ""),
   );
@@ -63,9 +81,15 @@ const AddressPage: React.FC = () => {
         if (firstAddress) {
           setSelectedAddressId(firstAddress.id);
           setFormState(mapAddressToForm(firstAddress));
+          setLabelMode(resolveLabelMode(firstAddress.label));
+          setCustomLabel(resolveLabelMode(firstAddress.label) === "other" ? firstAddress.label : "");
+          storeSelectedAddress(user, firstAddress);
         } else {
           setSelectedAddressId("new");
           setFormState(createEmptyAddress(user?.fullName || "", user?.phoneNumber || ""));
+          setLabelMode("home");
+          setCustomLabel("");
+          storeSelectedAddress(user, null);
           setEditing(true);
         }
       } catch {
@@ -76,7 +100,7 @@ const AddressPage: React.FC = () => {
     };
 
     void loadAddresses();
-  }, [user?.fullName, user?.phoneNumber]);
+  }, [user]);
 
   const selectedAddress = useMemo(
     () =>
@@ -122,12 +146,19 @@ const AddressPage: React.FC = () => {
   const handleSelectAddress = (address: UserAddress) => {
     setSelectedAddressId(address.id);
     setFormState(mapAddressToForm(address));
+    const nextLabelMode = resolveLabelMode(address.label);
+    setLabelMode(nextLabelMode);
+    setCustomLabel(nextLabelMode === "other" ? address.label : "");
+    storeSelectedAddress(user, address);
     setEditing(false);
   };
 
   const handleCreateNew = () => {
     setSelectedAddressId("new");
     setFormState(createEmptyAddress(user?.fullName || "", user?.phoneNumber || ""));
+    setLabelMode("home");
+    setCustomLabel("");
+    storeSelectedAddress(user, null);
     setEditing(true);
   };
 
@@ -148,19 +179,42 @@ const AddressPage: React.FC = () => {
     }
 
     setSaving(true);
+    const nextLabel =
+      labelMode === "other"
+        ? customLabel.trim()
+        : ADDRESS_LABEL_OPTIONS.find((option) => option.value === labelMode)?.label || "Home";
+    if (!nextLabel) {
+      toast.error("Please enter a label for this address.");
+      setSaving(false);
+      return;
+    }
+
+    const payload = {
+      ...formState,
+      label: nextLabel,
+    };
+
     try {
       if (typeof selectedAddressId === "number") {
-        const updated = await updateAddress(selectedAddressId, formState);
+        const updated = await updateAddress(selectedAddressId, payload);
         setAddresses((current) =>
           current.map((address) => (address.id === updated.id ? updated : address)),
         );
         setSelectedAddressId(updated.id);
         setFormState(mapAddressToForm(updated));
+        const nextUpdatedMode = resolveLabelMode(updated.label);
+        setLabelMode(nextUpdatedMode);
+        setCustomLabel(nextUpdatedMode === "other" ? updated.label : "");
+        storeSelectedAddress(user, updated);
       } else {
-        const created = await createAddress(formState);
+        const created = await createAddress(payload);
         setAddresses((current) => [...current, created]);
         setSelectedAddressId(created.id);
         setFormState(mapAddressToForm(created));
+        const nextCreatedMode = resolveLabelMode(created.label);
+        setLabelMode(nextCreatedMode);
+        setCustomLabel(nextCreatedMode === "other" ? created.label : "");
+        storeSelectedAddress(user, created);
       }
 
       setEditing(false);
@@ -224,16 +278,54 @@ const AddressPage: React.FC = () => {
             <form className="form-card address-form-card" onSubmit={handleSave}>
               <h2>{selectedAddress ? "Edit address" : "Add address"}</h2>
               <div className="form-grid">
-                <label>
-                  Label
-                  <input
-                    name="label"
-                    value={formState.label}
-                    onChange={handleChange}
-                    placeholder="Home"
-                    required
-                  />
-                </label>
+                <fieldset className="address-label-group form-grid__wide">
+                  <legend>Label</legend>
+                  <div className="address-label-options">
+                    {ADDRESS_LABEL_OPTIONS.map((option) => (
+                      <label
+                        key={option.value}
+                        className={`address-label-option ${
+                          labelMode === option.value ? "is-selected" : ""
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="labelMode"
+                          value={option.value}
+                          checked={labelMode === option.value}
+                          onChange={() => {
+                            setLabelMode(option.value);
+                            setCustomLabel("");
+                          }}
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                    ))}
+                    <label
+                      className={`address-label-option address-label-option--other ${
+                        labelMode === "other" ? "is-selected" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="labelMode"
+                        value="other"
+                        checked={labelMode === "other"}
+                        onChange={() => setLabelMode("other")}
+                      />
+                      <span>Other</span>
+                    </label>
+                  </div>
+                  {labelMode === "other" ? (
+                    <input
+                      className="address-label-input"
+                      value={customLabel}
+                      onChange={(event) => setCustomLabel(event.target.value)}
+                      placeholder="Enter custom label"
+                      required
+                    />
+                  ) : null}
+                </fieldset>
                 <label>
                   Recipient name
                   <input

@@ -22,6 +22,7 @@ import {
   WalletSummary,
 } from "../types/store";
 import { formatCurrency } from "../utils/currency";
+import { storeSelectedAddress } from "../utils/selectedAddress";
 
 const DELIVERY_SLOTS = [
   "09:00-11:00",
@@ -89,10 +90,14 @@ const CheckoutPage: React.FC = () => {
             city: defaultAddress.city,
             postalCode: defaultAddress.postalCode,
           }));
+          storeSelectedAddress(user, defaultAddress);
+        } else {
+          storeSelectedAddress(user, null);
         }
       } catch {
         setAddresses([]);
         setSelectedAddressId("new");
+        storeSelectedAddress(user, null);
       } finally {
         setLoadingAddresses(false);
         stopProcessing(processingId);
@@ -105,7 +110,7 @@ const CheckoutPage: React.FC = () => {
     }
 
     setLoadingAddresses(false);
-  }, [isStorePickup, startProcessing, stopProcessing]);
+  }, [isStorePickup, startProcessing, stopProcessing, user]);
 
   useEffect(() => {
     const loadWallet = async () => {
@@ -246,6 +251,7 @@ const CheckoutPage: React.FC = () => {
   const handleAddressSelect = (value: string) => {
     if (value === "new") {
       setSelectedAddressId("new");
+      storeSelectedAddress(user, null);
       return;
     }
     const nextAddress = addresses.find((address) => address.id === Number(value));
@@ -253,6 +259,7 @@ const CheckoutPage: React.FC = () => {
       return;
     }
     setSelectedAddressId(nextAddress.id);
+    storeSelectedAddress(user, nextAddress);
     setFormState((current) => ({
       ...current,
       address: nextAddress.streetAddress,
@@ -316,6 +323,7 @@ const CheckoutPage: React.FC = () => {
         });
         nextAddressId = savedAddress.id;
         setAddresses((current) => [...current, savedAddress]);
+        storeSelectedAddress(user, savedAddress);
       }
 
       const order = await checkout({

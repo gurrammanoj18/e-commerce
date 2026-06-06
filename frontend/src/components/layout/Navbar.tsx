@@ -8,6 +8,10 @@ import { useCollectionAnimation } from "../../contexts/CollectionAnimationContex
 import { useWishlist } from "../../contexts/WishlistContext";
 import { getCategories } from "../../services/productService";
 import { CategorySummary } from "../../types/store";
+import {
+  readSelectedAddressDisplay,
+  SELECTED_ADDRESS_UPDATED_EVENT,
+} from "../../utils/selectedAddress";
 import voltmartLogo from "../../assets/voltmart-logo.png";
 import voltmartLogoBlack from "../../assets/voltmart-logo-black.png";
 
@@ -25,6 +29,7 @@ const Navbar: React.FC = () => {
   const [switchingMode, setSwitchingMode] = useState(false);
   const [switchVisual, setSwitchVisual] = useState<"bike" | "walk" | null>(null);
   const [navbarPromos, setNavbarPromos] = useState<CategorySummary[]>([]);
+  const [selectedAddressDisplay, setSelectedAddressDisplay] = useState<string | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
   const profileInitial = useMemo(
     () => user?.fullName?.trim().charAt(0).toUpperCase() || "U",
@@ -34,6 +39,17 @@ const Navbar: React.FC = () => {
   const isCustomer = user?.role === "ROLE_CUSTOMER";
   const deliveryToggleLabel =
     user?.preferredDeliveryMode === "HOME_DELIVERY" ? "Store" : "Delivery";
+  const selectedAddressParts = selectedAddressDisplay?.split(" · ", 2) ?? null;
+
+  useEffect(() => {
+    const refreshSelectedAddress = () => {
+      setSelectedAddressDisplay(readSelectedAddressDisplay(user));
+    };
+
+    refreshSelectedAddress();
+    window.addEventListener(SELECTED_ADDRESS_UPDATED_EVENT, refreshSelectedAddress);
+    return () => window.removeEventListener(SELECTED_ADDRESS_UPDATED_EVENT, refreshSelectedAddress);
+  }, [user]);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 0);
@@ -364,9 +380,21 @@ const Navbar: React.FC = () => {
           ) : null}
           <div className="delivery-switch__desktop">{deliveryToggleButton}</div>
         <div className="site-nav__quick-links">
-          <Link className="cart-pill cart-pill--address" to="/address">
+          <Link
+            className="cart-pill cart-pill--address"
+            to="/address"
+            title={selectedAddressDisplay || "Address"}
+          >
             <span className="cart-pill__icon" aria-hidden="true">⌂</span>
-            <span className="cart-pill__label">Address</span>
+            {selectedAddressParts ? (
+              <span className="cart-pill__address-copy">
+                <strong>{selectedAddressParts[0]}</strong>
+                <span>{selectedAddressParts[1]}</span>
+              </span>
+            ) : (
+              <span className="cart-pill__label">Address</span>
+            )}
+            <span className="cart-pill__chevron" aria-hidden="true">⌄</span>
           </Link>
           <Link className="cart-pill cart-pill--wallet" to="/wallet">
             <span className="cart-pill__icon" aria-hidden="true">₹</span>
