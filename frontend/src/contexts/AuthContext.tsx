@@ -42,7 +42,9 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const AUTH_STORAGE_KEY = "voltmart-auth-user";
 const TOKEN_STORAGE_KEY = "voltmart-token";
 const PROFILE_COMPLETION_SKIP_STORAGE_PREFIX = "voltmart-profile-completion-skipped";
+const DELIVERY_PROMPT_SESSION_PREFIX = "voltmart-delivery-prompt-shown";
 const PINCODE_CHECKER_LOGIN_KEY = "voltmart-login-pincode-checker-shown";
+const GUEST_SITE_ENTRY_PROMPT_KEY = "voltmart-site-entry-prompt-shown:guest";
 
 const decodeJwtPayload = (token: string) => {
   try {
@@ -92,11 +94,32 @@ const markProfileCompletionSkippedThisSession = (user: AuthUser) => {
   window.sessionStorage.setItem(getProfileCompletionSkipSessionKey(user), "true");
 };
 
+const getDeliveryPromptSessionKey = (user: AuthUser) =>
+  `${DELIVERY_PROMPT_SESSION_PREFIX}:${user.email || user.phoneNumber || user.id || "customer"}`;
+
+const hasSeenDeliveryPromptThisSession = (user: AuthUser) =>
+  window.sessionStorage.getItem(getDeliveryPromptSessionKey(user)) === "true";
+
+const markDeliveryPromptSeenThisSession = (user: AuthUser) => {
+  window.sessionStorage.setItem(getDeliveryPromptSessionKey(user), "true");
+};
+
+const clearDeliveryPromptSeenThisSession = (user: AuthUser) => {
+  window.sessionStorage.removeItem(getDeliveryPromptSessionKey(user));
+};
+
 const shouldShowDeliveryPrompt = (user: AuthUser, requireProfile: boolean) =>
   user.role === "ROLE_CUSTOMER" &&
   !requireProfile &&
   !window.location.pathname.startsWith("/admin") &&
-  !user.preferredDeliveryMode;
+  !hasSeenDeliveryPromptThisSession(user);
+
+const shouldShowLoginPincodeChecker = (user: AuthUser, requireProfile: boolean) =>
+  user.role === "ROLE_CUSTOMER" &&
+  !requireProfile &&
+  user.preferredDeliveryMode === "HOME_DELIVERY" &&
+  !window.location.pathname.startsWith("/admin") &&
+  window.sessionStorage.getItem(PINCODE_CHECKER_LOGIN_KEY) !== "true";
 
 const restrictLettersOnly = (value: string) => value.replace(/[^A-Za-z\s.'-]/g, "");
 const restrictDigitsOnly = (value: string, maxLength = 10) =>
@@ -192,7 +215,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setToken(storedToken);
       setApiAuthToken(storedToken);
       setShowProfileCompletionModal(requireProfile && !hasSkippedProfileCompletionThisSession(parsedUser));
-      setShowDeliveryPreferenceModal(shouldShowDeliveryPrompt(parsedUser, requireProfile) && !isAdminArea);
+      const shouldOpenPincodeChecker = shouldShowLoginPincodeChecker(parsedUser, requireProfile) && !isAdminArea;
+      setShowPincodeCheckerModal(shouldOpenPincodeChecker);
+      setShowDeliveryPreferenceModal(
+        !shouldOpenPincodeChecker && shouldShowDeliveryPrompt(parsedUser, requireProfile) && !isAdminArea,
+      );
     } catch {
       window.localStorage.removeItem(AUTH_STORAGE_KEY);
       window.localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -232,14 +259,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         nextUser &&
         nextToken &&
         nextUser.role === "ROLE_CUSTOMER" &&
-        !window.location.pathname.startsWith("/admin") &&
-        !nextUser.preferredDeliveryMode,
+        !window.location.pathname.startsWith("/admin"),
+    );
+    const shouldOpenPincodeChecker = Boolean(
+      options?.promptDeliveryPreference &&
+        !shouldRequireProfileCompletion &&
+        nextUser &&
+        nextToken &&
+        shouldShowLoginPincodeChecker(nextUser, false),
     );
     const shouldDelayDeliveryPreference = false;
 
     setShowProfileCompletionModal(shouldRequireProfileCompletion && !profileCompletionSkipped);
-    setShowDeliveryPreferenceModal(shouldPromptDeliveryPreference && !shouldDelayDeliveryPreference);
-    setShowPincodeCheckerModal(false);
+    setShowDeliveryPreferenceModal(
+      shouldPromptDeliveryPreference && !shouldDelayDeliveryPreference && !shouldOpenPincodeChecker,
+    );
+    setShowPincodeCheckerModal(shouldOpenPincodeChecker);
     setPendingDeliveryPreferencePrompt(shouldDelayDeliveryPreference);
     setDeliveryPreferenceError("");
     setApiAuthToken(nextToken);
@@ -291,6 +326,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [isCustomerOnboardingBlocked]);
 
+  useEffect(() => {
+    if (showDeliveryPreferenceModal && user?.role === "ROLE_CUSTOMER") {
+      markDeliveryPromptSeenThisSession(user);
+    }
+  }, [showDeliveryPreferenceModal, user]);
+
   const googleLogin = async (credential: string) => {
     const processingId = startProcessing({
       title: "Signing you in",
@@ -298,6 +339,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     });
     try {
       const response = await googleLoginRequest({ credential });
+      if (response.user.role === "ROLE_CUSTOMER") {
+        clearDeliveryPromptSeenThisSession(response.user);
+      }
       persistAuth(response.user, response.token, {
         promptDeliveryPreference: true,
         requireProfileCompletion: response.requiresProfileCompletion,
@@ -342,6 +386,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     });
     try {
       const response = await verifyLoginOtpRequest({ phoneNumber, otp });
+      if (response.user.role === "ROLE_CUSTOMER") {
+        clearDeliveryPromptSeenThisSession(response.user);
+      }
       persistAuth(response.user, response.token, {
         promptDeliveryPreference: true,
         requireProfileCompletion: response.requiresProfileCompletion,
@@ -404,7 +451,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     markProfileCompletionSkippedThisSession(user);
     setShowProfileCompletionModal(false);
     setPendingDeliveryPreferencePrompt(false);
-    setShowDeliveryPreferenceModal(user.role === "ROLE_CUSTOMER" && !user.preferredDeliveryMode);
+    setShowDeliveryPreferenceModal(shouldShowDeliveryPrompt(user, false));
   }, [user]);
 
   const updateDeliveryPreference = async (mode: DeliveryMode) => {
@@ -460,17 +507,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const logout = useCallback(() => {
-    const currentUser = user;
+    if (user?.role === "ROLE_CUSTOMER") {
+      clearDeliveryPromptSeenThisSession(user);
+    }
+    window.sessionStorage.setItem(GUEST_SITE_ENTRY_PROMPT_KEY, "true");
+    window.sessionStorage.removeItem(PINCODE_CHECKER_LOGIN_KEY);
     persistAuth(null, null);
     setShowDeliveryPreferenceModal(false);
     setShowPincodeCheckerModal(false);
     setShowProfileCompletionModal(false);
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
-    if (currentUser) {
-      window.sessionStorage.removeItem(getDeliveryPromptSessionKey(currentUser));
-    }
-    window.sessionStorage.removeItem(PINCODE_CHECKER_LOGIN_KEY);
   }, [persistAuth, user]);
 
   return (

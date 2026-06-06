@@ -558,6 +558,53 @@
   margin-top: 0;
 }
 
+.admin-empty-state {
+  margin: 0;
+  color: var(--muted);
+}
+
+.admin-home-section-editor {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-home-section-editor__item {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.8fr) repeat(2, minmax(180px, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 14px;
+  border: 1px solid rgba(21, 32, 45, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.admin-home-section-editor__title {
+  display: grid;
+  gap: 4px;
+  align-self: center;
+}
+
+.admin-home-section-editor__title span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.admin-home-section-editor__item label {
+  display: grid;
+  gap: 6px;
+  color: #18212b;
+  font-weight: 700;
+}
+
+.admin-home-section-editor__item input {
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid rgba(21, 32, 45, 0.12);
+  border-radius: 14px;
+  background: #fff;
+}
+
 .admin-flag-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1184,6 +1231,7 @@
   .admin-workspace-grid,
   .admin-orders-layout,
   .admin-flag-grid,
+  .admin-home-section-editor__item,
   .admin-order-hero__meta,
   .admin-order-details__grid,
   .admin-order-totals {

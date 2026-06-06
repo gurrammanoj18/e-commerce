@@ -6,6 +6,8 @@ import com.voltmart.ecommerce.dto.bulk.BulkInquiryUpdateRequest;
 import com.voltmart.ecommerce.dto.bulk.BulkOrderResponse;
 import com.voltmart.ecommerce.dto.category.CategoryRequest;
 import com.voltmart.ecommerce.dto.category.CategoryResponse;
+import com.voltmart.ecommerce.dto.homepage.HomepageSectionContentRequest;
+import com.voltmart.ecommerce.dto.homepage.HomepageSectionContentResponse;
 import com.voltmart.ecommerce.dto.order.OrderResponse;
 import com.voltmart.ecommerce.dto.product.InventoryResponse;
 import com.voltmart.ecommerce.dto.product.ProductRequest;
@@ -24,6 +26,7 @@ import com.voltmart.ecommerce.service.AdminService;
 import com.voltmart.ecommerce.service.BannerService;
 import com.voltmart.ecommerce.service.BulkOrderService;
 import com.voltmart.ecommerce.service.CategoryService;
+import com.voltmart.ecommerce.service.HomepageSectionContentService;
 import com.voltmart.ecommerce.service.OrderService;
 import com.voltmart.ecommerce.service.ProductService;
 import com.voltmart.ecommerce.service.ReturnRequestService;
@@ -53,6 +56,7 @@ public class AdminDashboardController {
     private final ReturnRequestService returnRequestService;
     private final WalletService walletService;
     private final ServiceablePincodeService serviceablePincodeService;
+    private final HomepageSectionContentService homepageSectionContentService;
 
     @GetMapping("/dashboard")
     public Map<String, Object> getOverview() {
@@ -261,6 +265,19 @@ public class AdminDashboardController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteServiceablePincode(@PathVariable Long id) {
         serviceablePincodeService.deletePincode(id);
+    }
+
+    @GetMapping("/homepage-sections")
+    public List<HomepageSectionContentResponse> getHomepageSections() {
+        return homepageSectionContentService.getSections();
+    }
+
+    @PutMapping("/homepage-sections/{sectionKey}")
+    public HomepageSectionContentResponse updateHomepageSection(
+            @PathVariable String sectionKey,
+            @Valid @RequestBody HomepageSectionContentRequest request
+    ) {
+        return homepageSectionContentService.updateSection(sectionKey, request);
     }
 
 }

@@ -319,6 +319,26 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 """);
         jdbcTemplate.execute("drop table if exists homepage_section cascade");
         jdbcTemplate.execute("""
+                create table if not exists homepage_section_content (
+                    id bigserial primary key,
+                    section_key varchar(255) not null unique,
+                    tagline varchar(120) not null,
+                    heading varchar(120) not null
+                )
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists homepage_section_content
+                add column if not exists section_key varchar(255)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists homepage_section_content
+                add column if not exists tagline varchar(120)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists homepage_section_content
+                add column if not exists heading varchar(120)
+                """);
+        jdbcTemplate.execute("""
                 create table if not exists wallet_coupon (
                     id bigserial primary key,
                     code varchar(255) not null unique,

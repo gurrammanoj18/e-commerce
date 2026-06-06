@@ -11,8 +11,9 @@ const GUEST_DELIVERY_MODE_KEY = "voltmart-guest-delivery-mode";
 type EntryPromptStep = "delivery-mode" | "pincode-check";
 
 const SiteEntryPrompt: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth();
-  const [open, setOpen] = useState(() => window.sessionStorage.getItem(SITE_ENTRY_PROMPT_KEY) !== "true");
+  const { isAdmin, isAuthenticated, loading } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [promptSessionKey, setPromptSessionKey] = useState("");
   const [step, setStep] = useState<EntryPromptStep>("delivery-mode");
   const [deliveryMode, setDeliveryMode] = useState<string | null>(null);
   const [pincode, setPincode] = useState("");
@@ -20,18 +21,37 @@ const SiteEntryPrompt: React.FC = () => {
   const [result, setResult] = useState<PincodeServiceabilityResult | null>(null);
 
   useEffect(() => {
-    if (open) {
-      window.sessionStorage.setItem(SITE_ENTRY_PROMPT_KEY, "true");
-    }
-
     const storedMode = window.localStorage.getItem(GUEST_DELIVERY_MODE_KEY);
     if (storedMode === "HOME_DELIVERY" || storedMode === "STORE_PICKUP") {
       setDeliveryMode(storedMode);
     }
-  }, [open]);
+  }, []);
 
   useEffect(() => {
-    if (!open || loading || isAuthenticated) {
+    if (loading || isAdmin || window.location.pathname.startsWith("/admin")) {
+      setOpen(false);
+      return;
+    }
+
+    if (isAuthenticated) {
+      setOpen(false);
+      return;
+    }
+
+    const currentPromptKey = `${SITE_ENTRY_PROMPT_KEY}:guest`;
+
+    setPromptSessionKey(currentPromptKey);
+    if (window.sessionStorage.getItem(currentPromptKey) === "true") {
+      setOpen(false);
+      return;
+    }
+
+    window.sessionStorage.setItem(currentPromptKey, "true");
+    setOpen(true);
+  }, [isAdmin, isAuthenticated, loading]);
+
+  useEffect(() => {
+    if (!open || loading) {
       return undefined;
     }
 
@@ -41,14 +61,16 @@ const SiteEntryPrompt: React.FC = () => {
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [isAuthenticated, loading, open]);
+  }, [loading, open]);
 
-  if (!open || loading || isAuthenticated || window.location.pathname.startsWith("/admin")) {
+  if (!open || loading || isAdmin || isAuthenticated || window.location.pathname.startsWith("/admin")) {
     return null;
   }
 
   const closePrompt = () => {
-    window.sessionStorage.setItem(SITE_ENTRY_PROMPT_KEY, "true");
+    if (promptSessionKey) {
+      window.sessionStorage.setItem(promptSessionKey, "true");
+    }
     setOpen(false);
   };
 
@@ -57,7 +79,9 @@ const SiteEntryPrompt: React.FC = () => {
     event?: React.MouseEvent<HTMLButtonElement>,
   ) => {
     event?.stopPropagation();
-    window.sessionStorage.setItem(SITE_ENTRY_PROMPT_KEY, "true");
+    if (promptSessionKey) {
+      window.sessionStorage.setItem(promptSessionKey, "true");
+    }
     window.localStorage.setItem(GUEST_DELIVERY_MODE_KEY, mode);
     setDeliveryMode(mode);
     toast.success(mode === "HOME_DELIVERY" ? "Home delivery selected." : "Store pickup selected.");

@@ -6,9 +6,10 @@ import CategoryCard from "../components/product/CategoryCard";
 import ProductCard from "../components/product/ProductCard";
 import LoadingState from "../components/shared/LoadingState";
 import { useProducts } from "../contexts/ProductContext";
-import { Banner, BrandLogo, Product } from "../types/store";
+import { Banner, BrandLogo, HomepageSectionContent, Product } from "../types/store";
 import { fetchBanners, fetchSeasonalPicks } from "../services/bannerService";
 import { fetchBrandLogos } from "../services/brandLogoService";
+import { fetchHomepageSections } from "../services/homepageSectionService";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import bannerOne from "../assets/banners/ban1.png";
 import bannerTwo from "../assets/banners/ban2.png";
@@ -198,7 +199,21 @@ const homeSections: HomeSectionDefinition[] = [
   },
 ];
 
-const BrandSection: React.FC = () => {
+const getSectionCopy = (
+  sections: HomepageSectionContent[],
+  sectionKey: string,
+  fallbackTagline: string,
+  fallbackHeading: string,
+) => {
+  const section = sections.find((item) => item.sectionKey === sectionKey);
+
+  return {
+    tagline: section?.tagline || fallbackTagline,
+    heading: section?.heading || fallbackHeading,
+  };
+};
+
+const BrandSection: React.FC<{ contentSections: HomepageSectionContent[] }> = ({ contentSections }) => {
   const [brandLogos, setBrandLogos] = useState<BrandLogo[]>([]);
 
   useEffect(() => {
@@ -228,13 +243,14 @@ const BrandSection: React.FC = () => {
     .filter((brand) => brand.active && brand.logoUrl)
     .slice()
     .sort((left, right) => left.displayOrder - right.displayOrder);
+  const copy = getSectionCopy(contentSections, "shop-by-brand", "Shop by Brand", "Shop by Brand");
 
   return (
     <section className="shell section home-brand-section">
       <div className="section-heading">
         <div>
-          <span className="eyebrow">Shop by Brand</span>
-          <h2>Shop by Brand</h2>
+          <span className="eyebrow">{copy.tagline}</span>
+          <h2>{copy.heading}</h2>
         </div>
       </div>
       <div className="home-brand-grid">
@@ -253,21 +269,25 @@ const BrandSection: React.FC = () => {
   );
 };
 
-const SeasonalModulesSection: React.FC<{ seasonalPicks: Banner[] }> = ({ seasonalPicks }) => {
+const SeasonalModulesSection: React.FC<{
+  contentSections: HomepageSectionContent[];
+  seasonalPicks: Banner[];
+}> = ({ contentSections, seasonalPicks }) => {
   const modules = seasonalPicks.length
     ? seasonalPicks.map((banner) => ({
         title: `Seasonal pick ${banner.id}`,
         to: "/products?discover=1",
         image: banner.imageUrl,
-      }))
+    }))
     : seasonalModules;
+  const copy = getSectionCopy(contentSections, "seasonal-picks", "Seasonal picks", "Seasonal Picks");
 
   return (
     <section className="shell section home-seasonal-section">
       <div className="section-heading">
         <div>
-          <span className="eyebrow">Seasonal picks</span>
-          <h2>Seasonal Picks</h2>
+          <span className="eyebrow">{copy.tagline}</span>
+          <h2>{copy.heading}</h2>
         </div>
       </div>
       <div className="home-seasonal-grid">
@@ -425,6 +445,7 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
 const HomePage: React.FC = () => {
   const { bestSellerProducts, categories, loading, products } = useProducts();
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [contentSections, setContentSections] = useState<HomepageSectionContent[]>([]);
   const [seasonalPicks, setSeasonalPicks] = useState<Banner[]>([]);
 
   useEffect(() => {
@@ -432,18 +453,21 @@ const HomePage: React.FC = () => {
 
     const loadBanners = async () => {
       try {
-        const [bannerResponse, seasonalResponse] = await Promise.all([
+        const [bannerResponse, seasonalResponse, contentResponse] = await Promise.all([
           fetchBanners(),
           fetchSeasonalPicks(),
+          fetchHomepageSections(),
         ]);
         if (isMounted) {
           setBanners(bannerResponse);
           setSeasonalPicks(seasonalResponse);
+          setContentSections(contentResponse);
         }
       } catch {
         if (isMounted) {
           setBanners([]);
           setSeasonalPicks([]);
+          setContentSections([]);
         }
       }
     };
@@ -482,6 +506,7 @@ const HomePage: React.FC = () => {
       [...homeSections]
         .sort((left, right) => left.displayOrder - right.displayOrder)
         .map((section) => {
+          const copy = getSectionCopy(contentSections, section.sectionKey, section.eyebrow, section.title);
           const sectionProducts =
             section.sectionKey === "best-selling"
               ? (bestSellerProducts.length ? bestSellerProducts : fallbackProducts)
@@ -495,19 +520,22 @@ const HomePage: React.FC = () => {
 
           return {
             ...section,
+            eyebrow: copy.tagline,
+            title: copy.heading,
             products: sectionProducts.length ? sectionProducts : fallbackProducts,
           };
         }),
-    [bestSellerProducts, fallbackProducts, products, recentlyAddedProducts]
+    [bestSellerProducts, contentSections, fallbackProducts, products, recentlyAddedProducts]
   );
+  const categoryCopy = getSectionCopy(contentSections, "categories", "Categories", "Shop by Category");
 
   return (
     <>
       <section className="shell section home-category-section">
         <div className="section-heading">
           <div>
-            <span className="eyebrow">Categories</span>
-            <h2>Shop by Category</h2>
+            <span className="eyebrow">{categoryCopy.tagline}</span>
+            <h2>{categoryCopy.heading}</h2>
           </div>
         </div>
         <div className="category-grid">
@@ -530,7 +558,7 @@ const HomePage: React.FC = () => {
         />
       ))}
 
-      <BrandSection />
+      <BrandSection contentSections={contentSections} />
 
       {resolvedHomepageSections.slice(2, 5).map((section) => (
         <ProductCarouselSection
@@ -543,7 +571,7 @@ const HomePage: React.FC = () => {
         />
       ))}
 
-      <SeasonalModulesSection seasonalPicks={seasonalPicks} />
+      <SeasonalModulesSection contentSections={contentSections} seasonalPicks={seasonalPicks} />
 
       {resolvedHomepageSections.slice(5).map((section) => (
         <ProductCarouselSection

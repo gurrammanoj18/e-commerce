@@ -13,6 +13,7 @@ import {
   InventoryItem,
   Order,
   ProductApiShape,
+  HomepageSectionContent,
   ServiceRequest,
   ServiceablePincode,
   ServiceablePincodePayload,
@@ -145,6 +146,25 @@ export const updateAdminSeasonalPick = async (id: number, payload: BannerPayload
 
 export const deleteAdminSeasonalPick = async (id: number) => {
   await api.delete(`/admin/seasonal-picks/${id}`);
+};
+
+export const fetchAdminHomepageSections = async () => {
+  const response = await api.get<HomepageSectionContent[]>("/admin/homepage-sections");
+  return response.data;
+};
+
+export const updateAdminHomepageSection = async (
+  sectionKey: string,
+  payload: {
+    tagline: string;
+    heading: string;
+  },
+) => {
+  const response = await api.put<HomepageSectionContent>(
+    `/admin/homepage-sections/${sectionKey}`,
+    payload,
+  );
+  return response.data;
 };
 
 export const fetchAdminBrandLogos = async () => {

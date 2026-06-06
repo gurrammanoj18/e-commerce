@@ -46,7 +46,13 @@ const PincodeServiceChecker: React.FC<PincodeServiceCheckerProps> = ({
 
     setChecking(true);
     try {
-      setResult(await checkPincodeServiceability(normalized));
+      const response = await checkPincodeServiceability(normalized);
+      setResult(response);
+      if (response.serviceable) {
+        toast.success(response.message);
+        window.sessionStorage.setItem(storageKey, "true");
+        onClose();
+      }
     } catch {
       toast.error("Unable to check serviceability right now.");
       setResult(null);

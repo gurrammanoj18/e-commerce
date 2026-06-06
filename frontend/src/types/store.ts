@@ -106,6 +106,12 @@ export interface AuthUser {
   walletBalance?: number;
 }
 
+export interface HomepageSectionContent {
+  sectionKey: string;
+  tagline: string;
+  heading: string;
+}
+
 export interface UserAddress {
   id: number;
   label: string;

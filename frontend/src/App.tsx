@@ -16,6 +16,7 @@ import AdminBannersPage from "./pages/AdminBannersPage";
 import AdminBulkInquiriesPage from "./pages/AdminBulkInquiriesPage";
 import AdminCategoriesPage from "./pages/AdminCategoriesPage";
 import AdminBrandLogosPage from "./pages/AdminBrandLogosPage";
+import AdminHomeSectionsPage from "./pages/AdminHomeSectionsPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminReturnsPage from "./pages/AdminReturnsPage";
 import AddressPage from "./pages/AddressPage";
@@ -177,6 +178,14 @@ const App: React.FC = () => {
                         element={
                           <ProtectedRoute adminOnly>
                             <AdminBannersPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="home-sections"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <AdminHomeSectionsPage />
                           </ProtectedRoute>
                         }
                       />

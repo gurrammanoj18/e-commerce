@@ -58,6 +58,7 @@ public class SecurityConfig {
                         "/api/health", "/api/health/**",
                         "/api/banners", "/api/banners/**",
                         "/api/brand-logos", "/api/brand-logos/**",
+                        "/api/homepage-sections", "/api/homepage-sections/**",
                         "/api/products", "/api/products/**",
                         "/api/categories", "/api/categories/**",
                         "/api/pincode-serviceability", "/api/pincode-serviceability/**",
