@@ -7,6 +7,7 @@ import LoadingState from "../components/shared/LoadingState";
 import Pagination from "../components/shared/Pagination";
 import { useProducts } from "../contexts/ProductContext";
 import { ProductAvailabilityFilter, ProductSort } from "../types/store";
+import { getHomepageSectionProducts } from "../utils/homepageSections";
 
 type FilterSection = "category" | "brand" | "price" | "availability" | "discount";
 
@@ -57,20 +58,23 @@ const ProductsPage: React.FC = () => {
     Boolean(searchParams.get("category")) ||
     Boolean(searchParams.get("brand")) ||
     Boolean(searchParams.get("promo")) ||
+    Boolean(searchParams.get("section")) ||
     Boolean(searchParams.get("view"));
 
   const isDiscoverMode = useMemo(() => hasProductDiscoveryParams, [hasProductDiscoveryParams]);
   const isCollectionMode = searchParams.get("view") === "collection";
+  const collectionSectionKey = searchParams.get("section") ?? "";
   const collectionTitle = useMemo(() => {
     const title =
       searchParams.get("title") ||
+      collectionSectionKey ||
       searchParams.get("category") ||
       searchParams.get("promo") ||
       searchParams.get("search") ||
       "Products";
 
     return `Buy ${toDisplayLabel(title)} Online`;
-  }, [searchParams]);
+  }, [collectionSectionKey, searchParams]);
 
   const collectionFilterChips = useMemo(
     () =>
@@ -88,8 +92,9 @@ const ProductsPage: React.FC = () => {
     const nextCategory = searchParams.get("category") ?? "All";
     const nextBrand = searchParams.get("brand") ?? "All";
     const nextPromo = searchParams.get("promo") ?? "All";
+    const nextSection = searchParams.get("section") ?? "";
     const nextSort = (searchParams.get("sort") ?? "featured") as ProductSort;
-    const signature = `${isDiscoverMode}|${nextSearch}|${nextCategory}|${nextBrand}|${nextPromo}|${nextSort}`;
+    const signature = `${isDiscoverMode}|${nextSearch}|${nextCategory}|${nextBrand}|${nextPromo}|${nextSection}|${nextSort}`;
 
     if (appliedQuerySignature.current === signature) {
       return;
@@ -154,6 +159,14 @@ const ProductsPage: React.FC = () => {
 
     setSearchParams(nextParams);
   };
+
+  const collectionProducts = useMemo(
+    () =>
+      collectionSectionKey
+        ? getHomepageSectionProducts(filteredProducts, collectionSectionKey)
+        : filteredProducts,
+    [collectionSectionKey, filteredProducts],
+  );
 
   const openFilters = (section: FilterSection = "category") => {
     setActiveFilterSection(section);
@@ -376,11 +389,11 @@ const ProductsPage: React.FC = () => {
               </button>
             </div>
             <div className="product-grid products-collection-grid">
-              {filteredProducts.map((product) => (
+              {collectionProducts.map((product) => (
                 <ProductCard key={product.id} product={product} compact />
               ))}
             </div>
-            {!filteredProducts.length && (
+            {!collectionProducts.length && (
               <div className="store-card empty-state">
                 <h3>No products matched this collection.</h3>
                 <p>Try another product group from the home page.</p>

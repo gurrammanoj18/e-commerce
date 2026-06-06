@@ -9,6 +9,7 @@
   border-radius: 20px;
   background: #fff;
   box-shadow: 0 20px 44px rgba(15, 23, 42, 0.12);
+  font-family: inherit;
 }
 
 .filters-sidebar__top {
@@ -23,6 +24,7 @@
 .filters-sidebar__top h3 {
   margin: 0;
   font-size: 1.1rem;
+  line-height: 1.2;
   letter-spacing: 0.02em;
 }
 
@@ -64,6 +66,8 @@
   text-align: left;
   font-weight: 700;
   font-size: 0.95rem;
+  font-family: inherit;
+  line-height: 1.25;
 }
 
 .filters-sidebar__nav button.is-active {
@@ -108,6 +112,8 @@
 .filters-sidebar__panel h4 {
   margin: 0;
   font-size: 1rem;
+  font-family: inherit;
+  line-height: 1.25;
   color: #1f2937;
 }
 
@@ -160,6 +166,7 @@
   background: transparent;
   color: #374151;
   text-align: left;
+  font-family: inherit;
 }
 
 .filters-sidebar__choice-row:last-child {
@@ -168,6 +175,8 @@
 
 .filters-sidebar__choice-label {
   font-size: 0.98rem;
+  font-family: inherit;
+  line-height: 1.25;
 }
 
 .filters-sidebar__choice-meta {
@@ -219,6 +228,12 @@
   gap: 12px;
 }
 
+.filters-price-row label {
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
 .filters-sidebar__select {
   width: 100%;
   min-height: 44px;
@@ -226,10 +241,16 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   background: #fff;
+  font-family: inherit;
+  font-size: 0.98rem;
+  line-height: 1.25;
 }
 
 .filters-caption {
   color: var(--muted);
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .filters-sidebar__actions {

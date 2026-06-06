@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import AdminWorkspaceNav from "../components/admin/AdminWorkspaceNav";
 import {
   fetchAdminHomepageSections,
   updateAdminHomepageSection,
@@ -92,72 +93,75 @@ const AdminHomeSectionsPage: React.FC = () => {
   };
 
   return (
-    <section className="shell section page-section">
-      <div className="admin-page-heading">
-        <div>
-          <span className="eyebrow">Admin workspace</span>
-          <h1>Homepage section copy</h1>
-        </div>
-      </div>
-
-      <section className="store-card admin-panel admin-panel--full">
-        <div className="admin-panel__heading">
+    <>
+      <AdminWorkspaceNav />
+      <section className="shell section page-section">
+        <div className="admin-page-heading">
           <div>
-            <span className="eyebrow">Section text</span>
-            <h2>Edit taglines and headings</h2>
+            <span className="eyebrow">Admin workspace</span>
+            <h1>Homepage section copy</h1>
           </div>
         </div>
 
-        {loading ? (
-          <p className="admin-empty-state">Loading homepage sections...</p>
-        ) : (
-          <div className="admin-home-section-editor">
-            {sections.map((section) => (
-              <form
-                key={section.sectionKey}
-                className="admin-home-section-editor__item"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void saveSection(section);
-                }}
-              >
-                <div className="admin-home-section-editor__title">
-                  <strong>{sectionLabels[section.sectionKey] || section.sectionKey}</strong>
-                  <span>{section.sectionKey}</span>
-                </div>
-                <label>
-                  Section tagline
-                  <input
-                    maxLength={120}
-                    value={section.tagline}
-                    onChange={(event) =>
-                      updateSectionField(section.sectionKey, "tagline", event.target.value)
-                    }
-                  />
-                </label>
-                <label>
-                  Section heading
-                  <input
-                    maxLength={120}
-                    value={section.heading}
-                    onChange={(event) =>
-                      updateSectionField(section.sectionKey, "heading", event.target.value)
-                    }
-                  />
-                </label>
-                <button
-                  className="button"
-                  type="submit"
-                  disabled={savingKey === section.sectionKey}
-                >
-                  {savingKey === section.sectionKey ? "Saving..." : "Save"}
-                </button>
-              </form>
-            ))}
+        <section className="store-card admin-panel admin-panel--full">
+          <div className="admin-panel__heading">
+            <div>
+              <span className="eyebrow">Section text</span>
+              <h2>Edit taglines and headings</h2>
+            </div>
           </div>
-        )}
+
+          {loading ? (
+            <p className="admin-empty-state">Loading homepage sections...</p>
+          ) : (
+            <div className="admin-home-section-editor">
+              {sections.map((section) => (
+                <form
+                  key={section.sectionKey}
+                  className="admin-home-section-editor__item"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void saveSection(section);
+                  }}
+                >
+                  <div className="admin-home-section-editor__title">
+                    <strong>{sectionLabels[section.sectionKey] || section.sectionKey}</strong>
+                    <span>{section.sectionKey}</span>
+                  </div>
+                  <label>
+                    Section tagline
+                    <input
+                      maxLength={120}
+                      value={section.tagline}
+                      onChange={(event) =>
+                        updateSectionField(section.sectionKey, "tagline", event.target.value)
+                      }
+                    />
+                  </label>
+                  <label>
+                    Section heading
+                    <input
+                      maxLength={120}
+                      value={section.heading}
+                      onChange={(event) =>
+                        updateSectionField(section.sectionKey, "heading", event.target.value)
+                      }
+                    />
+                  </label>
+                  <button
+                    className="button"
+                    type="submit"
+                    disabled={savingKey === section.sectionKey}
+                  >
+                    {savingKey === section.sectionKey ? "Saving..." : "Save"}
+                  </button>
+                </form>
+              ))}
+            </div>
+          )}
+        </section>
       </section>
-    </section>
+    </>
   );
 };
 

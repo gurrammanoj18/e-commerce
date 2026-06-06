@@ -11,6 +11,7 @@ import { fetchBanners, fetchSeasonalPicks } from "../services/bannerService";
 import { fetchBrandLogos } from "../services/brandLogoService";
 import { fetchHomepageSections } from "../services/homepageSectionService";
 import { resolveMediaUrl } from "../utils/mediaUrl";
+import { getHomepageSectionProducts } from "../utils/homepageSections";
 import bannerOne from "../assets/banners/ban1.png";
 import bannerTwo from "../assets/banners/ban2.png";
 import bannerThree from "../assets/banners/ban4.png";
@@ -103,16 +104,9 @@ const buildSectionLink = (section: HomeSectionDefinition) => {
   const params = new URLSearchParams({
     discover: "1",
     view: "collection",
+    section: section.sectionKey,
     title: section.title,
   });
-
-  if (section.tags?.[0]) {
-    params.set("promo", section.tags[0]);
-  } else if (section.sectionKey === "recently-added") {
-    params.set("sort", "newest");
-  } else if (section.sectionKey === "best-selling") {
-    params.set("sort", "featured");
-  }
 
   return `/products?${params.toString()}`;
 };
@@ -507,16 +501,14 @@ const HomePage: React.FC = () => {
         .sort((left, right) => left.displayOrder - right.displayOrder)
         .map((section) => {
           const copy = getSectionCopy(contentSections, section.sectionKey, section.eyebrow, section.title);
-          const sectionProducts =
+          const sectionProducts = getHomepageSectionProducts(
             section.sectionKey === "best-selling"
               ? (bestSellerProducts.length ? bestSellerProducts : fallbackProducts)
               : section.sectionKey === "recently-added"
                 ? recentlyAddedProducts
-                : products.filter((product) =>
-                    (section.tags || []).some((tag) =>
-                      product.tags.some((productTag) => productTag.toLowerCase() === tag.toLowerCase())
-                    )
-                  );
+                : products,
+            section.sectionKey,
+          );
 
           return {
             ...section,
