@@ -21,6 +21,7 @@ import "../styles/pages/AdminDashboardPage.css";
 
 const emptyBanner: BannerPayload = {
   imageUrl: "",
+  heading: "",
 };
 
 const AdminBannersPage: React.FC = () => {
@@ -97,7 +98,7 @@ const AdminBannersPage: React.FC = () => {
         <div className="admin-panel__heading">
           <div>
             <span className="eyebrow">Banner form</span>
-            <h2>{editingId ? "Edit banner image" : "Upload banner image"}</h2>
+            <h2>{editingId ? "Edit banner" : "Upload banner"}</h2>
           </div>
         </div>
         <form
@@ -126,6 +127,18 @@ const AdminBannersPage: React.FC = () => {
             }
           }}
         >
+          <label className="form-grid__wide">
+            Banner heading
+            <input
+              type="text"
+              value={formState.heading || ""}
+              onChange={(event) =>
+                setFormState((current) => ({ ...current, heading: event.target.value }))
+              }
+              placeholder="Summer Deals"
+              required
+            />
+          </label>
           <label className="form-grid__wide">
             Banner image
             <input
@@ -192,13 +205,17 @@ const AdminBannersPage: React.FC = () => {
           <table>
             <thead>
               <tr>
+                <th>Heading</th>
+                <th>Slug</th>
                 <th>Image</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {banners.map((banner) => (
+              {banners.length ? banners.map((banner) => (
                 <tr key={banner.id}>
+                  <td>{banner.heading || "Untitled banner"}</td>
+                  <td>{banner.slug || "-"}</td>
                   <td>
                     {banner.imageUrl ? (
                       <img
@@ -219,6 +236,7 @@ const AdminBannersPage: React.FC = () => {
                           setEditingId(banner.id);
                           setFormState({
                             imageUrl: banner.imageUrl || "",
+                            heading: banner.heading || "",
                           });
                         }}
                       >
@@ -247,7 +265,13 @@ const AdminBannersPage: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={4}>
+                    <div className="admin-empty-note">No homepage banners have been added yet.</div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -391,6 +415,7 @@ const AdminBannersPage: React.FC = () => {
                           setEditingSeasonalId(banner.id);
                           setSeasonalFormState({
                             imageUrl: banner.imageUrl || "",
+                            heading: banner.heading || "",
                           });
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }}

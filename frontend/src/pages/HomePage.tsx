@@ -14,11 +14,8 @@ import { resolveMediaUrl } from "../utils/mediaUrl";
 import { getHomepageSectionProducts } from "../utils/homepageSections";
 import bannerOne from "../assets/banners/ban1.png";
 import bannerTwo from "../assets/banners/ban2.png";
-import bannerThree from "../assets/banners/ban4.png";
 import promoSummer from "../assets/promos/summer.png";
 import promoMonsoon from "../assets/promos/monsoon.png";
-import promoLighting from "../assets/promos/lighting.png";
-import promoContractorDeals from "../assets/promos/contractor-deals.png";
 
 const WhyShopIconBoxes = () => (
   <svg viewBox="0 0 64 64" aria-hidden="true">
@@ -111,7 +108,32 @@ const buildSectionLink = (section: HomeSectionDefinition) => {
   return `/products?${params.toString()}`;
 };
 
-const promoBanners = [bannerOne, bannerTwo, bannerThree];
+const HIDDEN_PROMO_SLUGS = new Set([
+  "lighting",
+  "contractor-deals",
+  "power-hand-tools",
+  "every-project-construction",
+]);
+
+const shouldShowPromoBanner = (banner: Banner) => {
+  const key = `${banner.slug || banner.heading || ""}`.toLowerCase().trim();
+  return key ? !HIDDEN_PROMO_SLUGS.has(key) : true;
+};
+
+const promoBanners: Banner[] = [
+  {
+    id: -1,
+    imageUrl: bannerOne,
+    heading: "Summer Deals",
+    slug: "summer",
+  },
+  {
+    id: -2,
+    imageUrl: bannerTwo,
+    heading: "Monsoon Protection",
+    slug: "monsoon",
+  },
+];
 
 const seasonalModules = [
   {
@@ -123,16 +145,6 @@ const seasonalModules = [
     title: "Monsoon Protection",
     to: "/products?discover=1&promo=monsoon",
     image: promoMonsoon,
-  },
-  {
-    title: "Festival Lighting",
-    to: "/products?discover=1&promo=lighting",
-    image: promoLighting,
-  },
-  {
-    title: "Contractor Bulk Deals",
-    to: "/products?discover=1&promo=contractor-deals",
-    image: promoContractorDeals,
   },
 ];
 
@@ -295,7 +307,31 @@ const SeasonalModulesSection: React.FC<{
   );
 };
 
-const MidPageBannerCarousel: React.FC<{ banners: string[] }> = ({ banners }) => {
+const buildPromoBannerLink = (banner: Banner) => {
+  const slug =
+    banner.slug?.trim() ||
+    banner.heading
+      ?.toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  const heading = banner.heading?.trim() || "Promotional banner";
+
+  if (!slug) {
+    return "/products?discover=1&view=collection";
+  }
+
+  const params = new URLSearchParams({
+    discover: "1",
+    view: "collection",
+    promo: slug,
+    title: heading,
+  });
+
+  return `/products?${params.toString()}`;
+};
+
+const MidPageBannerCarousel: React.FC<{ banners: Banner[] }> = ({ banners }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const carouselBanners = banners.length ? banners : promoBanners;
@@ -351,10 +387,15 @@ const MidPageBannerCarousel: React.FC<{ banners: string[] }> = ({ banners }) => 
             className="banner-carousel__track"
             style={{ transform: `translateX(-${activeIndex * 100}%)` }}
           >
-            {carouselBanners.map((bannerImage, index) => (
-              <div key={bannerImage} className="banner-carousel__slide">
-                <img src={bannerImage} alt={`VoltMart banner ${index + 1}`} />
-              </div>
+            {carouselBanners.map((banner, index) => (
+              <Link
+                key={banner.id}
+                className="banner-carousel__slide banner-carousel__link"
+                to={buildPromoBannerLink(banner)}
+                aria-label={banner.heading ? `Shop ${banner.heading}` : `Shop banner ${index + 1}`}
+              >
+                <img src={banner.imageUrl} alt={banner.heading || `VoltMart banner ${index + 1}`} />
+              </Link>
             ))}
           </div>
         </div>
@@ -383,9 +424,9 @@ const MidPageBannerCarousel: React.FC<{ banners: string[] }> = ({ banners }) => 
         </button>
 
         <div className="banner-carousel__dots" aria-label="Banner slides">
-          {carouselBanners.map((bannerImage, index) => (
+          {carouselBanners.map((banner, index) => (
             <button
-              key={`${bannerImage}-dot`}
+              key={`${banner.imageUrl}-dot`}
               type="button"
               className={index === activeIndex ? "is-active" : ""}
               onClick={() => setActiveIndex(index)}
@@ -537,7 +578,9 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <MidPageBannerCarousel banners={banners.map((banner) => banner.imageUrl).filter(Boolean)} />
+      <MidPageBannerCarousel
+        banners={banners.filter((banner) => banner.imageUrl && shouldShowPromoBanner(banner))}
+      />
 
       {resolvedHomepageSections.slice(0, 2).map((section) => (
         <ProductCarouselSection

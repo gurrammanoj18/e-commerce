@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -8,6 +8,7 @@ import AdminWorkspaceNav from "../components/admin/AdminWorkspaceNav";
 import { useAuth } from "../contexts/AuthContext";
 import {
   createAdminProduct,
+  fetchAdminBanners,
   deleteAdminOrder,
   deleteAdminProduct,
   fetchAdminInventory,
@@ -23,6 +24,7 @@ import { getCategories } from "../services/productService";
 import {
   AdminProductPayload,
   AdminUser,
+  Banner,
   CategorySummary,
   DashboardOverview,
   InventoryItem,
@@ -82,12 +84,16 @@ const HOMEPAGE_SECTION_TAG_OPTIONS = [
   { label: "Hardware & Tools", value: "hardware-tools" },
   { label: "Plumbing & Bathroom", value: "plumbing-bathroom" },
 ];
-const PROMO_TAG_OPTIONS = [
+const LEGACY_PROMO_TAG_OPTIONS = [
   { label: "Summer", value: "summer" },
   { label: "Monsoon", value: "monsoon" },
-  { label: "Lighting", value: "lighting" },
-  { label: "Contractor Deals", value: "contractor-deals" },
 ];
+const HIDDEN_PROMO_SLUGS = new Set([
+  "lighting",
+  "contractor-deals",
+  "power-hand-tools",
+  "every-project-construction",
+]);
 const USER_ORDER_ANALYSIS_OPTIONS: Array<{ label: string; value: UserOrderAnalysisPeriod }> = [
   { label: "All time", value: "all" },
   { label: "Monthly", value: "month" },
@@ -197,6 +203,7 @@ const createFormStateFromProduct = (
   product: Product,
   categories: CategorySummary[],
   inventory: InventoryItem[],
+  promoTagOptions: { label: string; value: string }[],
 ): ProductFormState => {
   const matchedCategory = categories.find((category) => category.slug === product.categorySlug);
   const matchedSubcategory =
@@ -227,7 +234,7 @@ const createFormStateFromProduct = (
     features: product.heroTag ? product.heroTag : "",
     items: product.tags.join("\n"),
     homepageSectionTags: parseCheckboxTags(product.tags, HOMEPAGE_SECTION_TAG_OPTIONS),
-    promoTags: parseCheckboxTags(product.tags, PROMO_TAG_OPTIONS),
+    promoTags: parseCheckboxTags(product.tags, promoTagOptions),
     images: product.images.join("\n"),
     stockQuantity: String(product.stockQuantity),
     lowStockThreshold: String(inventoryItem?.lowStockThreshold ?? 5),
@@ -297,6 +304,7 @@ const AdminDashboardPage: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [adminBanners, setAdminBanners] = useState<Banner[]>([]);
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [productForm, setProductForm] = useState<ProductFormState>(createEmptyFormState);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
@@ -364,6 +372,7 @@ const AdminDashboardPage: React.FC = () => {
       const userData = await fetchAdminUsers();
       const inventoryData = await fetchAdminInventory();
       const productData = await fetchAdminProducts();
+      const bannerData = await fetchAdminBanners();
       const categoryData = await getCategories();
       const returnRequestData = await fetchAdminReturnRequests();
 
@@ -372,6 +381,7 @@ const AdminDashboardPage: React.FC = () => {
       setUsers(userData);
       setInventory(inventoryData);
       setProducts(productData);
+      setAdminBanners(bannerData);
       setCategories(categoryData);
       setReturnRequests(returnRequestData);
     } catch (error) {
@@ -419,6 +429,33 @@ const AdminDashboardPage: React.FC = () => {
   );
   const availableSubcategories = selectedCategory?.subcategories || [];
   const productImages = parseImageList(productForm.images);
+  const promoTagOptions = useMemo(() => {
+    const dynamicBannerOptions = adminBanners
+      .filter(
+        (banner) =>
+          banner.placement === "HOMEPAGE" &&
+          Boolean(banner.heading?.trim()) &&
+          Boolean(banner.slug?.trim()),
+      )
+      .map((banner) => ({
+        label: banner.heading?.trim() || "Banner",
+        value: banner.slug?.trim() || "",
+      }))
+      .filter((option) => Boolean(option.value))
+      .filter((option) => !HIDDEN_PROMO_SLUGS.has(option.value.toLowerCase()));
+
+    const mergedOptions = [...dynamicBannerOptions, ...LEGACY_PROMO_TAG_OPTIONS];
+    const seen = new Set<string>();
+
+    return mergedOptions.filter((option) => {
+      const key = option.value.toLowerCase();
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }, [adminBanners]);
 
   const handleProductFormChange = (
     field: keyof ProductFormState,
@@ -433,7 +470,7 @@ const AdminDashboardPage: React.FC = () => {
 
   const handleEditProduct = (product: Product) => {
     setEditingProductId(product.id);
-    setProductForm(createFormStateFromProduct(product, categories, inventory));
+    setProductForm(createFormStateFromProduct(product, categories, inventory, promoTagOptions));
     setInventorySectionMode("form");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -1124,7 +1161,7 @@ const AdminDashboardPage: React.FC = () => {
             <div className="form-grid__wide admin-checkbox-group">
               <strong>Promotional banners</strong>
               <div className="admin-flag-grid">
-                {PROMO_TAG_OPTIONS.map((option) => (
+                {promoTagOptions.map((option) => (
                   <label key={option.value} className="admin-toggle">
                     <input
                       type="checkbox"

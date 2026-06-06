@@ -1,30 +1,18 @@
-import React, { useRef } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import "../styles/pages/CartPage.css";
 import { useCart } from "../contexts/CartContext";
-import { useCollectionAnimation } from "../contexts/CollectionAnimationContext";
 import { useWishlist } from "../contexts/WishlistContext";
 import { formatCurrency } from "../utils/currency";
 
 const WishlistPage: React.FC = () => {
   const { addToCart } = useCart();
   const { items, removeFromWishlist } = useWishlist();
-  const { animateProductToTarget } = useCollectionAnimation();
-  const imageRefs = useRef<Record<number, HTMLImageElement | null>>({});
 
   const handleMoveToCart = async (productId: number) => {
     const item = items.find((wishlistItem) => wishlistItem.product.id === productId);
     if (!item) {
       return;
-    }
-
-    const imageNode = imageRefs.current[productId];
-    if (item.product.images[0] && imageNode) {
-      await animateProductToTarget({
-        imageSrc: item.product.images[0],
-        sourceRect: imageNode.getBoundingClientRect(),
-        target: "cart",
-      });
     }
 
     await addToCart(item.product);
@@ -58,13 +46,7 @@ const WishlistPage: React.FC = () => {
         <div className="cart-items">
           {items.map((item) => (
             <article className="store-card cart-item" key={item.product.id}>
-              <img
-                ref={(node) => {
-                  imageRefs.current[item.product.id] = node;
-                }}
-                src={item.product.images[0]}
-                alt={item.product.name}
-              />
+              <img src={item.product.images[0]} alt={item.product.name} />
               <div className="cart-item__content">
                 <div className="cart-item__details">
                   <span>{item.product.brand}</span>

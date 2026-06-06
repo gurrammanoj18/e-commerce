@@ -4,10 +4,9 @@ import "../../styles/product/ProductGallery.css";
 interface ProductGalleryProps {
   images: string[];
   alt: string;
-  heroImageRef?: React.RefObject<HTMLImageElement | null>;
 }
 
-const ProductGallery: React.FC<ProductGalleryProps> = ({ images, alt, heroImageRef }) => {
+const ProductGallery: React.FC<ProductGalleryProps> = ({ images, alt }) => {
   const galleryImages = useMemo(() => images.filter(Boolean), [images]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -54,7 +53,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, alt, heroImageR
         >
           {galleryImages.map((image, index) => (
             <div key={`${image}-${index}`} className="product-gallery__slide">
-              <img ref={index === activeIndex ? heroImageRef : undefined} src={image} alt={alt} />
+              <img src={image} alt={alt} />
             </div>
           ))}
         </div>

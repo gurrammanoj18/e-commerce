@@ -236,6 +236,8 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 create table if not exists banner (
                     id bigserial primary key,
                     image_url text not null,
+                    heading varchar(255),
+                    slug varchar(255),
                     placement varchar(50) not null default 'HOMEPAGE'
                 )
                 """);
@@ -249,12 +251,32 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 """);
         jdbcTemplate.execute("""
                 alter table if exists banner
+                add column if not exists heading varchar(255)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists banner
+                add column if not exists slug varchar(255)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists banner
                 add column if not exists placement varchar(50) not null default 'HOMEPAGE'
                 """);
         jdbcTemplate.execute("""
                 update banner
                 set placement = 'HOMEPAGE'
                 where placement is null or placement = ''
+                """);
+        jdbcTemplate.execute("""
+                update banner
+                set slug = regexp_replace(
+                    regexp_replace(lower(trim(heading)), '[^a-z0-9]+', '-', 'g'),
+                    '(^-+|-+$)',
+                    '',
+                    'g'
+                )
+                where slug is null
+                  and heading is not null
+                  and trim(heading) <> ''
                 """);
         jdbcTemplate.execute("""
                 alter table if exists banner

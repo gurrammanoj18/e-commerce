@@ -19,6 +19,12 @@ public class Banner {
     @Column(columnDefinition = "text", nullable = false)
     private String imageUrl;
 
+    @Column(length = 255)
+    private String heading;
+
+    @Column(length = 255)
+    private String slug;
+
     @Column(nullable = false)
     @Builder.Default
     private String placement = "HOMEPAGE";

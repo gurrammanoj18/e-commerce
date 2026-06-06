@@ -7,7 +7,6 @@ import AdminLayout from "./components/layout/AdminLayout";
 import Layout from "./components/layout/Layout";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
-import { CollectionAnimationProvider } from "./contexts/CollectionAnimationContext";
 import { ProcessingProvider } from "./contexts/ProcessingContext";
 import { ProductProvider } from "./contexts/ProductContext";
 import { WishlistProvider } from "./contexts/WishlistContext";
@@ -50,9 +49,8 @@ const App: React.FC = () => {
         <ProductProvider>
           <CartProvider>
             <WishlistProvider>
-              <CollectionAnimationProvider>
-                <BrowserRouter>
-                  <Routes>
+              <BrowserRouter>
+                <Routes>
                     <Route path="login" element={<LoginPage />} />
                     <Route
                       element={<Layout />}
@@ -225,7 +223,6 @@ const App: React.FC = () => {
                   </Routes>
                   <ToastContainer position="top-right" autoClose={2500} />
                 </BrowserRouter>
-              </CollectionAnimationProvider>
             </WishlistProvider>
           </CartProvider>
         </ProductProvider>

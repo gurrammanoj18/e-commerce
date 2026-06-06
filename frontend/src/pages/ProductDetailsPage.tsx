@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import "../styles/pages/ProductDetailsPage.css";
 import ProductGallery from "../components/product/ProductGallery";
@@ -6,7 +6,6 @@ import ProductCard from "../components/product/ProductCard";
 import QuantitySelector from "../components/product/QuantitySelector";
 import LoadingState from "../components/shared/LoadingState";
 import { useCart } from "../contexts/CartContext";
-import { useCollectionAnimation } from "../contexts/CollectionAnimationContext";
 import { useProducts } from "../contexts/ProductContext";
 import { useWishlist } from "../contexts/WishlistContext";
 import { Product } from "../types/store";
@@ -22,12 +21,10 @@ const ProductDetailsPage: React.FC = () => {
   const { slug = "" } = useParams();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
-  const { animateProductToTarget } = useCollectionAnimation();
   const { getProductBySlug, getRelatedProducts, loading } = useProducts();
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<Product | null>(null);
   const [resolved, setResolved] = useState(false);
-  const heroImageRef = useRef<HTMLImageElement | null>(null);
 
   React.useEffect(() => {
     const loadProduct = async () => {
@@ -72,24 +69,13 @@ const ProductDetailsPage: React.FC = () => {
     product.warrantyAvailable ? "Warranty available" : "Warranty not listed",
     product.replacementAvailable ? "Replacement available" : "Replacement not listed",
   ].filter(Boolean);
-  const animateProduct = async (target: "cart" | "wishlist") => {
-    if (!product.images[0] || !heroImageRef.current) {
-      return;
-    }
-
-    await animateProductToTarget({
-      imageSrc: product.images[0],
-      sourceRect: heroImageRef.current.getBoundingClientRect(),
-      target,
-    });
-  };
 
   return (
     <section className="shell section page-section details-page">
       <div className="details-layout">
         <div className="details-gallery-wrap">
           <span className="details-badge">{discountLabel}</span>
-          <ProductGallery images={product.images} alt={product.name} heroImageRef={heroImageRef} />
+          <ProductGallery images={product.images} alt={product.name} />
           <div className="details-gallery-actions">
             <button
               type="button"
@@ -112,14 +98,7 @@ const ProductDetailsPage: React.FC = () => {
               className={`details-gallery-action details-gallery-action--wishlist ${
                 savedToWishlist ? "is-active" : ""
               }`}
-              onClick={() =>
-                void (async () => {
-                  if (!savedToWishlist) {
-                    await animateProduct("wishlist");
-                  }
-                  await toggleWishlist(product);
-                })()
-              }
+              onClick={() => void toggleWishlist(product)}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 21s-7-4.4-7-10.2C5 7.4 6.9 6 9.1 6c1.4 0 2.5.7 2.9 1.5.4-.8 1.5-1.5 2.9-1.5 2.2 0 4.1 1.4 4.1 4.8C19 16.6 12 21 12 21Z" />
@@ -156,12 +135,7 @@ const ProductDetailsPage: React.FC = () => {
               <button
                 type="button"
                 className="details-action-button details-action-button--primary"
-                onClick={() =>
-                  void (async () => {
-                    await animateProduct("cart");
-                    await addToCart(product, quantity);
-                  })()
-                }
+                onClick={() => void addToCart(product, quantity)}
               >
                 <span aria-hidden="true">🛒</span>
                 <span>Add to cart</span>

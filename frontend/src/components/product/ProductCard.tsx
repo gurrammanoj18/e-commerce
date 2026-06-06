@@ -1,9 +1,8 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "../../styles/product/ProductCard.css";
 import "../../styles/shared/LoadingState.css";
 import { useCart } from "../../contexts/CartContext";
-import { useCollectionAnimation } from "../../contexts/CollectionAnimationContext";
 import { useWishlist } from "../../contexts/WishlistContext";
 import { Product } from "../../types/store";
 import { formatCurrency } from "../../utils/currency";
@@ -16,14 +15,12 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) => {
   const { addToCart, items, updateQuantity } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
-  const { animateProductToTarget } = useCollectionAnimation();
   const [addingToCart, setAddingToCart] = useState(false);
   const [optimisticQuantity, setOptimisticQuantity] = useState<number | null>(null);
   const [wishlistPending, setWishlistPending] = useState(false);
   const [hoverDirection, setHoverDirection] = useState<"left" | "right" | null>(
     null
   );
-  const productImageRef = useRef<HTMLImageElement | null>(null);
 
   const previewImages = useMemo(() => {
     const fallbackImage = product.images[0];
@@ -61,25 +58,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
   const cartQuantity = cartItem?.quantity ?? 0;
   const visibleCartQuantity = optimisticQuantity ?? cartQuantity;
 
-  const animateProduct = async (target: "cart" | "wishlist") => {
-    if (!product.images[0] || !productImageRef.current) {
-      return;
-    }
-
-    await animateProductToTarget({
-      imageSrc: product.images[0],
-      sourceRect: productImageRef.current.getBoundingClientRect(),
-      target,
-    });
-  };
-
   const handleAddToCart = async () => {
     setOptimisticQuantity(cartQuantity + 1);
     setAddingToCart(true);
     try {
       await addToCart(product);
-      await new Promise((resolve) => window.requestAnimationFrame(resolve));
-      await animateProduct("cart");
     } finally {
       setOptimisticQuantity(null);
       setAddingToCart(false);
@@ -98,9 +81,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
   const handleToggleWishlist = async () => {
     setWishlistPending(true);
     try {
-      if (!savedToWishlist) {
-        await animateProduct("wishlist");
-      }
       await toggleWishlist(product);
     } finally {
       setWishlistPending(false);
@@ -117,7 +97,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
       >
         <div className="product-card__image-stage">
           <img
-            ref={productImageRef}
             className={`product-card__image product-card__image--base ${
               hoverDirection === "left"
                 ? "is-leaving-right"

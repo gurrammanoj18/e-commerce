@@ -4,7 +4,6 @@ import SearchBar from "../shared/SearchBar";
 import "../../styles/layout/Navbar.css";
 import { useAuth } from "../../contexts/AuthContext";
 import { useCart } from "../../contexts/CartContext";
-import { useCollectionAnimation } from "../../contexts/CollectionAnimationContext";
 import { useWishlist } from "../../contexts/WishlistContext";
 import { getCategories } from "../../services/productService";
 import { CategorySummary } from "../../types/store";
@@ -20,7 +19,6 @@ const Navbar: React.FC = () => {
   const { logout, user, updateDeliveryPreference } = useAuth();
   const { itemCount } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
-  const { registerTarget } = useCollectionAnimation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
@@ -403,7 +401,6 @@ const Navbar: React.FC = () => {
           <Link
             className={`cart-pill cart-pill--wishlist ${wishlistCount > 0 ? "cart-pill--has-items" : ""}`}
             to="/wishlist"
-            ref={(node) => registerTarget("wishlist", node)}
           >
             <span className="cart-pill__icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -416,7 +413,6 @@ const Navbar: React.FC = () => {
           <Link
             className={`cart-pill cart-pill--cart ${itemCount > 0 ? "cart-pill--has-items" : ""}`}
             to="/cart"
-            ref={(node) => registerTarget("cart", node)}
           >
             <span className="cart-pill__icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">

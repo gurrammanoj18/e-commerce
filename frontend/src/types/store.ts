@@ -304,11 +304,14 @@ export interface CategoryPayload {
 export interface Banner {
   id: number;
   imageUrl: string;
+  heading?: string | null;
+  slug?: string | null;
   placement?: "HOMEPAGE" | "SEASONAL_PICK" | string;
 }
 
 export interface BannerPayload {
   imageUrl: string;
+  heading?: string;
 }
 
 export interface BrandLogo {

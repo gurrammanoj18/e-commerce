@@ -26,6 +26,8 @@
 
 .banner-carousel__link {
   display: block;
+  color: inherit;
+  text-decoration: none;
 }
 
 .banner-carousel__slide::after {

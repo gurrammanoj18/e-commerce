@@ -62,7 +62,10 @@ const ProductsPage: React.FC = () => {
     Boolean(searchParams.get("view"));
 
   const isDiscoverMode = useMemo(() => hasProductDiscoveryParams, [hasProductDiscoveryParams]);
-  const isCollectionMode = searchParams.get("view") === "collection";
+  const isCollectionMode =
+    searchParams.get("view") === "collection" ||
+    Boolean(searchParams.get("promo")) ||
+    Boolean(searchParams.get("section"));
   const collectionSectionKey = searchParams.get("section") ?? "";
   const collectionTitle = useMemo(() => {
     const title =
