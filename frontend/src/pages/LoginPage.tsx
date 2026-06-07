@@ -234,7 +234,6 @@ const LoginPage: React.FC = () => {
     window.initSendOTP({
       widgetId: msg91WidgetId,
       tokenAuth: msg91TokenAuth,
-      exposeMethods: true,
       success: async (data) => {
         const accessToken = extractMsg91AccessToken(data);
         if (!accessToken) {
