@@ -33,8 +33,15 @@
 }
 
 .logo {
-  font-size: 24px;
-  font-weight: bold;
+  color: #111315;
+  background: linear-gradient(110deg, #111315 0%, #111315 38%, #ff7d3b 58%, #f05a1a 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+  -webkit-text-fill-color: transparent;
 }
 .main-div{
     display: flex;

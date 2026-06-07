@@ -60,7 +60,7 @@ const AdminLoginPage: React.FC = () => {
       <form className="store-card auth-card" onSubmit={handleSubmit}>
         <span className="eyebrow">Admin login</span>
         <h1>Admin portal access</h1>
-        <p>Sign in with an admin account to open the VoltMart control center.</p>
+        <p>Sign in with an admin account to open the Eldoo control center.</p>
         <label>
           Admin email
           <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />

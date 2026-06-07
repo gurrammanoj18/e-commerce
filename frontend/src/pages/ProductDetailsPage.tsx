@@ -84,7 +84,7 @@ const ProductDetailsPage: React.FC = () => {
                 const shareUrl = window.location.href;
                 void navigator.share?.({
                   title: product.name,
-                  text: `Check out ${product.name} on VoltMart`,
+                  text: `Check out ${product.name} on Eldoo`,
                   url: shareUrl,
                 });
               }}

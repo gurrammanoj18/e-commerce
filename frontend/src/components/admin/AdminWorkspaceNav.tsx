@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import voltmartLogo from "../../assets/voltmart-logo.png";
 
 const adminNavItems = [
   { to: "/admin/dashboard", label: "Dashboard" },
@@ -42,7 +41,7 @@ const AdminWorkspaceNav: React.FC = () => {
           <span />
         </button>
         <div className="admin-mobile-topbar__brand">
-          <img src={voltmartLogo} alt="VoltMart" />
+          <strong>Eldoo</strong>
           <small>Admin Portal</small>
         </div>
         <div className="admin-mobile-topbar__spacer" aria-hidden="true" />
@@ -65,7 +64,7 @@ const AdminWorkspaceNav: React.FC = () => {
           >
             <div className="admin-mobile-drawer__header">
               <div>
-                <img src={voltmartLogo} alt="VoltMart" className="admin-mobile-drawer__logo" />
+                <strong className="admin-mobile-drawer__brand">Eldoo</strong>
                 <small>Admin Portal</small>
               </div>
               <button
@@ -106,9 +105,8 @@ const AdminWorkspaceNav: React.FC = () => {
 
       <aside className="admin-sidebar">
         <div className="admin-sidebar__brand">
-          <img src={voltmartLogo} alt="VoltMart" />
           <div>
-            <strong>VoltMart</strong>
+            <strong>Eldoo</strong>
             <small>Admin Portal</small>
           </div>
         </div>

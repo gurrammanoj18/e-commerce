@@ -640,7 +640,7 @@ const AdminDashboardPage: React.FC = () => {
     const url = window.URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `voltmart-admin-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.download = `Eldoo-admin-report-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
@@ -962,7 +962,7 @@ const AdminDashboardPage: React.FC = () => {
               <input
                 value={productForm.name}
                 onChange={(event) => handleProductFormChange("name", event.target.value)}
-                placeholder="VoltMart Pro Dock"
+                placeholder="Eldoo Pro Dock"
                 required
               />
             </label>
@@ -971,7 +971,7 @@ const AdminDashboardPage: React.FC = () => {
               <input
                 value={productForm.brand}
                 onChange={(event) => handleProductFormChange("brand", event.target.value)}
-                placeholder="VoltMart"
+                placeholder="Eldoo"
                 required
               />
             </label>
@@ -1755,7 +1755,7 @@ const AdminDashboardPage: React.FC = () => {
       <div className="page-header admin-page-header">
         <div>
           <span className="eyebrow">Admin workspace</span>
-          <h1>VoltMart control center</h1>
+          <h1>Eldoo control center</h1>
         </div>
         <div className="admin-page-header__actions">
           <button type="button" className="link-button" onClick={handleExportReport}>

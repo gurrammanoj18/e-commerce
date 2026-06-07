@@ -73,7 +73,7 @@ const PincodeServiceChecker: React.FC<PincodeServiceCheckerProps> = ({
         <div className="pincode-checker__copy">
           <span className="eyebrow">Pincode service</span>
           <h2 id="pincode-checker-title">Check home delivery availability</h2>
-          <p>Enter your pincode to see whether VoltMart home delivery is available.</p>
+          <p>Enter your pincode to see whether Eldoo home delivery is available.</p>
         </div>
 
         <div className="pincode-checker__controls">

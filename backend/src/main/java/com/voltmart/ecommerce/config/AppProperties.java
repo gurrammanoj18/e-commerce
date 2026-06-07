@@ -72,7 +72,7 @@ public class AppProperties {
         private boolean enabled;
         private String provider = "smtp";
         private String fromAddress;
-        private String fromName = "VoltMart";
+        private String fromName = "Eldoo";
         private String apiKey;
         private String apiUrl = "https://api.brevo.com/v3/smtp/email";
     }

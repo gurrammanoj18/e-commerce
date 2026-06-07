@@ -128,7 +128,7 @@ const SiteEntryPrompt: React.FC = () => {
         onClick={(event) => event.stopPropagation()}
       >
         <div className="site-entry-prompt__header">
-          <span className="eyebrow">Welcome to VoltMart</span>
+          <span className="eyebrow">Welcome to Eldoo</span>
           <h2 id="site-entry-prompt-title">
             {step === "delivery-mode" ? "Choose how you want your order" : "Check home delivery availability"}
           </h2>

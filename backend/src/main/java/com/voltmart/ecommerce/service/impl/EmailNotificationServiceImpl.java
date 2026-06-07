@@ -55,7 +55,7 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
             return;
         }
 
-        String subject = "VoltMart order placed: #" + order.getId();
+        String subject = "Eldoo order placed: #" + order.getId();
         String html = buildEmailTemplate(
                 order,
                 "Your order has been placed!",
@@ -77,7 +77,7 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
             return;
         }
 
-        String subject = "VoltMart delivery update: #" + order.getId() + " is " + toDisplayStatus(order.getStatus());
+        String subject = "Eldoo delivery update: #" + order.getId() + " is " + toDisplayStatus(order.getStatus());
         String html = buildEmailTemplate(
                 order,
                 buildStatusHeadline(order.getStatus()),
@@ -100,7 +100,7 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
         }
 
         try {
-            String subject = "VoltMart return request: #" + returnRequest.getOrder().getId();
+            String subject = "Eldoo return request: #" + returnRequest.getOrder().getId();
             String html = buildSupportEmailTemplate(
                     returnRequest,
                     buildRequestHeadline(returnRequest.getRequestType(), returnRequest.getStatus()),
@@ -123,7 +123,7 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
         }
 
         try {
-            String subject = "VoltMart return update: #" + returnRequest.getOrder().getId() + " is " +
+            String subject = "Eldoo return update: #" + returnRequest.getOrder().getId() + " is " +
                     toDisplayStatus(returnRequest.getStatus());
             String html = buildSupportEmailTemplate(
                     returnRequest,
@@ -300,7 +300,7 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
                     <div style="padding:24px 12px;background:#111318;">
                       <div style="max-width:760px;margin:0 auto;border-radius:28px;overflow:hidden;background:#1a1d24;border:1px solid #2a2f39;">
                         <div style="background:#243447;padding:18px 24px;text-align:center;">
-                          <span style="display:inline-block;color:#f8fafc;font-size:14px;font-weight:700;margin:0 18px;">VoltMart</span>
+                          <span style="display:inline-block;color:#f8fafc;font-size:14px;font-weight:700;margin:0 18px;">Eldoo</span>
                           <span style="display:inline-block;color:#d7dde8;font-size:14px;font-weight:700;margin:0 18px;">Your Account</span>
                           <span style="display:inline-block;color:#d7dde8;font-size:14px;font-weight:700;margin:0 18px;">Support</span>
                         </div>
@@ -330,7 +330,7 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
                         </div>
                         <div style="padding:24px 28px;background:#20242b;">
                           <p style="margin:0 0 12px;color:#cbd5e1;font-size:14px;">%s</p>
-                          <p style="margin:0;color:#9ca3af;font-size:13px;">© 2026 VoltMart. Order notifications and delivery updates.</p>
+                          <p style="margin:0;color:#9ca3af;font-size:13px;">© 2026 Eldoo. Order notifications and delivery updates.</p>
                         </div>
                       </div>
                     </div>

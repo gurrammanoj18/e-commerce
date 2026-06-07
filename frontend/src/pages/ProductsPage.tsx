@@ -304,7 +304,7 @@ const ProductsPage: React.FC = () => {
           <div className="page-header">
             <span className="eyebrow">Product listing</span>
             <h1>Category-driven product catalog</h1>
-            <p>Browse the full VoltMart catalog in one place.</p>
+            <p>Browse the full Eldoo catalog in one place.</p>
           </div>
         ) : null}
 

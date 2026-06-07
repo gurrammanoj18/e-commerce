@@ -188,7 +188,7 @@ const LoginPage: React.FC = () => {
     <section className="shell section page-section auth-page">
       <div className="store-card auth-card">
         <span className="eyebrow">Login</span>
-        <h1>Sign in to VoltMart</h1>
+        <h1>Sign in to Eldoo</h1>
         <p>Continue with Google or use your mobile number to get an OTP.</p>
 
         {error ? <p className="form-error">{error}</p> : null}

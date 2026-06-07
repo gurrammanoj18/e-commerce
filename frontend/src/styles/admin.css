@@ -69,11 +69,6 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.admin-sidebar__brand img {
-  width: 108px;
-  object-fit: contain;
-}
-
 .admin-sidebar__brand strong,
 .admin-sidebar__brand small {
   display: block;
@@ -81,7 +76,15 @@
 
 .admin-sidebar__brand strong {
   color: #fff;
-  font-size: 1.08rem;
+  background: linear-gradient(110deg, #f8fafc 0%, #f8fafc 34%, #ff9a57 60%, #ff7d3b 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+  font-size: 1.36rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  -webkit-text-fill-color: transparent;
 }
 
 .admin-sidebar__brand small {
@@ -1073,9 +1076,18 @@
     text-align: center;
   }
 
-  .admin-mobile-topbar__brand img {
-    width: min(148px, 100%);
-    object-fit: contain;
+  .admin-mobile-topbar__brand strong,
+  .admin-mobile-drawer__brand {
+    color: #fff;
+    background: linear-gradient(110deg, #f8fafc 0%, #f8fafc 34%, #ff9a57 60%, #ff7d3b 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+    font-size: 1.32rem;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0;
+    -webkit-text-fill-color: transparent;
   }
 
   .admin-mobile-topbar__brand small,
@@ -1126,8 +1138,8 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .admin-mobile-drawer__logo {
-    width: 132px;
+  .admin-mobile-drawer__brand {
+    display: block;
     margin-bottom: 6px;
   }
 

@@ -11,8 +11,6 @@ import {
   readSelectedAddressDisplay,
   SELECTED_ADDRESS_UPDATED_EVENT,
 } from "../../utils/selectedAddress";
-import voltmartLogo from "../../assets/voltmart-logo.png";
-import voltmartLogoBlack from "../../assets/voltmart-logo-black.png";
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -180,7 +178,7 @@ const Navbar: React.FC = () => {
         </button>
 
         <Link className="site-logo" to="/">
-          <img src={isScrolled ? voltmartLogo : voltmartLogoBlack} alt="VoltMart" />
+          <span>Eldoo</span>
         </Link>
 
         {isMenuOpen ? (
@@ -303,15 +301,15 @@ const Navbar: React.FC = () => {
                     Address
                   </Link>
                   <Link to="/wallet" onClick={() => setIsMenuOpen(false)}>
-                    VoltMart Wallet
+                    Eldoo Wallet
                   </Link>
                 </>
               ) : null}
               <Link to="/services" onClick={() => setIsMenuOpen(false)}>
-                VoltMart Services
+                Eldoo Services
               </Link>
               <Link to="/about" onClick={() => setIsMenuOpen(false)}>
-                About VoltMart
+                About Eldoo
               </Link>
             </div>
 
@@ -473,7 +471,7 @@ const Navbar: React.FC = () => {
                       <span aria-hidden="true">›</span>
                     </Link>
                     <Link to="/about" onClick={() => setIsProfileOpen(false)}>
-                      <span>About VoltMart</span>
+                      <span>About Eldoo</span>
                       <span aria-hidden="true">›</span>
                     </Link>
                     <button type="button" onClick={handleLogout}>
@@ -483,7 +481,7 @@ const Navbar: React.FC = () => {
                 ) : (
                   <>
                     <Link to="/about" onClick={() => setIsProfileOpen(false)}>
-                      <span>About VoltMart</span>
+                      <span>About Eldoo</span>
                       <span aria-hidden="true">›</span>
                     </Link>
                     <button type="button" onClick={handleCustomerLogin}>

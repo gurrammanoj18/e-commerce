@@ -83,7 +83,7 @@ public class DataSeeder implements CommandLineRunner {
                 BigDecimal.valueOf(2199), BigDecimal.valueOf(2599), 22, true, false, true, true, true,
                 List.of("plumbing-bathroom", "monsoon"));
 
-        seedProduct("wiremaster-led-bulb", "WireMaster LED Bulb", "VoltMart", categories.get("lighting-fans"), "Lighting essential", "New",
+        seedProduct("wiremaster-led-bulb", "WireMaster LED Bulb", "Eldoo", categories.get("lighting-fans"), "Lighting essential", "New",
                 List.of("/catalog/lumen-monitor.webp", "/catalog/orbit-camera.webp", "/catalog/dock-station.webp"),
                 BigDecimal.valueOf(199), BigDecimal.valueOf(249), 320, true, false, true, true, false,
                 List.of("electrical-essentials", "everyday-essentials", "lighting", "summer"));
@@ -178,7 +178,7 @@ public class DataSeeder implements CommandLineRunner {
                 .orElseGet(() -> User.builder()
                         .createdAt(LocalDateTime.now())
                         .build());
-        admin.setFullName("VoltMart Admin");
+        admin.setFullName("Eldoo Admin");
         admin.setEmail(adminEmail);
         admin.setPassword(passwordEncoder.encode(adminPassword));
         admin.setRole(Role.ROLE_ADMIN);

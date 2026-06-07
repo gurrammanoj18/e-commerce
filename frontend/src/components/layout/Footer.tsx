@@ -25,7 +25,7 @@ const Footer: React.FC = () => {
           <a href="https://wa.me/919398546891" target="_blank" rel="noreferrer">
             WhatsApp
           </a>
-          <a href="mailto:support@voltmart.in">Email</a>
+          <a href="mailto:support@Eldoo.in">Email</a>
           <Link to="/terms">Terms &amp; Conditions</Link>
           <Link to="/privacy">Privacy Policy</Link>
           <Link to="/returns">Returns Policy</Link>
@@ -49,7 +49,7 @@ const Footer: React.FC = () => {
       </div>
 
       <div className="shell footer-bottom">
-        <p>Copyright © 2026, VoltMart, or its affiliates</p>
+        <p>Copyright © 2026, Eldoo, or its affiliates</p>
       </div>
     </footer>
   );

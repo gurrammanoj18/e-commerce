@@ -1,4 +1,4 @@
-export const aboutVoltmartParagraphs = [
+export const aboutEldooParagraphs = [
   "Welcome to our modern quick-commerce e-commerce platform, built to make shopping for electricals, hardware, home utility products, cleaning supplies, tools, and appliances faster, easier, and more reliable. Our mission is to provide customers with a smooth online shopping experience backed by quality products, quick delivery, and trusted customer support.",
   "We are focused on delivering everyday essentials and professional-grade products through a secure, scalable, and customer-friendly platform. Whether you are looking for electrical appliances, plumbing fittings, cleaning products, switches and wires, tools, or hardware accessories, we bring everything together in one convenient place.",
   "Our platform is designed with a quick-commerce approach, offering fast product search, smart category navigation, easy checkout, location-based delivery support, and mobile-friendly browsing for a seamless experience across all devices.",

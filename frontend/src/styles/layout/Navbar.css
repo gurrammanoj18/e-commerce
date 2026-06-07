@@ -120,13 +120,24 @@
   box-shadow: none;
 }
 
-.site-logo img {
+.site-logo span {
   display: block;
-  width: clamp(138px, 14vw, 205px);
-  height: auto;
-  object-fit: contain;
-  border: 0;
-  box-shadow: none;
+  color: #111315;
+  background: linear-gradient(110deg, #111315 0%, #111315 38%, #ff7d3b 58%, #f05a1a 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  font-size: clamp(1.55rem, 2vw, 2.15rem);
+  font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  -webkit-text-fill-color: transparent;
+}
+
+.site-header--solid .site-logo span {
+  background: linear-gradient(110deg, #ffffff 0%, #f8fafc 34%, #ff9a57 60%, #ff7d3b 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
 }
 
 .site-nav__links,
@@ -941,8 +952,8 @@
     justify-self: center;
   }
 
-  .site-logo img {
-    width: clamp(116px, 30vw, 148px);
+  .site-logo span {
+    font-size: clamp(1.45rem, 6vw, 1.85rem);
   }
 
   .menu-toggle {

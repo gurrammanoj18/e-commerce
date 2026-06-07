@@ -394,7 +394,7 @@ const MidPageBannerCarousel: React.FC<{ banners: Banner[] }> = ({ banners }) => 
                 to={buildPromoBannerLink(banner)}
                 aria-label={banner.heading ? `Shop ${banner.heading}` : `Shop banner ${index + 1}`}
               >
-                <img src={banner.imageUrl} alt={banner.heading || `VoltMart banner ${index + 1}`} />
+                <img src={banner.imageUrl} alt={banner.heading || `Eldoo banner ${index + 1}`} />
               </Link>
             ))}
           </div>

@@ -18,9 +18,9 @@ services:
       - key: APP_SEED_ADMIN_PASSWORD
         sync: false
       - key: APP_CORS_ALLOWED_ORIGINS
-        value: https://voltmart-frontend.onrender.com
+        value: https://www.eldoo.in,https://eldoo.in,https://voltmart-frontend.onrender.com
       - key: APP_STORE_FRONTEND_URL
-        value: https://voltmart-frontend.onrender.com
+        value: https://www.eldoo.in
       - key: APP_GOOGLE_CLIENT_ID
         sync: false
       - key: APP_EMAIL_ENABLED

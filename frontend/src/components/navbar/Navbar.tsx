@@ -22,7 +22,7 @@ const Navbar: React.FC = () => {
       <div className="main-div">
         <nav className="navbar">
           <div className="navbar-left">
-            <div className="logo">Logo</div>
+            <div className="logo">Eldoo</div>
           </div>
 
           <div className="nav-links-container">

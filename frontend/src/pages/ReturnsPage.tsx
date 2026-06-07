@@ -137,7 +137,7 @@ const ReturnsPage: React.FC = () => {
           <p className="order-card__copy">
             COD only changes how payment is collected at checkout. The customer pays when the order
             is delivered, so after delivery the order can still be managed as a return request.
-            Since there is no card transaction to reverse, VoltMart can handle the return through a
+            Since there is no card transaction to reverse, Eldoo can handle the return through a
             wallet credit, a replacement, or a manual refund arranged by support.
           </p>
           <p className="order-card__copy">

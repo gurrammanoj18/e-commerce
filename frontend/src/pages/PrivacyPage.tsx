@@ -6,7 +6,7 @@ const PrivacyPage: React.FC = () => {
     <InfoPageLayout
       eyebrow="Privacy"
       title="Privacy policy"
-      intro="VoltMart uses customer information to provide account access, order processing, support, and a smoother shopping experience."
+      intro="Eldoo uses customer information to provide account access, order processing, support, and a smoother shopping experience."
       sections={[
         {
           heading: "Information we collect",
@@ -19,7 +19,7 @@ const PrivacyPage: React.FC = () => {
           heading: "How we use it",
           paragraphs: [
             "We use collected information to complete purchases, provide customer support, improve storefront experiences, and communicate important order updates.",
-            "VoltMart does not use customer data for purposes unrelated to operating and improving the service experience you expect from the platform.",
+            "Eldoo does not use customer data for purposes unrelated to operating and improving the service experience you expect from the platform.",
           ],
         },
       ]}

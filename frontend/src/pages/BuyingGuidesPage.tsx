@@ -6,7 +6,7 @@ const BuyingGuidesPage: React.FC = () => {
     <InfoPageLayout
       eyebrow="Guides"
       title="Buying guides"
-      intro="Use VoltMart buying guides to choose the right products faster, whether you are shopping for home upkeep, repairs, or professional project work."
+      intro="Use Eldoo buying guides to choose the right products faster, whether you are shopping for home upkeep, repairs, or professional project work."
       sections={[
         {
           heading: "How to choose well",

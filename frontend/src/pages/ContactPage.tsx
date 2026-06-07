@@ -55,7 +55,7 @@ const ContactPage: React.FC = () => {
               </div>
               <div className="contact-info-item">
                 <span>Email</span>
-                <strong>support@voltmart.in</strong>
+                <strong>support@Eldoo.in</strong>
               </div>
               <div className="contact-info-item">
                 <span>Phone</span>
@@ -65,7 +65,7 @@ const ContactPage: React.FC = () => {
           </div>
           <a
             className="store-card whatsapp-card"
-            href="https://wa.me/919876543210?text=Hi%20VoltMart%2C%20I%20need%20help%20with%20a%20product."
+            href="https://wa.me/919876543210?text=Hi%20Eldoo%2C%20I%20need%20help%20with%20a%20product."
             target="_blank"
             rel="noreferrer"
           >
