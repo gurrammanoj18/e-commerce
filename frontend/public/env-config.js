@@ -1,2 +1,4 @@
 window.__APP_CONFIG__ = window.__APP_CONFIG__ || {};
 window.__APP_CONFIG__.REACT_APP_GOOGLE_CLIENT_ID = "";
+window.__APP_CONFIG__.REACT_APP_MSG91_WIDGET_ID = "";
+window.__APP_CONFIG__.REACT_APP_MSG91_TOKEN_AUTH = "";

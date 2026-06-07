@@ -5,6 +5,8 @@ declare global {
     __APP_CONFIG__?: {
       REACT_APP_API_BASE_URL?: string;
       REACT_APP_GOOGLE_CLIENT_ID?: string;
+      REACT_APP_MSG91_WIDGET_ID?: string;
+      REACT_APP_MSG91_TOKEN_AUTH?: string;
     };
   }
 }

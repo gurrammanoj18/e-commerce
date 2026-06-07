@@ -6,4 +6,6 @@ public interface Msg91OtpService {
     void sendOtp(String phoneNumber);
 
     void verifyOtp(String phoneNumber, String otp);
+
+    String verifyWidgetAccessToken(String accessToken);
 }

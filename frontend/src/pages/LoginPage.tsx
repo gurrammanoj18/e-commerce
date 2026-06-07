@@ -20,6 +20,13 @@ declare global {
         };
       };
     };
+    initSendOTP?: (config: {
+      widgetId: string;
+      tokenAuth: string;
+      exposeMethods?: boolean;
+      success: (data: Record<string, unknown>) => void;
+      failure: (error: unknown) => void;
+    }) => void;
   }
 }
 
@@ -27,7 +34,7 @@ const digitsOnly = (value: string, maxLength: number) =>
   value.replace(/\D/g, "").slice(0, maxLength);
 
 const LoginPage: React.FC = () => {
-  const { googleLogin, isAuthenticated, requestLoginOtp, verifyLoginOtp } = useAuth();
+  const { googleLogin, isAuthenticated, msg91WidgetLogin, requestLoginOtp, verifyLoginOtp } = useAuth();
   const navigate = useNavigate();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
@@ -37,12 +44,25 @@ const LoginPage: React.FC = () => {
   const [requestingOtp, setRequestingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [signingInWithGoogle, setSigningInWithGoogle] = useState(false);
+  const [signingInWithMsg91, setSigningInWithMsg91] = useState(false);
   const [googleButtonReady, setGoogleButtonReady] = useState(false);
+  const [msg91WidgetReady, setMsg91WidgetReady] = useState(false);
   const googleClientId = (
     window.__APP_CONFIG__?.REACT_APP_GOOGLE_CLIENT_ID ||
     process.env.REACT_APP_GOOGLE_CLIENT_ID ||
     ""
   ).trim();
+  const msg91WidgetId = (
+    window.__APP_CONFIG__?.REACT_APP_MSG91_WIDGET_ID ||
+    process.env.REACT_APP_MSG91_WIDGET_ID ||
+    ""
+  ).trim();
+  const msg91TokenAuth = (
+    window.__APP_CONFIG__?.REACT_APP_MSG91_TOKEN_AUTH ||
+    process.env.REACT_APP_MSG91_TOKEN_AUTH ||
+    ""
+  ).trim();
+  const msg91WidgetConfigured = Boolean(msg91WidgetId && msg91TokenAuth);
 
   const otpRequested = Boolean(verifiedPhoneNumber);
   const canRequestOtp = phoneNumber.length === 10 && !requestingOtp;
@@ -130,6 +150,111 @@ const LoginPage: React.FC = () => {
       script.onerror = null;
     };
   }, [googleClientId, googleLogin]);
+
+  useEffect(() => {
+    if (!msg91WidgetConfigured) {
+      setMsg91WidgetReady(false);
+      return;
+    }
+
+    const scriptUrls = [
+      "https://verify.msg91.com/otp-provider.js",
+      "https://verify.phone91.com/otp-provider.js",
+    ];
+
+    let cancelled = false;
+    let scriptIndex = 0;
+
+    const loadScript = () => {
+      const existingScript = document.querySelector(
+        `script[src="${scriptUrls[scriptIndex]}"]`,
+      ) as HTMLScriptElement | null;
+
+      const markReady = () => {
+        if (!cancelled && typeof window.initSendOTP === "function") {
+          setMsg91WidgetReady(true);
+        }
+      };
+
+      if (existingScript) {
+        if (typeof window.initSendOTP === "function") {
+          markReady();
+        } else {
+          existingScript.addEventListener("load", markReady, { once: true });
+        }
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = scriptUrls[scriptIndex];
+      script.async = true;
+      script.onload = markReady;
+      script.onerror = () => {
+        scriptIndex += 1;
+        if (!cancelled && scriptIndex < scriptUrls.length) {
+          loadScript();
+          return;
+        }
+        if (!cancelled) {
+          setError("Unable to load mobile OTP login. Please use manual OTP or try again later.");
+          setMsg91WidgetReady(false);
+        }
+      };
+      document.body.appendChild(script);
+    };
+
+    loadScript();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [msg91WidgetConfigured]);
+
+  const extractMsg91AccessToken = (data: Record<string, unknown>) => {
+    const candidates = [
+      data.token,
+      data.accessToken,
+      data.access_token,
+      data["access-token"],
+      data.jwt_token,
+    ];
+
+    const token = candidates.find((value) => typeof value === "string" && value.trim());
+    return typeof token === "string" ? token.trim() : "";
+  };
+
+  const openMsg91Widget = () => {
+    if (!msg91WidgetConfigured || typeof window.initSendOTP !== "function") {
+      setError("Mobile OTP login is not ready. Please use manual OTP or try again later.");
+      return;
+    }
+
+    setError("");
+    setSigningInWithMsg91(true);
+    window.initSendOTP({
+      widgetId: msg91WidgetId,
+      tokenAuth: msg91TokenAuth,
+      exposeMethods: true,
+      success: async (data) => {
+        const accessToken = extractMsg91AccessToken(data);
+        if (!accessToken) {
+          setError("MSG91 did not return an access token. Please try again.");
+          setSigningInWithMsg91(false);
+          return;
+        }
+
+        const result = await msg91WidgetLogin(accessToken);
+        if (result.error) {
+          setError(result.error);
+          setSigningInWithMsg91(false);
+        }
+      },
+      failure: () => {
+        setError("Mobile OTP verification failed. Please try again.");
+        setSigningInWithMsg91(false);
+      },
+    });
+  };
 
   const submitOtpRequest = async () => {
     setError("");
@@ -225,7 +350,20 @@ const LoginPage: React.FC = () => {
           <span>or login with OTP</span>
         </div>
 
-        {!otpRequested ? (
+        {msg91WidgetConfigured ? (
+          <button
+            className="button auth-card__msg91-button"
+            type="button"
+            disabled={!msg91WidgetReady || signingInWithMsg91}
+            onClick={openMsg91Widget}
+          >
+            {signingInWithMsg91
+              ? "Verifying..."
+              : msg91WidgetReady
+                ? "Continue with mobile OTP"
+                : "Preparing mobile OTP..."}
+          </button>
+        ) : !otpRequested ? (
           <form className="auth-card__otp-form" onSubmit={handleRequestOtp}>
             <label>
               Mobile number

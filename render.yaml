@@ -35,6 +35,14 @@ services:
         sync: false
       - key: APP_EMAIL_API_URL
         value: https://api.brevo.com/v3/smtp/email
+      - key: APP_MSG91_ENABLED
+        value: "true"
+      - key: APP_MSG91_AUTH_KEY
+        sync: false
+      - key: APP_MSG91_COUNTRY_CODE
+        value: "91"
+      - key: APP_MSG91_BASE_URL
+        value: https://control.msg91.com
 
   - type: web
     name: voltmart-frontend
@@ -45,4 +53,8 @@ services:
       - key: REACT_APP_API_BASE_URL
         value: https://voltmart-backend-xuho.onrender.com/api
       - key: REACT_APP_GOOGLE_CLIENT_ID
+        sync: false
+      - key: REACT_APP_MSG91_WIDGET_ID
+        sync: false
+      - key: REACT_APP_MSG91_TOKEN_AUTH
         sync: false

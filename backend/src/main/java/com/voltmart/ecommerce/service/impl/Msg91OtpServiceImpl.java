@@ -1,5 +1,7 @@
 package com.voltmart.ecommerce.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.voltmart.ecommerce.config.AppProperties;
 import com.voltmart.ecommerce.exception.BadRequestException;
 import com.voltmart.ecommerce.service.Msg91OtpService;
@@ -17,6 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class Msg91OtpServiceImpl implements Msg91OtpService {
     private final AppProperties appProperties;
+    private final ObjectMapper objectMapper;
 
     @Override
     public boolean isEnabled() {
@@ -77,6 +80,36 @@ public class Msg91OtpServiceImpl implements Msg91OtpService {
         }
     }
 
+    @Override
+    public String verifyWidgetAccessToken(String accessToken) {
+        if (!StringUtils.hasText(appProperties.getMsg91().getAuthKey())) {
+            throw new BadRequestException("MSG91 auth key is not configured.");
+        }
+        if (!StringUtils.hasText(accessToken)) {
+            throw new BadRequestException("MSG91 access token is missing.");
+        }
+
+        try {
+            String responseBody = RestClient.builder()
+                    .baseUrl(getBaseUrl())
+                    .build()
+                    .post()
+                    .uri("/api/v5/widget/verifyAccessToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(Map.of(
+                            "authkey", appProperties.getMsg91().getAuthKey(),
+                            "access-token", accessToken
+                    ))
+                    .retrieve()
+                    .body(String.class);
+
+            return extractVerifiedPhoneNumber(responseBody);
+        } catch (RestClientResponseException exception) {
+            throw new BadRequestException(resolveMessage(exception, "Unable to verify MSG91 access token."));
+        }
+    }
+
     private void ensureEnabled() {
         if (!isEnabled()) {
             throw new BadRequestException("MSG91 OTP is not configured.");
@@ -102,6 +135,88 @@ public class Msg91OtpServiceImpl implements Msg91OtpService {
         }
 
         return digitsOnly;
+    }
+
+    private String extractVerifiedPhoneNumber(String responseBody) {
+        if (!StringUtils.hasText(responseBody)) {
+            throw new BadRequestException("MSG91 did not return a verification response.");
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            String status = firstText(root, "type", "status");
+            String message = firstText(root, "message", "error");
+            if (StringUtils.hasText(status) && !"success".equalsIgnoreCase(status)) {
+                throw new BadRequestException(StringUtils.hasText(message) ? message : "MSG91 access token verification failed.");
+            }
+
+            String phoneNumber = firstText(
+                    root,
+                    "mobile",
+                    "phone",
+                    "phoneNumber",
+                    "phone_number",
+                    "identifier",
+                    "number"
+            );
+            if (!StringUtils.hasText(phoneNumber)) {
+                throw new BadRequestException("MSG91 verified the token but did not return a mobile number.");
+            }
+
+            String digitsOnly = phoneNumber.replaceAll("\\D", "");
+            String countryCode = appProperties.getMsg91().getCountryCode();
+            String normalizedCountryCode = StringUtils.hasText(countryCode) ? countryCode.replaceAll("\\D", "") : "91";
+            if (digitsOnly.startsWith(normalizedCountryCode) && digitsOnly.length() > 10) {
+                digitsOnly = digitsOnly.substring(normalizedCountryCode.length());
+            }
+
+            if (digitsOnly.length() != 10) {
+                throw new BadRequestException("MSG91 returned an invalid mobile number.");
+            }
+
+            return digitsOnly;
+        } catch (BadRequestException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new BadRequestException("Unable to read MSG91 verification response.");
+        }
+    }
+
+    private String firstText(JsonNode root, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            String value = findText(root, fieldName);
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String findText(JsonNode node, String fieldName) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        JsonNode directValue = node.get(fieldName);
+        if (directValue != null && directValue.isValueNode()) {
+            return directValue.asText();
+        }
+        if (node.isObject()) {
+            for (JsonNode child : node) {
+                String value = findText(child, fieldName);
+                if (StringUtils.hasText(value)) {
+                    return value;
+                }
+            }
+        }
+        if (node.isArray()) {
+            for (JsonNode child : node) {
+                String value = findText(child, fieldName);
+                if (StringUtils.hasText(value)) {
+                    return value;
+                }
+            }
+        }
+        return null;
     }
 
     private boolean isFailureResponse(String responseBody) {

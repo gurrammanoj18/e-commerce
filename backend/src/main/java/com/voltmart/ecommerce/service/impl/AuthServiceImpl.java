@@ -4,6 +4,7 @@ import com.voltmart.ecommerce.dto.auth.AuthRequest;
 import com.voltmart.ecommerce.dto.auth.AuthResponse;
 import com.voltmart.ecommerce.config.AppProperties;
 import com.voltmart.ecommerce.dto.auth.GoogleAuthRequest;
+import com.voltmart.ecommerce.dto.auth.Msg91WidgetVerifyRequest;
 import com.voltmart.ecommerce.dto.auth.OtpRequest;
 import com.voltmart.ecommerce.dto.auth.OtpRequestResponse;
 import com.voltmart.ecommerce.dto.auth.OtpVerifyRequest;
@@ -133,6 +134,13 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
         return buildAuthResponse(user, token, true);
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse msg91WidgetLogin(Msg91WidgetVerifyRequest request) {
+        String phoneNumber = msg91OtpService.verifyWidgetAccessToken(request.accessToken());
+        return issueLoginForPhoneNumber(normalizePhoneNumber(phoneNumber));
     }
 
     @Override

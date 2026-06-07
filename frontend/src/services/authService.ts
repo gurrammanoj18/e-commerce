@@ -11,6 +11,11 @@ export const googleLogin = async (payload: { credential: string }) => {
   return response.data;
 };
 
+export const msg91WidgetLogin = async (payload: { accessToken: string }) => {
+  const response = await api.post<AuthResponse>("/auth/otp/widget/verify", payload);
+  return response.data;
+};
+
 export const requestLoginOtp = async (payload: { phoneNumber: string }) => {
   const response = await api.post<{
     phoneNumber: string;
