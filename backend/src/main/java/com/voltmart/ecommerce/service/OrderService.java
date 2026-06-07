@@ -2,6 +2,7 @@ package com.voltmart.ecommerce.service;
 
 import com.voltmart.ecommerce.dto.order.CheckoutRequest;
 import com.voltmart.ecommerce.dto.order.OrderResponse;
+import com.voltmart.ecommerce.dto.cart.CartResponse;
 
 import java.util.List;
 
@@ -11,4 +12,5 @@ public interface OrderService {
     List<OrderResponse> getAllOrders();
     OrderResponse updateOrderStatus(Long orderId, String status);
     void deleteOrder(Long orderId);
+    CartResponse reorderOrder(Long orderId);
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { AxiosError } from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { fetchOrders } from "../services/orderService";
+import { fetchOrders, reorderOrder } from "../services/orderService";
 import { fetchReturnRequests, submitReturnRequest } from "../services/returnService";
 import "../styles/pages/OrdersPage.css";
 import { Order, ReturnRequest, ReturnRequestType, ReturnResolution } from "../types/store";
@@ -91,7 +91,7 @@ const getStatusLabel = (status: string) => {
   return labels[status] || formatStatus(status);
 };
 
-const getStatusNote = (status: string, order: Order, returnRequest?: ReturnRequest | undefined) => {
+const getStatusNote = (status: string, returnRequest?: ReturnRequest | undefined) => {
   if (!returnRequest) {
     const notes: Record<string, string> = {
       CONFIRMED: "Your order is confirmed and ready for the next step.",
@@ -382,6 +382,16 @@ const OrdersPage: React.FC = () => {
     }
   };
 
+  const handleReorder = async (orderId: number) => {
+    try {
+      await reorderOrder(orderId);
+      toast.success("Added items back to your cart.");
+      navigate("/cart");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to reorder this purchase right now."));
+    }
+  };
+
   const openReturnForm = (orderId: number, requestType: ReturnRequestType) => {
     setExpandedOrderId(orderId);
     setActiveReturnOrderId(orderId);
@@ -484,7 +494,7 @@ const OrdersPage: React.FC = () => {
                   <span className="order-card__status-title">{getStatusLabel(status)}</span>
                   <span className="order-card__status-date">{getStatusDate(status, order, returnRequest)}</span>
                 </div>
-                <p>{getStatusNote(status, order, returnRequest)}</p>
+                <p>{getStatusNote(status, returnRequest)}</p>
               </div>
             </div>
           );
@@ -655,6 +665,13 @@ const OrdersPage: React.FC = () => {
                       >
                         Replacement
                       </button>
+                      <button
+                        className="link-button order-card__post-delivery-button"
+                        type="button"
+                        onClick={() => void handleReorder(order.id)}
+                      >
+                        Reorder
+                      </button>
                     </div>
                   )}
                 </div>
@@ -689,7 +706,7 @@ const OrdersPage: React.FC = () => {
                           <p>
                             {returnRequest
                               ? getReturnStatusCopy(returnRequest)
-                              : getStatusNote(order.status, order)}
+                              : getStatusNote(order.status)}
                           </p>
                         </div>
                         <div className="order-card__mobile-status-meta">
@@ -711,6 +728,13 @@ const OrdersPage: React.FC = () => {
                               onClick={() => openReturnForm(order.id, "REPLACEMENT")}
                             >
                               Replacement
+                            </button>
+                            <button
+                              className="link-button order-card__mobile-return-button"
+                              type="button"
+                              onClick={() => void handleReorder(order.id)}
+                            >
+                              Reorder
                             </button>
                           </div>
                         ) : null}

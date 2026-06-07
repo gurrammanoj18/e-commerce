@@ -1,9 +1,13 @@
 package com.voltmart.ecommerce.service.impl;
 
 import com.voltmart.ecommerce.dto.order.CheckoutRequest;
+import com.voltmart.ecommerce.dto.cart.CartResponse;
 import com.voltmart.ecommerce.dto.order.OrderResponse;
+import com.voltmart.ecommerce.entity.Cart;
+import com.voltmart.ecommerce.entity.CartItem;
 import com.voltmart.ecommerce.entity.Order;
 import com.voltmart.ecommerce.entity.OrderItem;
+import com.voltmart.ecommerce.entity.Product;
 import com.voltmart.ecommerce.entity.WalletTransaction;
 import com.voltmart.ecommerce.entity.WalletCoupon;
 import com.voltmart.ecommerce.entity.enums.DeliveryMode;
@@ -19,6 +23,7 @@ import com.voltmart.ecommerce.repository.OrderRepository;
 import com.voltmart.ecommerce.repository.UserAddressRepository;
 import com.voltmart.ecommerce.repository.WalletTransactionRepository;
 import com.voltmart.ecommerce.service.CurrentUserService;
+import com.voltmart.ecommerce.service.CartService;
 import com.voltmart.ecommerce.service.EmailNotificationService;
 import com.voltmart.ecommerce.service.OrderService;
 import com.voltmart.ecommerce.service.ServiceablePincodeService;
@@ -52,6 +57,7 @@ public class OrderServiceImpl implements OrderService {
     private final UserAddressRepository userAddressRepository;
     private final WalletTransactionRepository walletTransactionRepository;
     private final EntityMapper entityMapper;
+    private final CartService cartService;
     private final WhatsappNotificationService whatsappNotificationService;
     private final EmailNotificationService emailNotificationService;
     private final WalletService walletService;
@@ -215,6 +221,46 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
         orderRepository.delete(order);
+    }
+
+    @Override
+    @Transactional
+    public CartResponse reorderOrder(Long orderId) {
+        var user = currentUserService.getCurrentUser();
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new BadRequestException("You can only reorder your own orders");
+        }
+
+        Cart cart = cartRepository.findByUserId(user.getId())
+                .orElseGet(() -> cartRepository.save(Cart.builder().user(user).build()));
+
+        for (OrderItem orderItem : order.getItems()) {
+            Product product = orderItem.getProduct();
+            var inventory = inventoryRepository.findByProductId(product.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Inventory not found"));
+            int nextQuantity = orderItem.getQuantity();
+            var existing = cart.getItems().stream()
+                    .filter(item -> item.getProduct().getId().equals(product.getId()))
+                    .findFirst();
+            int existingQuantity = existing.map(CartItem::getQuantity).orElse(0);
+            if (inventory.getStockQuantity() < existingQuantity + nextQuantity) {
+                throw new BadRequestException("Not enough stock to reorder " + product.getName());
+            }
+            if (existing.isPresent()) {
+                existing.get().setQuantity(existingQuantity + nextQuantity);
+            } else {
+                cart.getItems().add(CartItem.builder()
+                        .cart(cart)
+                        .product(product)
+                        .quantity(nextQuantity)
+                        .build());
+            }
+        }
+
+        cartRepository.save(cart);
+        return cartService.getCartForCurrentUser();
     }
 
     private String normalizeDeliverySlot(String value, boolean isStorePickup) {

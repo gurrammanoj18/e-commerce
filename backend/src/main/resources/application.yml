@@ -84,6 +84,12 @@ app:
     country-code: ${APP_MSG91_COUNTRY_CODE:91}
     base-url: ${APP_MSG91_BASE_URL:https://control.msg91.com}
 
+  cache:
+    redis-enabled: ${APP_CACHE_REDIS_ENABLED:false}
+    host: ${APP_CACHE_REDIS_HOST:localhost}
+    port: ${APP_CACHE_REDIS_PORT:6379}
+    ttl-seconds: ${APP_CACHE_TTL_SECONDS:300}
+
 logging:
   level:
     org.springframework.security: INFO

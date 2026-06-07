@@ -15,6 +15,7 @@ import com.voltmart.ecommerce.repository.ProductRepository;
 import com.voltmart.ecommerce.repository.WishlistItemRepository;
 import com.voltmart.ecommerce.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -39,6 +40,7 @@ public class ProductServiceImpl implements ProductService {
     private final EntityMapper entityMapper;
 
     @Override
+    @Cacheable(cacheNames = "productsPage", key = "T(java.util.Objects).hash(#category, #search, #brand, #minPrice, #maxPrice, #minDiscount, #availability, #sort, #page, #size)")
     public PagedResponse<ProductResponse> getProducts(
             String category,
             String search,
@@ -70,6 +72,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(cacheNames = "productsAll")
     public List<ProductResponse> getAllProducts() {
         return productRepository.findAll(resolveSort("newest")).stream()
                 .map(product -> entityMapper.toProductResponse(product, inventoryFor(product.getId())))
@@ -77,6 +80,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(cacheNames = "productBySlug", key = "#slug")
     public ProductResponse getProductBySlug(String slug) {
         Product product = productRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
@@ -84,6 +88,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(cacheNames = "featuredProducts")
     public List<ProductResponse> getFeaturedProducts() {
         return productRepository.findAll().stream()
                 .filter(Product::getFeatured)
@@ -92,6 +97,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(cacheNames = "bestSellerProducts")
     public List<ProductResponse> getBestSellerProducts() {
         List<Long> topProductIds = orderItemRepository.findTopDeliveredProductIds();
         if (!topProductIds.isEmpty()) {

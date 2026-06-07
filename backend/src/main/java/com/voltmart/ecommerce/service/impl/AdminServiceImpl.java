@@ -5,6 +5,7 @@ import com.voltmart.ecommerce.dto.user.AdminUserResponse;
 import com.voltmart.ecommerce.repository.*;
 import com.voltmart.ecommerce.service.AdminService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class AdminServiceImpl implements AdminService {
     private final BulkOrderInquiryRepository bulkOrderInquiryRepository;
 
     @Override
+    @Cacheable(cacheNames = "adminDashboardOverview")
     public Map<String, Object> getDashboardOverview() {
         long lowStockCount = inventoryRepository.findAll().stream()
                 .filter(inventory -> inventory.getStockQuantity() <= inventory.getLowStockThreshold())
@@ -36,6 +38,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
+    @Cacheable(cacheNames = "adminUsers")
     public List<AdminUserResponse> getUsers() {
         return userRepository.findAll().stream()
                 .map(user -> new AdminUserResponse(
@@ -50,6 +53,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
+    @Cacheable(cacheNames = "adminInventory")
     public List<InventoryResponse> getInventory() {
         return inventoryRepository.findAll().stream()
                 .map(inventory -> new InventoryResponse(

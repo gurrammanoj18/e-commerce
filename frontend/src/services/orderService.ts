@@ -1,5 +1,5 @@
 import api from "./api";
-import { DeliveryMode, Order } from "../types/store";
+import { CartApiResponse, DeliveryMode, Order } from "../types/store";
 
 export const checkout = async (payload: {
   deliveryMode: DeliveryMode;
@@ -22,5 +22,10 @@ export const checkout = async (payload: {
 
 export const fetchOrders = async () => {
   const response = await api.get<Order[]>("/orders");
+  return response.data;
+};
+
+export const reorderOrder = async (orderId: number) => {
+  const response = await api.post<CartApiResponse>(`/orders/${orderId}/reorder`);
   return response.data;
 };

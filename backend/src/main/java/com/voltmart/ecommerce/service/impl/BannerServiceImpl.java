@@ -8,6 +8,7 @@ import com.voltmart.ecommerce.exception.ResourceNotFoundException;
 import com.voltmart.ecommerce.repository.BannerRepository;
 import com.voltmart.ecommerce.service.BannerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ public class BannerServiceImpl implements BannerService {
     private final BannerRepository bannerRepository;
 
     @Override
+    @Cacheable(cacheNames = "homepageBanners")
     public List<BannerResponse> getAllBanners() {
         return bannerRepository
                 .findByPlacementOrderByIdDesc(HOMEPAGE_PLACEMENT)
@@ -32,11 +34,13 @@ public class BannerServiceImpl implements BannerService {
     }
 
     @Override
+    @Cacheable(cacheNames = "homepageBanners")
     public List<BannerResponse> getHomepageBanners() {
         return getAllBanners();
     }
 
     @Override
+    @Cacheable(cacheNames = "seasonalPicks")
     public List<BannerResponse> getSeasonalPicks() {
         return bannerRepository
                 .findByPlacementOrderByIdDesc(SEASONAL_PICK_PLACEMENT)

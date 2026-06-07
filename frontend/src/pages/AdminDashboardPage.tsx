@@ -613,6 +613,40 @@ const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  const handleExportReport = () => {
+    const summaryRows = [
+      ["Metric", "Value"],
+      ["Products", String(overview?.productCount ?? 0)],
+      ["Orders", String(overview?.orderCount ?? 0)],
+      ["Customers", String(overview?.userCount ?? 0)],
+      ["Bulk inquiries", String(overview?.bulkInquiryCount ?? 0)],
+      ["Low stock items", String(overview?.lowStockCount ?? 0)],
+      ["Total revenue", String(totalRevenue)],
+    ];
+    const orderRows = [
+      ["Order number", "Customer", "Status", "Total", "Created at"],
+      ...orders.map((order) => [
+        order.orderNumber,
+        order.shippingName,
+        order.status,
+        String(order.totalAmount),
+        order.createdAt,
+      ]),
+    ];
+    const csv = [...summaryRows, [], ...orderRows]
+      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `voltmart-admin-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    window.URL.revokeObjectURL(url);
+  };
+
   const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
   const openOrders = orders.filter((order) =>
     ["CONFIRMED", "PROCESSING", "SHIPPED"].includes(order.status),
@@ -1724,6 +1758,9 @@ const AdminDashboardPage: React.FC = () => {
           <h1>VoltMart control center</h1>
         </div>
         <div className="admin-page-header__actions">
+          <button type="button" className="link-button" onClick={handleExportReport}>
+            Export report
+          </button>
           <span>{user?.fullName || "Admin"}</span>
         </div>
       </div>

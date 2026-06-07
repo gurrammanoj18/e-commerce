@@ -19,6 +19,7 @@ public class AppProperties {
     private final Whatsapp whatsapp = new Whatsapp();
     private final Email email = new Email();
     private final Msg91 msg91 = new Msg91();
+    private final Cache cache = new Cache();
 
     @Getter
     @Setter
@@ -84,5 +85,14 @@ public class AppProperties {
         private String templateId;
         private String countryCode = "91";
         private String baseUrl = "https://control.msg91.com";
+    }
+
+    @Getter
+    @Setter
+    public static class Cache {
+        private boolean redisEnabled;
+        private String host = "localhost";
+        private int port = 6379;
+        private long ttlSeconds = 300;
     }
 }

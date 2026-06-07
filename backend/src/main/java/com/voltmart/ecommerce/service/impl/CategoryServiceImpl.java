@@ -10,6 +10,7 @@ import com.voltmart.ecommerce.repository.CategoryRepository;
 import com.voltmart.ecommerce.repository.ProductRepository;
 import com.voltmart.ecommerce.service.CategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "categoriesTree")
     public List<CategoryResponse> getCategories() {
         var categories = categoryRepository.findAll();
         Map<Long, Long> directProductCounts = new HashMap<>();

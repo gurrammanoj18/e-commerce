@@ -7,6 +7,7 @@ import com.voltmart.ecommerce.exception.ResourceNotFoundException;
 import com.voltmart.ecommerce.repository.HomepageSectionContentRepository;
 import com.voltmart.ecommerce.service.HomepageSectionContentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ public class HomepageSectionContentServiceImpl implements HomepageSectionContent
 
     @Override
     @Transactional
+    @Cacheable(cacheNames = "homepageSections")
     public List<HomepageSectionContentResponse> getSections() {
         return DEFAULT_SECTIONS.stream()
                 .sorted(Comparator.comparingInt(DefaultSection::displayOrder))

@@ -2,6 +2,7 @@ package com.voltmart.ecommerce.controller;
 
 import com.voltmart.ecommerce.dto.order.CheckoutRequest;
 import com.voltmart.ecommerce.dto.order.OrderResponse;
+import com.voltmart.ecommerce.dto.cart.CartResponse;
 import com.voltmart.ecommerce.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +25,10 @@ public class OrderController {
     @GetMapping
     public List<OrderResponse> getOrders() {
         return orderService.getCurrentUserOrders();
+    }
+
+    @PostMapping("/{orderId}/reorder")
+    public CartResponse reorder(@PathVariable Long orderId) {
+        return orderService.reorderOrder(orderId);
     }
 }
