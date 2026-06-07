@@ -39,6 +39,8 @@ services:
         value: "true"
       - key: APP_MSG91_AUTH_KEY
         sync: false
+      - key: APP_MSG91_TEMPLATE_ID
+        sync: false
       - key: APP_MSG91_COUNTRY_CODE
         value: "91"
       - key: APP_MSG91_BASE_URL

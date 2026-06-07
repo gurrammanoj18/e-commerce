@@ -147,7 +147,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public OtpRequestResponse requestOtp(OtpRequest request) {
         String phoneNumber = normalizePhoneNumber(request.phoneNumber());
-        if (msg91OtpService.isEnabled()) {
+        if (appProperties.getMsg91().isEnabled()) {
             msg91OtpService.sendOtp(phoneNumber);
             return new OtpRequestResponse(
                     phoneNumber,
@@ -180,7 +180,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse verifyOtp(OtpVerifyRequest request) {
         String phoneNumber = normalizePhoneNumber(request.phoneNumber());
-        if (msg91OtpService.isEnabled()) {
+        if (appProperties.getMsg91().isEnabled()) {
             msg91OtpService.verifyOtp(phoneNumber, request.otp());
             return issueLoginForPhoneNumber(phoneNumber);
         }

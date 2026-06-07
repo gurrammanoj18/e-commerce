@@ -210,17 +210,58 @@ const LoginPage: React.FC = () => {
     };
   }, [msg91WidgetConfigured]);
 
-  const extractMsg91AccessToken = (data: Record<string, unknown>) => {
-    const candidates = [
-      data.token,
-      data.accessToken,
-      data.access_token,
-      data["access-token"],
-      data.jwt_token,
-    ];
+  const extractMsg91AccessToken = (data: unknown): string => {
+    if (typeof data === "string") {
+      return data.trim();
+    }
 
-    const token = candidates.find((value) => typeof value === "string" && value.trim());
-    return typeof token === "string" ? token.trim() : "";
+    if (!data || typeof data !== "object") {
+      return "";
+    }
+
+    const tokenKeys = new Set([
+      "token",
+      "accesstoken",
+      "access_token",
+      "access-token",
+      "jwttoken",
+      "jwt_token",
+      "jwt-token",
+    ]);
+
+    const findToken = (value: unknown): string => {
+      if (!value || typeof value !== "object") {
+        return "";
+      }
+
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const token = findToken(item);
+          if (token) {
+            return token;
+          }
+        }
+        return "";
+      }
+
+      for (const [key, childValue] of Object.entries(value)) {
+        const normalizedKey = key.toLowerCase().replace(/[\s_]+/g, "");
+        if (tokenKeys.has(key.toLowerCase()) || tokenKeys.has(normalizedKey)) {
+          if (typeof childValue === "string" && childValue.trim()) {
+            return childValue.trim();
+          }
+        }
+
+        const nestedToken = findToken(childValue);
+        if (nestedToken) {
+          return nestedToken;
+        }
+      }
+
+      return "";
+    };
+
+    return findToken(data);
   };
 
   const openMsg91Widget = () => {
@@ -349,20 +390,7 @@ const LoginPage: React.FC = () => {
           <span>or login with OTP</span>
         </div>
 
-        {msg91WidgetConfigured ? (
-          <button
-            className="button auth-card__msg91-button"
-            type="button"
-            disabled={!msg91WidgetReady || signingInWithMsg91}
-            onClick={openMsg91Widget}
-          >
-            {signingInWithMsg91
-              ? "Verifying..."
-              : msg91WidgetReady
-                ? "Continue with mobile OTP"
-                : "Preparing mobile OTP..."}
-          </button>
-        ) : !otpRequested ? (
+        {!otpRequested ? (
           <form className="auth-card__otp-form" onSubmit={handleRequestOtp}>
             <label>
               Mobile number
@@ -412,6 +440,26 @@ const LoginPage: React.FC = () => {
             </div>
           </form>
         )}
+
+        {msg91WidgetConfigured ? (
+          <>
+            <div className="auth-card__divider">
+              <span>or</span>
+            </div>
+            <button
+              className="button auth-card__msg91-button"
+              type="button"
+              disabled={!msg91WidgetReady || signingInWithMsg91}
+              onClick={openMsg91Widget}
+            >
+              {signingInWithMsg91
+                ? "Verifying..."
+                : msg91WidgetReady
+                  ? "Use MSG91 secure popup"
+                  : "Preparing mobile OTP..."}
+            </button>
+          </>
+        ) : null}
       </div>
     </section>
   );
