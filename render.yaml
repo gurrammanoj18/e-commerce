@@ -22,7 +22,7 @@ services:
       - key: APP_STORE_FRONTEND_URL
         value: https://www.eldoo.in
       - key: APP_GOOGLE_CLIENT_ID
-        sync: false
+        value: 536121505527-9vfs7pm13jjrvsb9np95nubbpji6b01l.apps.googleusercontent.com
       - key: APP_EMAIL_ENABLED
         value: "true"
       - key: APP_EMAIL_PROVIDER
@@ -57,7 +57,7 @@ services:
       - key: REACT_APP_API_BASE_URL
         value: https://voltmart-backend-xuho.onrender.com/api
       - key: REACT_APP_GOOGLE_CLIENT_ID
-        sync: false
+        value: 536121505527-9vfs7pm13jjrvsb9np95nubbpji6b01l.apps.googleusercontent.com
       - key: REACT_APP_MSG91_WIDGET_ID
         sync: false
       - key: REACT_APP_MSG91_TOKEN_AUTH
