@@ -302,7 +302,6 @@ const LoginPage: React.FC = () => {
 
   const submitOtpRequest = async () => {
     setError("");
-    setDemoOtp("");
 
     if (phoneNumber.length !== 10) {
       setError("Enter a valid 10 digit mobile number.");
