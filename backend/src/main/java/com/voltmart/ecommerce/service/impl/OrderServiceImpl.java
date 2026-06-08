@@ -100,10 +100,13 @@ public class OrderServiceImpl implements OrderService {
         WalletCoupon checkoutCoupon = resolveCheckoutCoupon(request.couponCode());
         BigDecimal discountAmount = calculateDiscountAmount(subtotal, checkoutCoupon);
         BigDecimal discountedSubtotal = subtotal.subtract(discountAmount);
-        BigDecimal shipping = isStorePickup
+        boolean isWithinFreeDeliveryRadius = isStorePickup || serviceablePincodeService.isServiceable(postalCode);
+        BigDecimal shipping = isWithinFreeDeliveryRadius
                 ? BigDecimal.ZERO
                 : discountedSubtotal.compareTo(BigDecimal.valueOf(4999)) >= 0 ? BigDecimal.ZERO : BigDecimal.valueOf(499);
-        BigDecimal tax = discountedSubtotal.multiply(BigDecimal.valueOf(0.18)).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal tax = isWithinFreeDeliveryRadius
+                ? BigDecimal.ZERO
+                : discountedSubtotal.multiply(BigDecimal.valueOf(0.18)).setScale(2, RoundingMode.HALF_UP);
         BigDecimal totalBeforeWallet = discountedSubtotal.add(shipping).add(tax);
         BigDecimal walletDebitAmount = BigDecimal.ZERO;
         BigDecimal total = totalBeforeWallet;

@@ -151,6 +151,7 @@ const CheckoutPage: React.FC = () => {
   const discountedSubtotal = Math.max(subtotal - couponDiscountAmount, 0);
   const hasSavedAddress = Boolean(selectedAddress);
   const activePostalCode = (selectedAddress?.postalCode ?? formState.postalCode).trim();
+  const isWithinFreeDeliveryRadius = isStorePickup || Boolean(pincodeStatus?.serviceable);
 
   useEffect(() => {
     const loadCoupons = async () => {
@@ -202,8 +203,8 @@ const CheckoutPage: React.FC = () => {
     };
   }, [activePostalCode, isStorePickup]);
 
-  const shipping = isStorePickup ? 0 : discountedSubtotal >= 4999 ? 0 : 499;
-  const tax = Math.round(discountedSubtotal * 0.18 * 100) / 100;
+  const shipping = isWithinFreeDeliveryRadius ? 0 : discountedSubtotal >= 4999 ? 0 : 499;
+  const tax = isWithinFreeDeliveryRadius ? 0 : Math.round(discountedSubtotal * 0.18 * 100) / 100;
   const total = discountedSubtotal + shipping + tax;
   const walletDebitPreview = formState.useWalletBalance && wallet?.balance
     ? Math.min(wallet.balance, total)
@@ -496,7 +497,7 @@ const CheckoutPage: React.FC = () => {
                           </small>
                         ) : (
                           <small className="checkout-pincode-status">
-                            Home delivery is currently available for pincode 500074 only.
+                            Shipping and tax are waived inside the shop's 5 km delivery radius.
                           </small>
                         )}
                       </label>
@@ -691,6 +692,8 @@ const CheckoutPage: React.FC = () => {
               <strong>
                 {isStorePickup
                   ? "Store pickup"
+                  : isWithinFreeDeliveryRadius
+                    ? "Free within 5 km"
                   : shipping === 0
                     ? "Free"
                     : formatCurrency(shipping)}
@@ -698,7 +701,7 @@ const CheckoutPage: React.FC = () => {
             </div>
             <div>
               <span>Tax</span>
-              <strong>{formatCurrency(tax)}</strong>
+              <strong>{isWithinFreeDeliveryRadius ? "Waived" : formatCurrency(tax)}</strong>
             </div>
             {formState.useWalletBalance && wallet?.balance ? (
               <div>

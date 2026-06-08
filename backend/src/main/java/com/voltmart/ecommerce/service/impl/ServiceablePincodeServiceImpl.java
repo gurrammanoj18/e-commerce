@@ -30,7 +30,7 @@ public class ServiceablePincodeServiceImpl implements ServiceablePincodeService 
                 normalized,
                 serviceable,
                 serviceable
-                        ? "Home delivery is available for this pincode."
+                        ? "Home delivery is available within the shop's 5 km radius. Shipping and tax are waived."
                         : "Home delivery is not available for this pincode yet."
         );
     }
