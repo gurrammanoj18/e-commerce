@@ -31,7 +31,7 @@ interface AuthContextValue {
   loading: boolean;
   googleLogin: (credential: string) => Promise<AuthActionResult>;
   msg91WidgetLogin: (accessToken: string) => Promise<AuthActionResult>;
-  requestLoginOtp: (phoneNumber: string) => Promise<AuthActionResult<{ phoneNumber: string; demoOtp?: string }>>;
+  requestLoginOtp: (phoneNumber: string) => Promise<AuthActionResult<{ phoneNumber: string }>>;
   verifyLoginOtp: (phoneNumber: string, otp: string) => Promise<AuthActionResult>;
   adminLogin: (email: string, password: string) => Promise<AuthActionResult>;
   completeProfile: (payload: ProfileCompletionPayload) => Promise<AuthActionResult>;
@@ -351,7 +351,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return {
         data: {
           phoneNumber: response.phoneNumber,
-          demoOtp: response.demoOtp,
         },
       };
     } catch (error) {

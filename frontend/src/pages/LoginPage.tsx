@@ -44,7 +44,6 @@ const LoginPage: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState("");
-  const [demoOtp, setDemoOtp] = useState("");
   const [error, setError] = useState("");
   const [requestingOtp, setRequestingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
@@ -320,7 +319,6 @@ const LoginPage: React.FC = () => {
     }
 
     setVerifiedPhoneNumber(result.data?.phoneNumber || phoneNumber);
-    setDemoOtp(result.data?.demoOtp || "");
     setOtp("");
   };
 
@@ -350,7 +348,6 @@ const LoginPage: React.FC = () => {
   const editPhoneNumber = () => {
     setVerifiedPhoneNumber("");
     setOtp("");
-    setDemoOtp("");
     setError("");
   };
 
@@ -429,7 +426,6 @@ const LoginPage: React.FC = () => {
                 placeholder="Enter 6 digit OTP"
               />
             </label>
-            {demoOtp ? <p className="auth-card__note">Demo OTP: {demoOtp}</p> : null}
             <div className="auth-card__otp-actions">
               <button className="button" type="submit" disabled={!canVerifyOtp}>
                 {verifyingOtp ? "Verifying..." : "Verify OTP"}

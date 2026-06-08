@@ -9,7 +9,6 @@ import com.voltmart.ecommerce.dto.auth.OtpRequest;
 import com.voltmart.ecommerce.dto.auth.OtpRequestResponse;
 import com.voltmart.ecommerce.dto.auth.OtpVerifyRequest;
 import com.voltmart.ecommerce.entity.Cart;
-import com.voltmart.ecommerce.entity.LoginOtp;
 import com.voltmart.ecommerce.entity.User;
 import com.voltmart.ecommerce.entity.Wishlist;
 import com.voltmart.ecommerce.dto.auth.DeliveryPreferenceRequest;
@@ -18,7 +17,6 @@ import com.voltmart.ecommerce.entity.enums.Role;
 import com.voltmart.ecommerce.exception.BadRequestException;
 import com.voltmart.ecommerce.mapper.EntityMapper;
 import com.voltmart.ecommerce.repository.CartRepository;
-import com.voltmart.ecommerce.repository.LoginOtpRepository;
 import com.voltmart.ecommerce.repository.UserRepository;
 import com.voltmart.ecommerce.repository.WishlistRepository;
 import com.voltmart.ecommerce.security.JwtService;
@@ -28,7 +26,6 @@ import com.voltmart.ecommerce.service.Msg91OtpService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +33,6 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.math.BigDecimal;
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -44,18 +40,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
     private static final int OTP_EXPIRY_SECONDS = 300;
-    private static final int MAX_OTP_ATTEMPTS = 5;
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
-    private final LoginOtpRepository loginOtpRepository;
     private final CartRepository cartRepository;
     private final WishlistRepository wishlistRepository;
     private final JwtService jwtService;
     private final EntityMapper entityMapper;
     private final AppProperties appProperties;
     private final AuthenticationManager authenticationManager;
-    private final PasswordEncoder passwordEncoder;
     private final CurrentUserService currentUserService;
     private final Msg91OtpService msg91OtpService;
 
@@ -147,32 +139,15 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public OtpRequestResponse requestOtp(OtpRequest request) {
         String phoneNumber = normalizePhoneNumber(request.resolvedPhoneNumber());
-        if (appProperties.getMsg91().isEnabled()) {
-            msg91OtpService.sendOtp(phoneNumber);
-            return new OtpRequestResponse(
-                    phoneNumber,
-                    "OTP sent successfully.",
-                    OTP_EXPIRY_SECONDS,
-                    null
-            );
+        if (!appProperties.getMsg91().isEnabled()) {
+            throw new BadRequestException("Mobile OTP login is not configured.");
         }
-
-        String otp = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
-
-        loginOtpRepository.save(LoginOtp.builder()
-                .phoneNumber(phoneNumber)
-                .otpHash(passwordEncoder.encode(otp))
-                .expiresAt(LocalDateTime.now().plusSeconds(OTP_EXPIRY_SECONDS))
-                .consumed(false)
-                .attemptCount(0)
-                .createdAt(LocalDateTime.now())
-                .build());
-
+        msg91OtpService.sendOtp(phoneNumber);
         return new OtpRequestResponse(
                 phoneNumber,
-                "OTP generated successfully.",
+                "OTP sent successfully.",
                 OTP_EXPIRY_SECONDS,
-                otp
+                null
         );
     }
 
@@ -180,36 +155,10 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse verifyOtp(OtpVerifyRequest request) {
         String phoneNumber = normalizePhoneNumber(request.resolvedPhoneNumber());
-        if (appProperties.getMsg91().isEnabled()) {
-            msg91OtpService.verifyOtp(phoneNumber, request.otp());
-            return issueLoginForPhoneNumber(phoneNumber);
+        if (!appProperties.getMsg91().isEnabled()) {
+            throw new BadRequestException("Mobile OTP login is not configured.");
         }
-
-        LoginOtp loginOtp = loginOtpRepository
-                .findFirstByPhoneNumberAndConsumedFalseOrderByCreatedAtDesc(phoneNumber)
-                .orElseThrow(() -> new BadRequestException("Please request a fresh OTP."));
-
-        if (loginOtp.getExpiresAt().isBefore(LocalDateTime.now())) {
-            loginOtp.setConsumed(true);
-            loginOtpRepository.save(loginOtp);
-            throw new BadRequestException("OTP expired. Please request a new one.");
-        }
-
-        if (loginOtp.getAttemptCount() >= MAX_OTP_ATTEMPTS) {
-            loginOtp.setConsumed(true);
-            loginOtpRepository.save(loginOtp);
-            throw new BadRequestException("Too many incorrect attempts. Please request a new OTP.");
-        }
-
-        if (!passwordEncoder.matches(request.otp(), loginOtp.getOtpHash())) {
-            loginOtp.setAttemptCount(loginOtp.getAttemptCount() + 1);
-            loginOtpRepository.save(loginOtp);
-            throw new BadRequestException("Invalid OTP.");
-        }
-
-        loginOtp.setConsumed(true);
-        loginOtpRepository.save(loginOtp);
-
+        msg91OtpService.verifyOtp(phoneNumber, request.otp());
         return issueLoginForPhoneNumber(phoneNumber);
     }
 

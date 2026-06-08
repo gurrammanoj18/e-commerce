@@ -21,7 +21,6 @@ export const requestLoginOtp = async (payload: { phoneNumber: string }) => {
     phoneNumber: string;
     message: string;
     expiresInSeconds: number;
-    demoOtp?: string;
   }>("/auth/otp/request", payload);
   return response.data;
 };
