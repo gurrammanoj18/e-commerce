@@ -7,7 +7,7 @@ import {
   removeCartItem,
   updateCartItem,
 } from "../services/cartService";
-import { CartItem, Product } from "../types/store";
+import { CartApiItem, CartItem, Product } from "../types/store";
 import { useAuth } from "./AuthContext";
 import { useProcessing } from "./ProcessingContext";
 
@@ -40,6 +40,47 @@ const isAuthorizationError = (error: unknown) =>
   error instanceof AxiosError &&
   (error.response?.status === 401 || error.response?.status === 403);
 
+const toCartItem = (item: CartApiItem): CartItem => ({
+  id: item.id,
+  quantity: item.quantity,
+  product: {
+    id: item.productId,
+    slug: item.productSlug,
+    name: item.productName,
+    brand: "",
+    category: "",
+    categorySlug: "",
+    subcategory: "",
+    subcategorySlug: "",
+    subcategoryId: 0,
+    price: item.unitPrice,
+    originalPrice: item.unitPrice,
+    discountPercentage: 0,
+    rating: 0,
+    reviewCount: 0,
+    stockQuantity: item.stockQuantity,
+    lowStock: false,
+    availability:
+      item.stockQuantity <= 0
+        ? "out-of-stock"
+        : item.stockQuantity <= 5
+        ? "low-stock"
+        : "in-stock",
+    badge: "",
+    shortDescription: "",
+    description: "",
+    heroTag: "",
+    images: item.image ? [item.image] : [],
+    tags: [],
+    featured: false,
+    bestSeller: false,
+    bulkEligible: false,
+    newArrival: false,
+    warrantyAvailable: false,
+    replacementAvailable: item.stockQuantity > 0,
+  },
+});
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -59,48 +100,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(true);
     try {
       const cart = await fetchCart();
-      setItems(
-        cart.items.map((item) => ({
-          id: item.id,
-          quantity: item.quantity,
-          product: {
-            id: item.productId,
-            slug: item.productSlug,
-            name: item.productName,
-            brand: "",
-            category: "",
-            categorySlug: "",
-            subcategory: "",
-            subcategorySlug: "",
-            subcategoryId: 0,
-            price: item.unitPrice,
-            originalPrice: item.unitPrice,
-            discountPercentage: 0,
-            rating: 0,
-            reviewCount: 0,
-            stockQuantity: item.stockQuantity,
-            lowStock: false,
-            availability:
-              item.stockQuantity <= 0
-                ? "out-of-stock"
-                : item.stockQuantity <= 5
-                ? "low-stock"
-                : "in-stock",
-            badge: "",
-            shortDescription: "",
-            description: "",
-            heroTag: "",
-            images: item.image ? [item.image] : [],
-            tags: [],
-            featured: false,
-            bestSeller: false,
-            bulkEligible: false,
-            newArrival: false,
-            warrantyAvailable: false,
-            replacementAvailable: item.stockQuantity > 0,
-          },
-        }))
-      );
+      setItems(cart.items.map(toCartItem));
     } catch (error) {
       setItems([]);
     } finally {
@@ -129,20 +129,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [items, useRemoteCart]);
 
   const addToCart = async (product: Product, quantity = 1) => {
-    if (useRemoteCart) {
-      try {
-        await addCartItem(product.id, quantity);
-        await loadRemoteCart();
-      } catch (error) {
-        if (isAuthorizationError(error)) {
-          setItems([]);
-          return;
-        }
-
-        toast.error(getCartErrorMessage(error, "Couldn't add this item to cart right now."));
-      }
-      return;
-    }
+    const previousItems = items;
 
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.product.id === product.id);
@@ -155,6 +142,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       return [...currentItems, { product, quantity }];
     });
+
+    if (useRemoteCart) {
+      try {
+        const cart = await addCartItem(product.id, quantity);
+        setItems(cart.items.map(toCartItem));
+      } catch (error) {
+        setItems(previousItems);
+        if (isAuthorizationError(error)) {
+          setItems([]);
+          return;
+        }
+
+        toast.error(getCartErrorMessage(error, "Couldn't add this item to cart right now."));
+      }
+      return;
+    }
   };
 
   const removeFromCart = async (productId: number) => {
