@@ -21,6 +21,7 @@ export const transformProduct = (product: ProductApiShape): Product => {
     warrantyAvailable: product.warrantyAvailable,
     replacementAvailable: product.replacementAvailable,
     images: product.images || [],
+    tags: product.tags || [],
     createdAt: product.createdAt,
   };
 };

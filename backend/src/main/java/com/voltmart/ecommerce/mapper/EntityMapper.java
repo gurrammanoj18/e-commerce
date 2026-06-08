@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +34,7 @@ public class EntityMapper {
                 user.getFullName(),
                 user.getEmail(),
                 user.getPhoneNumber(),
+                user.getMobileVerified(),
                 user.getProfileImageUrl(),
                 user.getRole().name(),
                 user.getPreferredDeliveryMode() == null ? null : user.getPreferredDeliveryMode().name(),
@@ -81,8 +83,8 @@ public class EntityMapper {
                 product.getBulkEligible(),
                 product.getBadge(),
                 product.getHeroTag(),
-                product.getImageUrls(),
-                product.getTags(),
+                new ArrayList<>(product.getImageUrls()),
+                new ArrayList<>(product.getTags()),
                 product.getCreatedAt()
         );
     }

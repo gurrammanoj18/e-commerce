@@ -83,6 +83,7 @@ public class AppProperties {
         private boolean enabled;
         private String authKey;
         private String templateId;
+        private String senderId;
         private String countryCode = "91";
         private String baseUrl = "https://control.msg91.com";
     }

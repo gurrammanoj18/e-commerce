@@ -23,6 +23,16 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 """);
         jdbcTemplate.execute("""
                 alter table if exists users
+                add column if not exists mobile_verified boolean not null default false
+                """);
+        jdbcTemplate.execute("""
+                update users
+                set mobile_verified = true
+                where phone_number is not null
+                  and mobile_verified = false
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists users
                 add column if not exists profile_image_url text
                 """);
         jdbcTemplate.execute("""

@@ -81,6 +81,7 @@ app:
     enabled: ${APP_MSG91_ENABLED:false}
     auth-key: ${APP_MSG91_AUTH_KEY:}
     template-id: ${APP_MSG91_TEMPLATE_ID:}
+    sender-id: ${APP_MSG91_SENDER_ID:}
     country-code: ${APP_MSG91_COUNTRY_CODE:91}
     base-url: ${APP_MSG91_BASE_URL:https://control.msg91.com}
 

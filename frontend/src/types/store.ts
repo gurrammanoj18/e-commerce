@@ -100,6 +100,7 @@ export interface AuthUser {
   fullName: string;
   email?: string | null;
   phoneNumber?: string | null;
+  mobileVerified?: boolean | null;
   profileImageUrl?: string | null;
   role: string;
   preferredDeliveryMode?: DeliveryMode | null;

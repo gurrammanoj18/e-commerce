@@ -35,6 +35,10 @@ public class User implements UserDetails {
     @Column(unique = true)
     private String phoneNumber;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean mobileVerified = false;
+
     @Column(columnDefinition = "text")
     private String profileImageUrl;
 

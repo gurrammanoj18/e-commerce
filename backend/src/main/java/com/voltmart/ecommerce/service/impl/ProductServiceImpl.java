@@ -40,6 +40,7 @@ public class ProductServiceImpl implements ProductService {
     private final EntityMapper entityMapper;
 
     @Override
+    @Transactional(readOnly = true)
     @Cacheable(cacheNames = "productsPage", key = "T(java.util.Objects).hash(#category, #search, #brand, #minPrice, #maxPrice, #minDiscount, #availability, #sort, #page, #size)")
     public PagedResponse<ProductResponse> getProducts(
             String category,
@@ -72,6 +73,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @Cacheable(cacheNames = "productsAll")
     public List<ProductResponse> getAllProducts() {
         return productRepository.findAll(resolveSort("newest")).stream()
@@ -80,6 +82,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @Cacheable(cacheNames = "productBySlug", key = "#slug")
     public ProductResponse getProductBySlug(String slug) {
         Product product = productRepository.findBySlug(slug)
@@ -88,6 +91,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @Cacheable(cacheNames = "featuredProducts")
     public List<ProductResponse> getFeaturedProducts() {
         return productRepository.findAll().stream()
@@ -97,6 +101,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @Cacheable(cacheNames = "bestSellerProducts")
     public List<ProductResponse> getBestSellerProducts() {
         List<Long> topProductIds = orderItemRepository.findTopDeliveredProductIds();

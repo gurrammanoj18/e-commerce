@@ -36,12 +36,12 @@ public class AuthController {
         return authService.msg91WidgetLogin(request);
     }
 
-    @PostMapping("/otp/request")
+    @PostMapping({"/otp/request", "/send-otp"})
     public OtpRequestResponse requestOtp(@Valid @RequestBody OtpRequest request) {
         return authService.requestOtp(request);
     }
 
-    @PostMapping("/otp/verify")
+    @PostMapping({"/otp/verify", "/verify-otp"})
     public AuthResponse verifyOtp(@Valid @RequestBody OtpVerifyRequest request) {
         return authService.verifyOtp(request);
     }

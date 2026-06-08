@@ -146,7 +146,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public OtpRequestResponse requestOtp(OtpRequest request) {
-        String phoneNumber = normalizePhoneNumber(request.phoneNumber());
+        String phoneNumber = normalizePhoneNumber(request.resolvedPhoneNumber());
         if (appProperties.getMsg91().isEnabled()) {
             msg91OtpService.sendOtp(phoneNumber);
             return new OtpRequestResponse(
@@ -179,7 +179,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse verifyOtp(OtpVerifyRequest request) {
-        String phoneNumber = normalizePhoneNumber(request.phoneNumber());
+        String phoneNumber = normalizePhoneNumber(request.resolvedPhoneNumber());
         if (appProperties.getMsg91().isEnabled()) {
             msg91OtpService.verifyOtp(phoneNumber, request.otp());
             return issueLoginForPhoneNumber(phoneNumber);
@@ -210,28 +210,7 @@ public class AuthServiceImpl implements AuthService {
         loginOtp.setConsumed(true);
         loginOtpRepository.save(loginOtp);
 
-        User user = userRepository.findByPhoneNumber(phoneNumber)
-                .map(existingUser -> {
-                    if (existingUser.getRole() == Role.ROLE_ADMIN) {
-                        throw new BadRequestException("Use admin login for administrator access.");
-                    }
-                    return existingUser;
-                })
-                .orElseGet(() -> userRepository.save(User.builder()
-                        .fullName("")
-                        .phoneNumber(phoneNumber)
-                        .role(Role.ROLE_CUSTOMER)
-                        .walletBalance(BigDecimal.ZERO)
-                        .createdAt(LocalDateTime.now())
-                        .build()));
-
-        cartRepository.findByUserId(user.getId())
-                .orElseGet(() -> cartRepository.save(Cart.builder().user(user).build()));
-        wishlistRepository.findByUserId(user.getId())
-                .orElseGet(() -> wishlistRepository.save(Wishlist.builder().user(user).build()));
-
-        String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
-        return buildAuthResponse(user, token, true);
+        return issueLoginForPhoneNumber(phoneNumber);
     }
 
     @Override
@@ -260,6 +239,7 @@ public class AuthServiceImpl implements AuthService {
 
         user.setFullName(request.fullName().trim());
         user.setPhoneNumber(phoneNumber);
+        user.setMobileVerified(true);
         user.setEmail(email);
         user.setProfileImageUrl(trimToNull(request.profileImageUrl()));
         User savedUser = userRepository.save(user);
@@ -317,17 +297,24 @@ public class AuthServiceImpl implements AuthService {
                 .orElseGet(() -> userRepository.save(User.builder()
                         .fullName("")
                         .phoneNumber(phoneNumber)
+                        .mobileVerified(true)
                         .role(Role.ROLE_CUSTOMER)
                         .walletBalance(BigDecimal.ZERO)
                         .createdAt(LocalDateTime.now())
                         .build()));
 
-        cartRepository.findByUserId(user.getId())
-                .orElseGet(() -> cartRepository.save(Cart.builder().user(user).build()));
-        wishlistRepository.findByUserId(user.getId())
-                .orElseGet(() -> wishlistRepository.save(Wishlist.builder().user(user).build()));
+        if (!Boolean.TRUE.equals(user.getMobileVerified())) {
+            user.setMobileVerified(true);
+            user = userRepository.save(user);
+        }
 
-        String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
-        return buildAuthResponse(user, token, true);
+        User savedUser = user;
+        cartRepository.findByUserId(savedUser.getId())
+                .orElseGet(() -> cartRepository.save(Cart.builder().user(savedUser).build()));
+        wishlistRepository.findByUserId(savedUser.getId())
+                .orElseGet(() -> wishlistRepository.save(Wishlist.builder().user(savedUser).build()));
+
+        String token = jwtService.generateToken(savedUser, Map.of("role", savedUser.getRole().name()));
+        return buildAuthResponse(savedUser, token, true);
     }
 }

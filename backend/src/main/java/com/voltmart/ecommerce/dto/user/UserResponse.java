@@ -5,6 +5,7 @@ public record UserResponse(
         String fullName,
         String email,
         String phoneNumber,
+        Boolean mobileVerified,
         String profileImageUrl,
         String role,
         String preferredDeliveryMode,
