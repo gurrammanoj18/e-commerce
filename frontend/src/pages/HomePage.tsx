@@ -109,7 +109,7 @@ const buildSectionLink = (section: HomeSectionDefinition) => {
 
 interface PromoBanner {
   id: number;
-  imageUrl: string;
+  image: string;
   heading: string;
   slug: string;
 }
@@ -117,13 +117,13 @@ interface PromoBanner {
 const promoBanners: PromoBanner[] = [
   {
     id: -1,
-    imageUrl: bannerOne,
+    image: bannerOne,
     heading: "Summer Deals",
     slug: "summer",
   },
   {
     id: -2,
-    imageUrl: bannerTwo,
+    image: bannerTwo,
     heading: "Monsoon Protection",
     slug: "monsoon",
   },
@@ -380,7 +380,7 @@ const MidPageBannerCarousel: React.FC = () => {
                 to={buildPromoBannerLink(banner)}
                 aria-label={banner.heading ? `Shop ${banner.heading}` : `Shop banner ${index + 1}`}
               >
-                <img src={banner.imageUrl} alt={banner.heading || `Eldoo banner ${index + 1}`} />
+                <img src={banner.image} alt={banner.heading || `Eldoo banner ${index + 1}`} />
               </Link>
             ))}
           </div>
@@ -412,7 +412,7 @@ const MidPageBannerCarousel: React.FC = () => {
         <div className="banner-carousel__dots" aria-label="Banner slides">
           {carouselBanners.map((banner, index) => (
             <button
-              key={`${banner.imageUrl}-dot`}
+              key={`${banner.image}-dot`}
               type="button"
               className={index === activeIndex ? "is-active" : ""}
               onClick={() => setActiveIndex(index)}
