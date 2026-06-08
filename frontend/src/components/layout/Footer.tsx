@@ -2,20 +2,25 @@ import React from "react";
 import { Link } from "react-router-dom";
 import "../../styles/layout/Footer.css";
 
+const categoryLink = (category: string, title: string) =>
+  `/products?discover=1&view=collection&category=${encodeURIComponent(
+    category,
+  )}&title=${encodeURIComponent(title)}`;
+
 const Footer: React.FC = () => {
   return (
     <footer className="site-footer">
       <div className="shell footer-grid">
         <div className="footer-column">
           <h3>ONLINE SHOPPING</h3>
-          <Link to="/products?category=appliances">Appliances</Link>
-          <Link to="/products?category=electricals">Electricals</Link>
-          <Link to="/products?category=power-hand-tools">Power &amp; Hand Tools</Link>
-          <Link to="/products?category=hardware">Hardware</Link>
-          <Link to="/products?category=lighting-fans">Lighting &amp; Fans</Link>
-          <Link to="/products?category=bathroom">Bathroom</Link>
-          <Link to="/products?category=plumbing">Plumbing</Link>
-          <Link to="/products?category=kitchen">Kitchen</Link>
+          <Link to={categoryLink("appliances", "Appliances")}>Appliances</Link>
+          <Link to={categoryLink("electricals", "Electricals")}>Electricals</Link>
+          <Link to={categoryLink("power-hand-tools", "Power & Hand Tools")}>Power &amp; Hand Tools</Link>
+          <Link to={categoryLink("hardware", "Hardware")}>Hardware</Link>
+          <Link to={categoryLink("lighting-fans", "Lighting & Fans")}>Lighting &amp; Fans</Link>
+          <Link to={categoryLink("bathroom", "Bathroom")}>Bathroom</Link>
+          <Link to={categoryLink("plumbing", "Plumbing")}>Plumbing</Link>
+          <Link to={categoryLink("kitchen", "Kitchen")}>Kitchen</Link>
         </div>
 
         <div className="footer-column">

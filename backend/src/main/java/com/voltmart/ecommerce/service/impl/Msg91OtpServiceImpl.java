@@ -131,12 +131,12 @@ public class Msg91OtpServiceImpl implements Msg91OtpService {
         String countryCode = appProperties.getMsg91().getCountryCode();
         String normalizedCountryCode = StringUtils.hasText(countryCode) ? countryCode.replaceAll("\\D", "") : "91";
 
-        if (digitsOnly.startsWith(normalizedCountryCode)) {
-            return digitsOnly;
+        if (digitsOnly.startsWith(normalizedCountryCode) && digitsOnly.length() > 10) {
+            digitsOnly = digitsOnly.substring(normalizedCountryCode.length());
         }
 
-        if (digitsOnly.length() == 10) {
-            return normalizedCountryCode + digitsOnly;
+        if (!digitsOnly.matches("^[6-9][0-9]{9}$")) {
+            throw new BadRequestException("Enter a valid 10 digit Indian mobile number.");
         }
 
         return digitsOnly;

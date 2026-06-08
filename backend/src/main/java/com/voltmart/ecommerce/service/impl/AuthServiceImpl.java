@@ -283,7 +283,19 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private String normalizePhoneNumber(String value) {
-        return value == null ? "" : value.replaceAll("\\D", "");
+        String digitsOnly = value == null ? "" : value.replaceAll("\\D", "");
+        String countryCode = appProperties.getMsg91().getCountryCode();
+        String normalizedCountryCode = StringUtils.hasText(countryCode) ? countryCode.replaceAll("\\D", "") : "91";
+
+        if (digitsOnly.startsWith(normalizedCountryCode) && digitsOnly.length() > 10) {
+            digitsOnly = digitsOnly.substring(normalizedCountryCode.length());
+        }
+
+        if (!digitsOnly.matches("^[6-9][0-9]{9}$")) {
+            throw new BadRequestException("Enter a valid 10 digit Indian mobile number.");
+        }
+
+        return digitsOnly;
     }
 
     private AuthResponse issueLoginForPhoneNumber(String phoneNumber) {

@@ -264,7 +264,9 @@ const BrandSection: React.FC<{ contentSections: HomepageSectionContent[] }> = ({
           <Link
             key={brand.id}
             className="home-brand-card"
-            to={`/products?discover=1&brand=${encodeURIComponent(brand.brandName)}`}
+            to={`/products?discover=1&view=collection&brand=${encodeURIComponent(
+              brand.brandName,
+            )}&title=${encodeURIComponent(brand.brandName)}`}
           >
             <img src={resolveMediaUrl(brand.logoUrl)} alt={`${brand.brandName} logo`} loading="lazy" />
             <span>{brand.brandName}</span>

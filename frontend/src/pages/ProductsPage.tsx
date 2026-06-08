@@ -164,11 +164,16 @@ const ProductsPage: React.FC = () => {
   };
 
   const collectionProducts = useMemo(
-    () =>
-      collectionSectionKey
+    () => {
+      if (collectionSectionKey === "best-selling") {
+        return bestSellerProducts;
+      }
+
+      return collectionSectionKey
         ? getHomepageSectionProducts(filteredProducts, collectionSectionKey)
-        : filteredProducts,
-    [collectionSectionKey, filteredProducts],
+        : filteredProducts;
+    },
+    [bestSellerProducts, collectionSectionKey, filteredProducts],
   );
 
   const openFilters = (section: FilterSection = "category") => {

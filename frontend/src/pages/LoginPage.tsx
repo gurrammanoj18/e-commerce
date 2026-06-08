@@ -30,8 +30,13 @@ declare global {
   }
 }
 
-const digitsOnly = (value: string, maxLength: number) =>
-  value.replace(/\D/g, "").slice(0, maxLength);
+const digitsOnly = (value: string, maxLength: number) => {
+  const digits = value.replace(/\D/g, "");
+  if (maxLength === 10 && digits.startsWith("91") && digits.length > 10) {
+    return digits.slice(2, 12);
+  }
+  return digits.slice(0, maxLength);
+};
 
 const LoginPage: React.FC = () => {
   const { googleLogin, isAuthenticated, msg91WidgetLogin, requestLoginOtp, verifyLoginOtp } = useAuth();

@@ -5,10 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 public record OtpVerifyRequest(
-        @Pattern(regexp = "^[0-9]{10}$", message = "Enter a valid 10 digit mobile number")
+        @Pattern(regexp = "^(?:\\+?91)?[6-9][0-9]{9}$", message = "Enter a valid 10 digit Indian mobile number")
         String phoneNumber,
 
-        @Pattern(regexp = "^[0-9]{10}$", message = "Enter a valid 10 digit mobile number")
+        @Pattern(regexp = "^(?:\\+?91)?[6-9][0-9]{9}$", message = "Enter a valid 10 digit Indian mobile number")
         String mobile,
 
         @NotBlank

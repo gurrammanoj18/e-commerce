@@ -102,12 +102,17 @@ const Navbar: React.FC = () => {
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const query = searchValue.trim();
+    const params = new URLSearchParams({
+      discover: "1",
+      view: "collection",
+    });
 
-    navigate(
-      query
-        ? `/products?discover=1&search=${encodeURIComponent(query)}`
-        : "/products?discover=1"
-    );
+    if (query) {
+      params.set("search", query);
+      params.set("title", query);
+    }
+
+    navigate(`/products?${params.toString()}`);
     setIsMenuOpen(false);
     setIsCategoryMenuOpen(false);
   };
@@ -154,7 +159,9 @@ const Navbar: React.FC = () => {
 
   const promoNavigationItems = navbarPromos.map((category) => ({
     label: category.name,
-    to: `/products?discover=1&category=${encodeURIComponent(category.slug || category.name)}`,
+    to: `/products?discover=1&view=collection&category=${encodeURIComponent(
+      category.slug || category.name,
+    )}&title=${encodeURIComponent(category.name)}`,
   }));
 
   return (
