@@ -107,15 +107,15 @@ public class DataSeeder implements CommandLineRunner {
     private Map<String, Category> seedCategories() {
         Map<String, Category> categories = new LinkedHashMap<>();
 
-        categories.put("appliances", upsertCategory("Appliances", "appliances", "Essential machines and home-use appliances for daily living.", "🧺", null));
-        categories.put("electricals", upsertCategory("Electricals", "electricals", "Switches, wiring, connectors, and electrical essentials.", "🔌", null));
-        categories.put("power-hand-tools", upsertCategory("Power & Hand Tools", "power-hand-tools", "Repair kits, workshop tools, and job-ready equipment.", "🛠️", null));
-        categories.put("hardware", upsertCategory("Hardware", "hardware", "Fasteners, brackets, fixtures, and durable installation essentials.", "🔩", null));
-        categories.put("lighting-fans", upsertCategory("Lighting & Fans", "lighting-fans", "Lighting fixtures, bulbs, and fan solutions for every room.", "💡", null));
-        categories.put("bathroom", upsertCategory("Bathroom", "bathroom", "Bathroom care, fittings, and everyday utility products.", "🚿", null));
-        categories.put("plumbing", upsertCategory("Plumbing", "plumbing", "Pipes, valves, fittings, and flow-control solutions.", "🚰", null));
-        categories.put("kitchen", upsertCategory("Kitchen", "kitchen", "Kitchen appliances, storage, and prep essentials.", "🍽️", null));
-        categories.put("services", upsertCategory("Services", "services", "Book trusted home and site services from verified professionals.", "🧰", null));
+        categories.put("appliances", upsertCategory("Appliances", "appliances", "Essential machines and home-use appliances for daily living.", "🧺", null, "/catalog/pulse-laptop.webp"));
+        categories.put("electricals", upsertCategory("Electricals", "electricals", "Switches, wiring, connectors, and electrical essentials.", "🔌", null, "/catalog/lumen-monitor.webp"));
+        categories.put("power-hand-tools", upsertCategory("Power & Hand Tools", "power-hand-tools", "Repair kits, workshop tools, and job-ready equipment.", "🛠️", null, "/catalog/vector-keyboard.webp"));
+        categories.put("hardware", upsertCategory("Hardware", "hardware", "Fasteners, brackets, fixtures, and durable installation essentials.", "🔩", null, "/catalog/dock-station.webp"));
+        categories.put("lighting-fans", upsertCategory("Lighting & Fans", "lighting-fans", "Lighting fixtures, bulbs, and fan solutions for every room.", "💡", null, "/catalog/orbit-camera.webp"));
+        categories.put("bathroom", upsertCategory("Bathroom", "bathroom", "Bathroom care, fittings, and everyday utility products.", "🚿", null, "/catalog/mesh-router.webp"));
+        categories.put("plumbing", upsertCategory("Plumbing", "plumbing", "Pipes, valves, fittings, and flow-control solutions.", "🚰", null, "/catalog/forge-speaker.webp"));
+        categories.put("kitchen", upsertCategory("Kitchen", "kitchen", "Kitchen appliances, storage, and prep essentials.", "🍽️", null, "/catalog/atlas-book.webp"));
+        categories.put("services", upsertCategory("Services", "services", "Book trusted home and site services from verified professionals.", "🧰", null, "/catalog/hero-banner.webp"));
         categories.put("diwali-offer", upsertCategory(
                 "Diwali Offer",
                 "diwali-offer",
@@ -159,7 +159,15 @@ public class DataSeeder implements CommandLineRunner {
         return upsertCategory(name, slug, description, icon, parent, false);
     }
 
+    private Category upsertCategory(String name, String slug, String description, String icon, Category parent, String defaultImage) {
+        return upsertCategory(name, slug, description, icon, parent, false, defaultImage);
+    }
+
     private Category upsertCategory(String name, String slug, String description, String icon, Category parent, boolean showInNavbar) {
+        return upsertCategory(name, slug, description, icon, parent, showInNavbar, null);
+    }
+
+    private Category upsertCategory(String name, String slug, String description, String icon, Category parent, boolean showInNavbar, String defaultImage) {
         Category category = categoryRepository.findBySlug(slug)
                 .orElseGet(() -> Category.builder().slug(slug).build());
         category.setName(name);
@@ -168,6 +176,11 @@ public class DataSeeder implements CommandLineRunner {
         category.setIcon(icon);
         category.setShowInNavbar(showInNavbar);
         category.setParent(parent);
+        if (showInNavbar) {
+            category.setImage(null);
+        } else if ((category.getImage() == null || category.getImage().isBlank()) && defaultImage != null) {
+            category.setImage(defaultImage);
+        }
         return categoryRepository.save(category);
     }
 

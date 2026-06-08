@@ -254,7 +254,7 @@ const SeasonalModulesSection: React.FC<{
     .map((banner) => ({
       title: banner.heading || `Seasonal pick ${banner.id}`,
       to: buildPromoBannerLink(banner),
-      image: banner.imageUrl,
+      image: resolveMediaUrl(banner.imageUrl),
     }));
   const copy = getSectionCopy(contentSections, "seasonal-picks", "Seasonal picks", "Seasonal Picks");
 
@@ -372,7 +372,7 @@ const MidPageBannerCarousel: React.FC<{ banners: Banner[] }> = ({ banners }) => 
                 to={buildPromoBannerLink(banner)}
                 aria-label={banner.heading ? `Shop ${banner.heading}` : `Shop banner ${index + 1}`}
               >
-                <img src={banner.imageUrl} alt={banner.heading || `Eldoo banner ${index + 1}`} />
+                <img src={resolveMediaUrl(banner.imageUrl)} alt={banner.heading || `Eldoo banner ${index + 1}`} />
               </Link>
             ))}
           </div>

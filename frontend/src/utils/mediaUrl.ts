@@ -21,7 +21,11 @@ export const resolveMediaUrl = (value?: string | null) => {
     return value;
   }
 
+  if (value.startsWith("/")) {
+    return value;
+  }
+
   const apiBaseUrl = getApiBaseUrl();
   const mediaBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
-  return new URL(value.startsWith("/") ? value : `/${value}`, mediaBaseUrl).toString();
+  return new URL(`/${value}`, mediaBaseUrl).toString();
 };

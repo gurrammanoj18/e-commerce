@@ -8,6 +8,7 @@ import Pagination from "../components/shared/Pagination";
 import { useProducts } from "../contexts/ProductContext";
 import { ProductAvailabilityFilter, ProductSort } from "../types/store";
 import { getHomepageSectionProducts } from "../utils/homepageSections";
+import { resolveMediaUrl } from "../utils/mediaUrl";
 
 type FilterSection = "category" | "brand" | "price" | "availability" | "discount";
 
@@ -386,7 +387,7 @@ const ProductsPage: React.FC = () => {
                       updateDiscoverParams({ category: categoryValue, promo: null });
                     }}
                   >
-                    {category.image ? <img src={category.image} alt="" aria-hidden="true" /> : null}
+                    {category.image ? <img src={resolveMediaUrl(category.image)} alt="" aria-hidden="true" /> : null}
                     <span>{category.name}</span>
                   </button>
                 );

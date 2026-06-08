@@ -38,6 +38,8 @@ const digitsOnly = (value: string, maxLength: number) => {
   return digits.slice(0, maxLength);
 };
 
+const DEFAULT_GOOGLE_CLIENT_ID = "536121505527-9vfs7pm13jjrvsb9np95nubbpji6b01l.apps.googleusercontent.com";
+
 const LoginPage: React.FC = () => {
   const { googleLogin, isAuthenticated, msg91WidgetLogin, requestLoginOtp, verifyLoginOtp } = useAuth();
   const navigate = useNavigate();
@@ -54,7 +56,7 @@ const LoginPage: React.FC = () => {
   const googleClientId = (
     window.__APP_CONFIG__?.REACT_APP_GOOGLE_CLIENT_ID ||
     process.env.REACT_APP_GOOGLE_CLIENT_ID ||
-    ""
+    DEFAULT_GOOGLE_CLIENT_ID
   ).trim();
   const msg91WidgetId = (
     window.__APP_CONFIG__?.REACT_APP_MSG91_WIDGET_ID ||

@@ -45,6 +45,8 @@ public class Msg91OtpServiceImpl implements Msg91OtpService {
                             .queryParam("template_id", appProperties.getMsg91().getTemplateId())
                             .queryParam("mobile", mobile)
                             .queryParam("authkey", appProperties.getMsg91().getAuthKey())
+                            .queryParam("otp_length", 6)
+                            .queryParam("otp_expiry", 5)
                             .build())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(Map.of())
@@ -77,9 +79,7 @@ public class Msg91OtpServiceImpl implements Msg91OtpService {
                     .retrieve()
                     .body(String.class);
 
-            if (responseBody != null && isFailureResponse(responseBody)) {
-                throw new BadRequestException(formatFailureMessage(responseBody));
-            }
+            validateVerifyOtpResponse(responseBody);
         } catch (RestClientResponseException exception) {
             throw new BadRequestException(resolveMessage(exception, "Unable to verify OTP right now."));
         }
@@ -242,8 +242,13 @@ public class Msg91OtpServiceImpl implements Msg91OtpService {
         String normalized = responseBody.toLowerCase(Locale.ROOT);
         return normalized.contains("invalid otp")
                 || normalized.contains("otp expired")
+                || normalized.contains("otp not")
+                || normalized.contains("not match")
+                || normalized.contains("incorrect")
                 || normalized.contains("wrong number")
                 || normalized.contains("no number input")
+                || normalized.contains("mobile no")
+                || normalized.contains("mobile number")
                 || normalized.contains("max retry")
                 || normalized.contains("invalid auth")
                 || normalized.contains("authkey")
@@ -280,9 +285,48 @@ public class Msg91OtpServiceImpl implements Msg91OtpService {
         }
     }
 
+    private void validateVerifyOtpResponse(String responseBody) {
+        if (!StringUtils.hasText(responseBody)) {
+            throw new BadRequestException("MSG91 did not return an OTP verification response.");
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            String status = firstText(root, "type", "status");
+            String message = firstText(root, "message", "error");
+            if (StringUtils.hasText(status)) {
+                if ("success".equalsIgnoreCase(status)) {
+                    return;
+                }
+                throw new BadRequestException(StringUtils.hasText(message) ? formatFailureMessage(message) : "Invalid OTP.");
+            }
+            if (isSuccessResponse(responseBody)) {
+                return;
+            }
+            throw new BadRequestException(isFailureResponse(responseBody) ? formatFailureMessage(responseBody) : "Invalid OTP.");
+        } catch (BadRequestException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            if (isSuccessResponse(responseBody)) {
+                return;
+            }
+            throw new BadRequestException(isFailureResponse(responseBody) ? formatFailureMessage(responseBody) : "Invalid OTP.");
+        }
+    }
+
+    private boolean isSuccessResponse(String responseBody) {
+        String normalized = responseBody.toLowerCase(Locale.ROOT);
+        return normalized.contains("otp verified")
+                || normalized.contains("number_verified_successfully")
+                || normalized.contains("verified successfully");
+    }
+
     private String formatFailureMessage(String responseBody) {
         String normalized = responseBody.toLowerCase(Locale.ROOT);
         if (normalized.contains("invalid otp")) {
+            return "Invalid OTP.";
+        }
+        if (normalized.contains("otp not") || normalized.contains("not match") || normalized.contains("incorrect")) {
             return "Invalid OTP.";
         }
         if (normalized.contains("otp expired")) {
@@ -292,6 +336,9 @@ public class Msg91OtpServiceImpl implements Msg91OtpService {
             return "Please request a fresh OTP.";
         }
         if (normalized.contains("no number input")) {
+            return "Please request a fresh OTP.";
+        }
+        if (normalized.contains("mobile no") || normalized.contains("mobile number")) {
             return "Please request a fresh OTP.";
         }
         if (normalized.contains("max retry")) {
