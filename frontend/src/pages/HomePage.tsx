@@ -12,10 +12,6 @@ import { fetchBrandLogos } from "../services/brandLogoService";
 import { fetchHomepageSections } from "../services/homepageSectionService";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import { getHomepageSectionProducts } from "../utils/homepageSections";
-import bannerOne from "../assets/banners/ban1.png";
-import bannerTwo from "../assets/banners/ban2.png";
-import promoSummer from "../assets/promos/summer.png";
-import promoMonsoon from "../assets/promos/monsoon.png";
 
 const WhyShopIconBoxes = () => (
   <svg viewBox="0 0 64 64" aria-hidden="true">
@@ -119,34 +115,6 @@ const shouldShowPromoBanner = (banner: Banner) => {
   const key = `${banner.slug || banner.heading || ""}`.toLowerCase().trim();
   return key ? !HIDDEN_PROMO_SLUGS.has(key) : true;
 };
-
-const promoBanners: Banner[] = [
-  {
-    id: -1,
-    imageUrl: bannerOne,
-    heading: "Summer Deals",
-    slug: "summer",
-  },
-  {
-    id: -2,
-    imageUrl: bannerTwo,
-    heading: "Monsoon Protection",
-    slug: "monsoon",
-  },
-];
-
-const seasonalModules = [
-  {
-    title: "Summer Cooling Picks",
-    to: "/products?discover=1&promo=summer",
-    image: promoSummer,
-  },
-  {
-    title: "Monsoon Protection",
-    to: "/products?discover=1&promo=monsoon",
-    image: promoMonsoon,
-  },
-];
 
 const homeSections: HomeSectionDefinition[] = [
   {
@@ -281,14 +249,18 @@ const SeasonalModulesSection: React.FC<{
   contentSections: HomepageSectionContent[];
   seasonalPicks: Banner[];
 }> = ({ contentSections, seasonalPicks }) => {
-  const modules = seasonalPicks.length
-    ? seasonalPicks.map((banner) => ({
-        title: `Seasonal pick ${banner.id}`,
-        to: "/products?discover=1",
-        image: banner.imageUrl,
-    }))
-    : seasonalModules;
+  const modules = seasonalPicks
+    .filter((banner) => banner.imageUrl)
+    .map((banner) => ({
+      title: banner.heading || `Seasonal pick ${banner.id}`,
+      to: buildPromoBannerLink(banner),
+      image: banner.imageUrl,
+    }));
   const copy = getSectionCopy(contentSections, "seasonal-picks", "Seasonal picks", "Seasonal Picks");
+
+  if (!modules.length) {
+    return null;
+  }
 
   return (
     <section className="shell section home-seasonal-section">
@@ -336,7 +308,7 @@ const buildPromoBannerLink = (banner: Banner) => {
 const MidPageBannerCarousel: React.FC<{ banners: Banner[] }> = ({ banners }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const carouselBanners = banners.length ? banners : promoBanners;
+  const carouselBanners = banners.filter((banner) => banner.imageUrl);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -376,6 +348,10 @@ const MidPageBannerCarousel: React.FC<{ banners: Banner[] }> = ({ banners }) => 
     );
     setTouchStartX(null);
   };
+
+  if (!carouselBanners.length) {
+    return null;
+  }
 
   return (
     <section className="section">

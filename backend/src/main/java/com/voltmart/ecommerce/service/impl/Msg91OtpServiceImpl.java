@@ -33,7 +33,7 @@ public class Msg91OtpServiceImpl implements Msg91OtpService {
     @Override
     public void sendOtp(String phoneNumber) {
         ensureEnabled();
-        String mobile = normalizeMobileNumber(phoneNumber);
+        String mobile = toMsg91MobileNumber(phoneNumber);
 
         try {
             String responseBody = RestClient.builder()
@@ -61,7 +61,7 @@ public class Msg91OtpServiceImpl implements Msg91OtpService {
     @Override
     public void verifyOtp(String phoneNumber, String otp) {
         ensureEnabled();
-        String mobile = normalizeMobileNumber(phoneNumber);
+        String mobile = toMsg91MobileNumber(phoneNumber);
 
         try {
             String responseBody = RestClient.builder()
@@ -140,6 +140,13 @@ public class Msg91OtpServiceImpl implements Msg91OtpService {
         }
 
         return digitsOnly;
+    }
+
+    private String toMsg91MobileNumber(String phoneNumber) {
+        String normalizedPhoneNumber = normalizeMobileNumber(phoneNumber);
+        String countryCode = appProperties.getMsg91().getCountryCode();
+        String normalizedCountryCode = StringUtils.hasText(countryCode) ? countryCode.replaceAll("\\D", "") : "91";
+        return normalizedCountryCode + normalizedPhoneNumber;
     }
 
     private String lastFourDigits(String mobile) {
