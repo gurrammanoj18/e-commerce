@@ -46,7 +46,6 @@ const SiteEntryPrompt: React.FC = () => {
       return;
     }
 
-    window.sessionStorage.setItem(currentPromptKey, "true");
     setOpen(true);
   }, [isAdmin, isAuthenticated, loading]);
 
@@ -67,7 +66,7 @@ const SiteEntryPrompt: React.FC = () => {
     return null;
   }
 
-  const closePrompt = () => {
+  const closePromptAfterChoice = () => {
     if (promptSessionKey) {
       window.sessionStorage.setItem(promptSessionKey, "true");
     }
@@ -92,7 +91,7 @@ const SiteEntryPrompt: React.FC = () => {
       return;
     }
 
-    closePrompt();
+    closePromptAfterChoice();
   };
 
   const handleCheck = async () => {
@@ -109,7 +108,7 @@ const SiteEntryPrompt: React.FC = () => {
       setResult(response);
       if (response.serviceable) {
         toast.success(response.message);
-        closePrompt();
+        closePromptAfterChoice();
       }
     } catch {
       toast.error("Unable to check pincode serviceability right now.");
@@ -119,7 +118,7 @@ const SiteEntryPrompt: React.FC = () => {
   };
 
   return (
-    <div className="site-entry-prompt" role="presentation" onClick={closePrompt}>
+    <div className="site-entry-prompt" role="presentation">
       <section
         className="site-entry-prompt__card"
         role="dialog"
@@ -213,16 +212,6 @@ const SiteEntryPrompt: React.FC = () => {
               Back
             </button>
           ) : null}
-          <button
-            type="button"
-            className="link-button"
-            onClick={(event) => {
-              event.stopPropagation();
-              closePrompt();
-            }}
-          >
-            Skip for now
-          </button>
         </div>
       </section>
     </div>

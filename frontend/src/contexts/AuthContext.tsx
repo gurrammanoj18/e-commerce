@@ -44,6 +44,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const AUTH_STORAGE_KEY = "voltmart-auth-user";
 const TOKEN_STORAGE_KEY = "voltmart-token";
 const PROFILE_COMPLETION_SKIP_STORAGE_PREFIX = "voltmart-profile-completion-skipped";
+const DELIVERY_PROMPT_COMPLETED_SESSION_PREFIX = "voltmart-delivery-preference-completed";
 const PINCODE_CHECKER_LOGIN_KEY = "voltmart-login-pincode-checker-shown";
 const GUEST_SITE_ENTRY_PROMPT_KEY = "voltmart-site-entry-prompt-shown:guest";
 
@@ -95,9 +96,20 @@ const markProfileCompletionSkippedThisSession = (user: AuthUser) => {
   window.sessionStorage.setItem(getProfileCompletionSkipSessionKey(user), "true");
 };
 
+const getDeliveryPromptCompletedSessionKey = (user: AuthUser) =>
+  `${DELIVERY_PROMPT_COMPLETED_SESSION_PREFIX}:${user.email || user.phoneNumber || user.id || "customer"}`;
+
+const hasCompletedDeliveryPromptThisSession = (user: AuthUser) =>
+  window.sessionStorage.getItem(getDeliveryPromptCompletedSessionKey(user)) === "true";
+
+const markDeliveryPromptCompletedThisSession = (user: AuthUser) => {
+  window.sessionStorage.setItem(getDeliveryPromptCompletedSessionKey(user), "true");
+};
+
 const shouldShowDeliveryPrompt = (user: AuthUser, requireProfile: boolean) =>
   user.role === "ROLE_CUSTOMER" &&
   !requireProfile &&
+  !hasCompletedDeliveryPromptThisSession(user) &&
   !window.location.pathname.startsWith("/admin");
 
 const restrictLettersOnly = (value: string) => value.replace(/[^A-Za-z\s.'-]/g, "");
@@ -452,6 +464,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const response = await updateDeliveryPreferenceRequest({
         preferredDeliveryMode: mode,
       });
+      markDeliveryPromptCompletedThisSession(user);
       persistAuth(response.user, response.token);
       setShowDeliveryPreferenceModal(false);
       setPendingDeliveryPreferencePrompt(false);
@@ -487,6 +500,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const logout = useCallback(() => {
+    if (user?.role === "ROLE_CUSTOMER") {
+      window.sessionStorage.removeItem(getDeliveryPromptCompletedSessionKey(user));
+    }
     window.sessionStorage.setItem(GUEST_SITE_ENTRY_PROMPT_KEY, "true");
     window.sessionStorage.removeItem(PINCODE_CHECKER_LOGIN_KEY);
     persistAuth(null, null);
@@ -495,7 +511,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setShowProfileCompletionModal(false);
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
-  }, [persistAuth]);
+  }, [persistAuth, user]);
 
   return (
     <AuthContext.Provider
