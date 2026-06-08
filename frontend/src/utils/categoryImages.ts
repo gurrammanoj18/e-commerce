@@ -1,5 +1,4 @@
 import { CategorySummary } from "../types/store";
-import { resolveMediaUrl } from "./mediaUrl";
 import appliancesImage from "../assets/categories/appliances.jpg";
 import bathroomImage from "../assets/categories/bathroom.jpg";
 import electricalsImage from "../assets/categories/electricals.jpg";
@@ -27,5 +26,5 @@ export const getCategoryKey = (category: CategorySummary) =>
 
 export const getCategoryCoverImage = (category: CategorySummary) => {
   const categoryKey = getCategoryKey(category);
-  return categoryImageMap[categoryKey] || resolveMediaUrl(category.image) || homeUtilityImage;
+  return categoryImageMap[categoryKey] || homeUtilityImage;
 };

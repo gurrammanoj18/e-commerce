@@ -2,6 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <script>
+      if (window.location.hostname === "www.eldoo.in") {
+        window.location.replace("https://eldoo.in" + window.location.pathname + window.location.search + window.location.hash);
+      }
+    </script>
     <link rel="icon" type="image/png" href="%PUBLIC_URL%/favicon.png" />
     <meta
       name="viewport"

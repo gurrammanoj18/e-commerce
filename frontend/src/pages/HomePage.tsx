@@ -6,8 +6,7 @@ import CategoryCard from "../components/product/CategoryCard";
 import ProductCard from "../components/product/ProductCard";
 import LoadingState from "../components/shared/LoadingState";
 import { useProducts } from "../contexts/ProductContext";
-import { Banner, BrandLogo, HomepageSectionContent, Product } from "../types/store";
-import { fetchBanners, fetchSeasonalPicks } from "../services/bannerService";
+import { BrandLogo, HomepageSectionContent, Product } from "../types/store";
 import { fetchBrandLogos } from "../services/brandLogoService";
 import { fetchHomepageSections } from "../services/homepageSectionService";
 import { resolveMediaUrl } from "../utils/mediaUrl";
@@ -108,19 +107,14 @@ const buildSectionLink = (section: HomeSectionDefinition) => {
   return `/products?${params.toString()}`;
 };
 
-const HIDDEN_PROMO_SLUGS = new Set([
-  "lighting",
-  "contractor-deals",
-  "power-hand-tools",
-  "every-project-construction",
-]);
+interface PromoBanner {
+  id: number;
+  imageUrl: string;
+  heading: string;
+  slug: string;
+}
 
-const shouldShowPromoBanner = (banner: Banner) => {
-  const key = `${banner.slug || banner.heading || ""}`.toLowerCase().trim();
-  return key ? !HIDDEN_PROMO_SLUGS.has(key) : true;
-};
-
-const promoBanners: Banner[] = [
+const promoBanners: PromoBanner[] = [
   {
     id: -1,
     imageUrl: bannerOne,
@@ -277,18 +271,7 @@ const BrandSection: React.FC<{ contentSections: HomepageSectionContent[] }> = ({
   );
 };
 
-const SeasonalModulesSection: React.FC<{
-  contentSections: HomepageSectionContent[];
-  seasonalPicks: Banner[];
-}> = ({ contentSections, seasonalPicks }) => {
-  const dbModules = seasonalPicks
-    .filter((banner) => banner.imageUrl)
-    .map((banner) => ({
-      title: banner.heading || `Seasonal pick ${banner.id}`,
-      to: buildPromoBannerLink(banner),
-      image: resolveMediaUrl(banner.imageUrl),
-    }));
-  const modules = dbModules.length ? dbModules : seasonalModules;
+const SeasonalModulesSection: React.FC<{ contentSections: HomepageSectionContent[] }> = ({ contentSections }) => {
   const copy = getSectionCopy(contentSections, "seasonal-picks", "Seasonal picks", "Seasonal Picks");
 
   return (
@@ -300,7 +283,7 @@ const SeasonalModulesSection: React.FC<{
         </div>
       </div>
       <div className="home-seasonal-grid">
-        {modules.map((module) => (
+        {seasonalModules.map((module) => (
           <Link key={module.title} className="home-seasonal-card home-seasonal-card--banner" to={module.to}>
             <img src={module.image} alt={module.title} loading="lazy" />
           </Link>
@@ -310,7 +293,7 @@ const SeasonalModulesSection: React.FC<{
   );
 };
 
-const buildPromoBannerLink = (banner: Banner) => {
+const buildPromoBannerLink = (banner: PromoBanner) => {
   const slug =
     banner.slug?.trim() ||
     banner.heading
@@ -334,11 +317,10 @@ const buildPromoBannerLink = (banner: Banner) => {
   return `/products?${params.toString()}`;
 };
 
-const MidPageBannerCarousel: React.FC<{ banners: Banner[] }> = ({ banners }) => {
+const MidPageBannerCarousel: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const dbBanners = banners.filter((banner) => banner.imageUrl);
-  const carouselBanners = dbBanners.length ? dbBanners : promoBanners;
+  const carouselBanners = promoBanners;
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -398,7 +380,7 @@ const MidPageBannerCarousel: React.FC<{ banners: Banner[] }> = ({ banners }) => 
                 to={buildPromoBannerLink(banner)}
                 aria-label={banner.heading ? `Shop ${banner.heading}` : `Shop banner ${index + 1}`}
               >
-                <img src={resolveMediaUrl(banner.imageUrl)} alt={banner.heading || `Eldoo banner ${index + 1}`} />
+                <img src={banner.imageUrl} alt={banner.heading || `Eldoo banner ${index + 1}`} />
               </Link>
             ))}
           </div>
@@ -483,35 +465,25 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
 
 const HomePage: React.FC = () => {
   const { bestSellerProducts, categories, loading, products } = useProducts();
-  const [banners, setBanners] = useState<Banner[]>([]);
   const [contentSections, setContentSections] = useState<HomepageSectionContent[]>([]);
-  const [seasonalPicks, setSeasonalPicks] = useState<Banner[]>([]);
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadBanners = async () => {
+    const loadHomepageSections = async () => {
       try {
-        const [bannerResponse, seasonalResponse, contentResponse] = await Promise.all([
-          fetchBanners(),
-          fetchSeasonalPicks(),
-          fetchHomepageSections(),
-        ]);
+        const contentResponse = await fetchHomepageSections();
         if (isMounted) {
-          setBanners(bannerResponse);
-          setSeasonalPicks(seasonalResponse);
           setContentSections(contentResponse);
         }
       } catch {
         if (isMounted) {
-          setBanners([]);
-          setSeasonalPicks([]);
           setContentSections([]);
         }
       }
     };
 
-    void loadBanners();
+    void loadHomepageSections();
 
     return () => {
       isMounted = false;
@@ -582,9 +554,7 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <MidPageBannerCarousel
-        banners={banners.filter((banner) => banner.imageUrl && shouldShowPromoBanner(banner))}
-      />
+      <MidPageBannerCarousel />
 
       {resolvedHomepageSections.slice(0, 2).map((section) => (
         <ProductCarouselSection
@@ -610,7 +580,7 @@ const HomePage: React.FC = () => {
         />
       ))}
 
-      <SeasonalModulesSection contentSections={contentSections} seasonalPicks={seasonalPicks} />
+      <SeasonalModulesSection contentSections={contentSections} />
 
       {resolvedHomepageSections.slice(5).map((section) => (
         <ProductCarouselSection
