@@ -1,19 +1,23 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800;900&display=swap");
+
 :root {
-  --bg: #f5f3ef;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-alt: #f1eee8;
-  --text: #161616;
-  --muted: #66615a;
-  --border: rgba(22, 22, 22, 0.08);
-  --dark: #202020;
-  --dark-soft: #2f2f2f;
-  --accent: #ff7d3b;
-  --accent-soft: #ffe3d4;
-  --accent-strong: #d8642a;
-  --shadow: 0 20px 45px rgba(15, 15, 15, 0.08);
+  --surface-alt: #e6dfdf;
+  --text: #001b5e;
+  --muted: #5f6f95;
+  --border: rgba(0, 27, 94, 0.12);
+  --dark: #001b5e;
+  --dark-soft: #163678;
+  --accent: #ff6a00;
+  --accent-soft: #fff0e5;
+  --accent-strong: #d95a00;
+  --shadow: 0 20px 45px rgba(0, 27, 94, 0.08);
   --radius-lg: 28px;
   --radius-md: 20px;
   --radius-sm: 14px;
+  --font-sans: "Poppins", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-ui: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 * {
@@ -22,13 +26,14 @@
 
 html {
   scroll-behavior: smooth;
+  background: var(--bg);
 }
 
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -70,6 +75,40 @@ button {
 img {
   display: block;
   max-width: 100%;
+}
+
+#root,
+.app-shell,
+.app-main,
+.app-main--home,
+.app-main--page {
+  background: var(--bg);
+}
+
+/* Keep every route on one consistent white canvas. Page-specific styles may
+   still control cards and panels without changing the surrounding page. */
+.app-main > .section,
+.app-main .page-section,
+.mobile-market-page,
+.mobile-reference-home,
+.products-collection-page,
+.page-section--collection,
+.services-page,
+.wallet-page,
+.profile-mobile-view,
+.edit-profile-page,
+.edit-profile-mobile-view,
+.help-mobile-view,
+.bulk-order-page,
+.details-page,
+.orders-page,
+.order-details-page,
+.categories-page,
+.cart-page,
+.wishlist-page,
+.address-page,
+.checkout-page {
+  background-color: #fff !important;
 }
 
 .app-main {
@@ -141,7 +180,8 @@ img {
   padding: 0 22px;
   border-radius: 999px;
   border: 1px solid transparent;
-  font-weight: 700;
+  font-family: var(--font-ui);
+  font-weight: 500;
   transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
@@ -172,6 +212,34 @@ img {
   transform: translateY(-2px);
 }
 
+.button[aria-busy="true"],
+.button:disabled:has(.button-loading:not(.button-loading--dark)) {
+  border-color: var(--dark);
+  background: #fff;
+  color: var(--dark);
+  opacity: 1;
+  cursor: wait;
+  transform: none;
+}
+
+.button--light[aria-busy="true"],
+.link-button[aria-busy="true"],
+.button--light:disabled:has(.button-loading),
+.link-button:disabled:has(.button-loading) {
+  border-color: var(--dark);
+  background: var(--dark);
+  color: #fff;
+  opacity: 1;
+  cursor: wait;
+  transform: none;
+}
+
+.button[aria-busy="true"] .button-loading__spinner,
+.button:disabled:has(.button-loading:not(.button-loading--dark)) .button-loading__spinner {
+  border-color: rgba(32, 32, 32, 0.2);
+  border-top-color: var(--dark);
+}
+
 @media (min-width: 1025px) and (max-width: 1440px) {
   .app-main--home {
     padding-top: 112px;
@@ -193,6 +261,14 @@ img {
 }
 
 @media (max-width: 820px) {
+  html,body,#root,.app-shell,.app-main,.app-main--home,.app-main--page{background:#fff}
+  body{color:#071943}
+  .app-shell{padding-bottom:64px}
+  .app-shell--inner .site-nav,.app-shell--inner .site-category-strip,.app-shell--inner .app-tagline{display:none!important}
+  .app-shell--inner .app-main--page{padding-top:0}
+  .site-footer{display:none}
+  .app-shell--inner .shell{width:100%}
+  .app-shell--inner .page-section{padding-bottom:86px}
   .app-tagline {
     display: block;
   }
@@ -214,6 +290,10 @@ img {
     letter-spacing: 0.09em;
     line-height: 1.2;
     white-space: normal;
+  }
+
+  .section {
+    padding: 1px 0 4px;
   }
 }
 

@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/pages/HomePage.css";
-import DiscoverySection from "../components/discovery/DiscoverySection";
+import "../styles/pages/DesktopStorefront.css";
 import CategoryCard from "../components/product/CategoryCard";
 import ProductCard from "../components/product/ProductCard";
 import LoadingState from "../components/shared/LoadingState";
+import DesktopHomePage from "../components/home/DesktopHomePage";
 import { useProducts } from "../contexts/ProductContext";
+import { useAuth } from "../contexts/AuthContext";
 import { BrandLogo, HomepageSectionContent, Product } from "../types/store";
 import { fetchBrandLogos } from "../services/brandLogoService";
 import { fetchHomepageSections } from "../services/homepageSectionService";
@@ -13,8 +15,13 @@ import { resolveMediaUrl } from "../utils/mediaUrl";
 import { getHomepageSectionProducts } from "../utils/homepageSections";
 import bannerOne from "../assets/banners/ban1.png";
 import bannerTwo from "../assets/banners/ban2.png";
-import promoSummer from "../assets/promos/summer.png";
-import promoMonsoon from "../assets/promos/monsoon.png";
+import contractorDeals from "../assets/promos/contractor-deals.png";
+import servicesIcon from "../assets/categories/services.svg";
+import walletIcon from "../assets/wallet.png";
+import offerQualityImage from "../assets/offers/quality.png";
+import offerCodImage from "../assets/offers/cod.png";
+import offerDeliveryImage from "../assets/offers/delivery.png";
+import offerCashbackImage from "../assets/offers/cashback.png";
 
 const WhyShopIconBoxes = () => (
   <svg viewBox="0 0 64 64" aria-hidden="true">
@@ -129,17 +136,38 @@ const promoBanners: PromoBanner[] = [
   },
 ];
 
-const seasonalModules = [
+const homeHeroPanels = [
   {
-    title: "Summer Cooling Picks",
-    to: "/products?discover=1&promo=summer",
-    image: promoSummer,
+    eyebrow: "Explore products",
+    title: "Browse electricals, hardware and home essentials",
+    description: "Discover the core marketplace collections from one polished storefront.",
+    to: "/products?discover=1&view=collection",
+    image: bannerOne,
+    tone: "light",
   },
   {
-    title: "Monsoon Protection",
-    to: "/products?discover=1&promo=monsoon",
-    image: promoMonsoon,
+    eyebrow: "Services",
+    title: "Electrician, plumber, carpenter and painter support",
+    description: "Move into service booking with the same familiar Eldoo experience.",
+    to: "/services",
+    image: servicesIcon,
+    tone: "blue",
   },
+  {
+    eyebrow: "Bulk order",
+    title: "Quote large quantities for contractors and projects",
+    description: "Raise a bulk request when you need prices for bigger cart sizes.",
+    to: "/bulk-order",
+    image: contractorDeals,
+    tone: "dark",
+  },
+];
+
+const mobileOfferTiles = [
+  { label: "Top Quality", image: offerQualityImage },
+  { label: "COD Available", image: offerCodImage },
+  { label: "Fast Delivery", image: offerDeliveryImage },
+  { label: "Cashbacks", image: offerCashbackImage },
 ];
 
 const homeSections: HomeSectionDefinition[] = [
@@ -246,7 +274,7 @@ const BrandSection: React.FC<{ contentSections: HomepageSectionContent[] }> = ({
   const copy = getSectionCopy(contentSections, "shop-by-brand", "Shop by Brand", "Shop by Brand");
 
   return (
-    <section className="shell section home-brand-section">
+    <section id="shop-by-brand" className="shell section home-brand-section">
       <div className="section-heading">
         <div>
           <span className="eyebrow">{copy.tagline}</span>
@@ -264,28 +292,6 @@ const BrandSection: React.FC<{ contentSections: HomepageSectionContent[] }> = ({
           >
             <img src={resolveMediaUrl(brand.logoUrl)} alt={`${brand.brandName} logo`} loading="lazy" />
             <span>{brand.brandName}</span>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-};
-
-const SeasonalModulesSection: React.FC<{ contentSections: HomepageSectionContent[] }> = ({ contentSections }) => {
-  const copy = getSectionCopy(contentSections, "seasonal-picks", "Seasonal picks", "Seasonal Picks");
-
-  return (
-    <section className="shell section home-seasonal-section">
-      <div className="section-heading">
-        <div>
-          <span className="eyebrow">{copy.tagline}</span>
-          <h2>{copy.heading}</h2>
-        </div>
-      </div>
-      <div className="home-seasonal-grid">
-        {seasonalModules.map((module) => (
-          <Link key={module.title} className="home-seasonal-card home-seasonal-card--banner" to={module.to}>
-            <img src={module.image} alt={module.title} loading="lazy" />
           </Link>
         ))}
       </div>
@@ -425,6 +431,50 @@ const MidPageBannerCarousel: React.FC = () => {
   );
 };
 
+const MobileReferenceHome: React.FC = () => {
+  return (
+    <section className="mobile-reference-home" aria-label="Eldoo home">
+      <nav className="mobile-reference-home__tabs" aria-label="Featured shortcuts">
+        <Link className="is-active" to="/products?discover=1&view=collection">Shop</Link>
+        <Link to="/services">Services</Link>
+        <Link to="/bulk-order">Bulk Order</Link>
+      </nav>
+
+      <Link className="mobile-reference-home__hero" to="/products?discover=1&view=collection&promo=summer&title=Popular">
+        <img src={bannerOne} alt="Everything your home needs all in one place" />
+      </Link>
+
+      <div className="mobile-reference-home__offers">
+        {mobileOfferTiles.map((tile) => (
+          <div key={tile.label} className="mobile-reference-home__offer-tile">
+            <span aria-hidden="true">
+              <img src={tile.image} alt="" loading="lazy" />
+            </span>
+            <strong>{tile.label}</strong>
+          </div>
+        ))}
+      </div>
+
+    </section>
+  );
+};
+
+const HomeWalletCard: React.FC<{ walletBalance: number }> = ({ walletBalance }) => (
+  <section className="shell section home-wallet-section">
+    <Link to="/wallet" className="home-wallet-card">
+      <div className="home-wallet-card__copy">
+        <span>My Wallet Balance</span>
+        <strong>₹{walletBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+        <span className="home-wallet-card__action">Add Money</span>
+        <small>+250 Reward Points</small>
+      </div>
+      <span className="home-wallet-card__icon" aria-hidden="true">
+        <img src={walletIcon} alt="" />
+      </span>
+    </Link>
+  </section>
+);
+
 const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
   title,
   eyebrow,
@@ -448,7 +498,7 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
       </div>
       {loading ? (
         <LoadingState />
-      ) : (
+      ) : products.length ? (
         <div className="home-carousel">
           <div className="home-carousel__viewport">
             <div className="product-grid product-grid--carousel">
@@ -458,12 +508,22 @@ const ProductCarouselSection: React.FC<ProductCarouselSectionProps> = ({
             </div>
           </div>
         </div>
+      ) : (
+        <div className="home-carousel home-carousel--empty">
+          <div className="home-carousel__viewport">
+            <div className="home-carousel__empty-state">
+              <strong>No products match this section yet.</strong>
+              <span>Add products with the right admin tags to populate it.</span>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );
 };
 
 const HomePage: React.FC = () => {
+  const { user } = useAuth();
   const { bestSellerProducts, categories, loading, products } = useProducts();
   const [contentSections, setContentSections] = useState<HomepageSectionContent[]>([]);
 
@@ -490,15 +550,6 @@ const HomePage: React.FC = () => {
     };
   }, []);
 
-  const trendingProducts = useMemo(
-    () =>
-      [...products].sort(
-        (left, right) =>
-          right.rating * right.reviewCount - left.rating * left.reviewCount
-      ),
-    [products]
-  );
-
   const recentlyAddedProducts = useMemo(
     () =>
       [...products]
@@ -508,10 +559,6 @@ const HomePage: React.FC = () => {
   );
 
   const categoryShowcase = useMemo(() => categories, [categories]);
-  const fallbackProducts = useMemo(
-    () => (trendingProducts.length ? trendingProducts : products),
-    [products, trendingProducts]
-  );
   const resolvedHomepageSections = useMemo(
     () =>
       [...homeSections]
@@ -520,7 +567,7 @@ const HomePage: React.FC = () => {
           const copy = getSectionCopy(contentSections, section.sectionKey, section.eyebrow, section.title);
           const sectionProducts = getHomepageSectionProducts(
             section.sectionKey === "best-selling"
-              ? (bestSellerProducts.length ? bestSellerProducts : fallbackProducts)
+              ? bestSellerProducts
               : section.sectionKey === "recently-added"
                 ? recentlyAddedProducts
                 : products,
@@ -531,30 +578,101 @@ const HomePage: React.FC = () => {
             ...section,
             eyebrow: copy.tagline,
             title: copy.heading,
-            products: sectionProducts.length ? sectionProducts : fallbackProducts,
+            products: sectionProducts.slice(0, section.maxProducts),
           };
         }),
-    [bestSellerProducts, contentSections, fallbackProducts, products, recentlyAddedProducts]
+    [bestSellerProducts, contentSections, products, recentlyAddedProducts]
   );
   const categoryCopy = getSectionCopy(contentSections, "categories", "Categories", "Shop by Category");
-
+  const walletBalance = user?.walletBalance ?? 1250;
+  const featuredCategories = useMemo(
+    () =>
+      categoryShowcase
+        .filter((category) => category.name && category.count >= 0)
+        .slice(0, 8),
+    [categoryShowcase],
+  );
   return (
     <>
+      <DesktopHomePage
+        categories={categoryShowcase.filter((category) => category.name && category.count >= 0)}
+        sections={resolvedHomepageSections.map((section) => ({
+          sectionKey: section.sectionKey,
+          title: section.title,
+          eyebrow: section.eyebrow,
+          products: section.products,
+          seeAllTo: buildSectionLink(section),
+        }))}
+        walletBalance={walletBalance}
+        loading={loading}
+      />
+      <MobileReferenceHome />
+
+      <div className="legacy-home-content">
+      <section className="shell section home-hero-section">
+        <div className="home-hero">
+          <div className="home-hero__copy">
+            <span className="eyebrow">Eldoo marketplace</span>
+            <h1>Everything for Your Home, Business &amp; Projects</h1>
+            <p>
+              A cleaner storefront for shopping products, booking services, and placing
+              bulk requests from one app-like experience.
+            </p>
+            <div className="home-hero__actions">
+              <Link className="button" to="/products?discover=1&view=collection">
+                Shop products
+              </Link>
+              <Link className="button button--light" to="/services">
+                Book services
+              </Link>
+              <Link className="button button--ghost" to="/bulk-order">
+                Request quote
+              </Link>
+            </div>
+          </div>
+
+          <div className="home-hero__panels">
+            {homeHeroPanels.map((panel) => (
+              <Link
+                key={panel.title}
+                className={`home-hero-panel home-hero-panel--${panel.tone}`}
+                to={panel.to}
+              >
+                <div className="home-hero-panel__copy">
+                  <span>{panel.eyebrow}</span>
+                  <strong>{panel.title}</strong>
+                  <p>{panel.description}</p>
+                </div>
+                <div className="home-hero-panel__media">
+                  <img src={panel.image} alt={panel.title} loading="lazy" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <MidPageBannerCarousel />
+
       <section className="shell section home-category-section">
         <div className="section-heading">
           <div>
             <span className="eyebrow">{categoryCopy.tagline}</span>
             <h2>{categoryCopy.heading}</h2>
           </div>
+          <Link className="home-product-section__see-all" to="/categories">
+            See All
+            <span aria-hidden="true">›</span>
+          </Link>
         </div>
         <div className="category-grid">
-          {categoryShowcase.map((category) => (
+          {featuredCategories.map((category) => (
             <CategoryCard key={category.name} category={category} />
           ))}
         </div>
       </section>
 
-      <MidPageBannerCarousel />
+      <HomeWalletCard walletBalance={walletBalance} />
 
       {resolvedHomepageSections.slice(0, 2).map((section) => (
         <ProductCarouselSection
@@ -580,8 +698,6 @@ const HomePage: React.FC = () => {
         />
       ))}
 
-      <SeasonalModulesSection contentSections={contentSections} />
-
       {resolvedHomepageSections.slice(5).map((section) => (
         <ProductCarouselSection
           key={section.sectionKey}
@@ -592,10 +708,6 @@ const HomePage: React.FC = () => {
           seeAllTo={buildSectionLink(section)}
         />
       ))}
-
-      <section className="section home-discovery-section">
-        <DiscoverySection />
-      </section>
 
       <section className="section home-why-shop-section">
         <div className="shell">
@@ -614,6 +726,7 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
+      </div>
     </>
   );
 };
