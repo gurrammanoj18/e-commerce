@@ -16,9 +16,9 @@ public class AppProperties {
     private final Google google = new Google();
     private final Store store = new Store();
     private final Seed seed = new Seed();
+    private final SmsOtp smsOtp = new SmsOtp();
     private final Whatsapp whatsapp = new Whatsapp();
     private final Email email = new Email();
-    private final Msg91 msg91 = new Msg91();
     private final Cache cache = new Cache();
 
     @Getter
@@ -33,7 +33,9 @@ public class AppProperties {
     public static class Cors {
         private List<String> allowedOrigins = List.of(
                 "http://localhost:3000",
-                "https://voltmart-frontend.onrender.com"
+                "http://175.101.46.98",
+                "https://eldoo.in",
+                "https://www.eldoo.in"
         );
     }
 
@@ -41,12 +43,27 @@ public class AppProperties {
     @Setter
     public static class Google {
         private String clientId;
+        private String mapsApiKey;
     }
 
     @Getter
     @Setter
     public static class Store {
-        private String frontendUrl = "http://localhost:3000";
+        private String frontendUrl = "http://175.101.46.98";
+    }
+
+    @Getter
+    @Setter
+    public static class SmsOtp {
+        private boolean enabled;
+        private String provider = "JIO_TRUECONNECT";
+        private String requestUrl;
+        private String authHeaderName = "Authorization";
+        private String authHeaderValue;
+        private String senderId;
+        private String templateId;
+        private String messageTemplate = "Your Eldoo OTP is {otp}. It is valid for {minutes} minutes.";
+        private String requestBodyTemplate = "{\"mobile\":\"{phoneNumber}\",\"message\":\"{message}\",\"senderId\":\"{senderId}\",\"templateId\":\"{templateId}\"}";
     }
 
     @Getter
@@ -54,6 +71,7 @@ public class AppProperties {
     public static class Seed {
         private String adminEmail = "admin@voltmart.in";
         private String adminPassword = "Admin@123";
+        private boolean demoCatalogEnabled;
     }
 
     @Getter
@@ -62,8 +80,12 @@ public class AppProperties {
         private String supportNumber;
         private boolean enabled;
         private String apiVersion = "v25.0";
+        private String businessAccountId;
         private String phoneNumberId;
         private String accessToken;
+        private String statusTemplateName = "custom_order_v2";
+        private String statusTemplateLanguage = "en_IN";
+        private String templateImageUrl = "https://eldoo.in/whatsapp-logo.png";
     }
 
     @Getter
@@ -75,17 +97,6 @@ public class AppProperties {
         private String fromName = "Eldoo";
         private String apiKey;
         private String apiUrl = "https://api.brevo.com/v3/smtp/email";
-    }
-
-    @Getter
-    @Setter
-    public static class Msg91 {
-        private boolean enabled;
-        private String authKey;
-        private String templateId;
-        private String senderId;
-        private String countryCode = "91";
-        private String baseUrl = "https://control.msg91.com";
     }
 
     @Getter

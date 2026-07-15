@@ -11,21 +11,21 @@ export const googleLogin = async (payload: { credential: string }) => {
   return response.data;
 };
 
-export const msg91WidgetLogin = async (payload: { accessToken: string }) => {
-  const response = await api.post<AuthResponse>("/auth/otp/widget/verify", payload);
-  return response.data;
+export const getGoogleClientId = async () => {
+  const response = await api.get<{ clientId: string }>("/auth/google/client-id");
+  return response.data.clientId;
 };
 
-export const requestLoginOtp = async (payload: { phoneNumber: string }) => {
+export const requestPhoneOtp = async (payload: { phoneNumber: string }) => {
   const response = await api.post<{
     phoneNumber: string;
-    message: string;
     expiresInSeconds: number;
+    sent: boolean;
   }>("/auth/otp/request", payload);
   return response.data;
 };
 
-export const verifyLoginOtp = async (payload: { phoneNumber: string; otp: string }) => {
+export const verifyPhoneOtp = async (payload: { phoneNumber: string; otp: string }) => {
   const response = await api.post<AuthResponse>("/auth/otp/verify", payload);
   return response.data;
 };
@@ -34,7 +34,6 @@ export const completeProfile = async (payload: {
   fullName: string;
   phoneNumber: string;
   email?: string;
-  profileImageUrl?: string;
 }) => {
   const response = await api.patch<AuthResponse>("/auth/profile", payload);
   return response.data;

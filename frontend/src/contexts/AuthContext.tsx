@@ -7,16 +7,16 @@ import {
   adminLogin as adminLoginRequest,
   completeProfile as completeProfileRequest,
   googleLogin as googleLoginRequest,
-  msg91WidgetLogin as msg91WidgetLoginRequest,
-  requestLoginOtp as requestLoginOtpRequest,
+  requestPhoneOtp as requestPhoneOtpRequest,
+  verifyPhoneOtp as verifyPhoneOtpRequest,
   updateDeliveryPreference as updateDeliveryPreferenceRequest,
-  verifyLoginOtp as verifyLoginOtpRequest,
 } from "../services/authService";
 import PincodeServiceChecker from "../components/shared/PincodeServiceChecker";
+import { readSelectedAddress } from "../utils/selectedAddress";
+import { setStoredGuestDeliveryMode } from "../utils/deliveryModePreference";
 
 import { useProcessing } from "./ProcessingContext";
 import { AuthUser, DeliveryMode } from "../types/store";
-import { optimizeImageFile } from "../utils/imageUpload";
 
 interface AuthActionResult<T = void> {
   data?: T;
@@ -30,9 +30,12 @@ interface AuthContextValue {
   isAdmin: boolean;
   loading: boolean;
   googleLogin: (credential: string) => Promise<AuthActionResult>;
-  msg91WidgetLogin: (accessToken: string) => Promise<AuthActionResult>;
-  requestLoginOtp: (phoneNumber: string) => Promise<AuthActionResult<{ phoneNumber: string }>>;
-  verifyLoginOtp: (phoneNumber: string, otp: string) => Promise<AuthActionResult>;
+  requestPhoneOtp: (phoneNumber: string) => Promise<AuthActionResult<{
+    phoneNumber: string;
+    expiresInSeconds: number;
+    sent: boolean;
+  }>>;
+  verifyPhoneOtp: (phoneNumber: string, otp: string) => Promise<AuthActionResult>;
   adminLogin: (email: string, password: string) => Promise<AuthActionResult>;
   completeProfile: (payload: ProfileCompletionPayload) => Promise<AuthActionResult>;
   updateDeliveryPreference: (mode: DeliveryMode) => Promise<AuthActionResult>;
@@ -43,10 +46,11 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = "voltmart-auth-user";
 const TOKEN_STORAGE_KEY = "voltmart-token";
+const AUTH_CLEARED_EVENT = "voltmart-auth-cleared";
 const PROFILE_COMPLETION_SKIP_STORAGE_PREFIX = "voltmart-profile-completion-skipped";
 const DELIVERY_PROMPT_COMPLETED_SESSION_PREFIX = "voltmart-delivery-preference-completed";
 const PINCODE_CHECKER_LOGIN_KEY = "voltmart-login-pincode-checker-shown";
-const GUEST_SITE_ENTRY_PROMPT_KEY = "voltmart-site-entry-prompt-shown:guest";
+const GUEST_DELIVERY_PROMPT_SESSION_KEY = "voltmart-delivery-prompt-shown:guest";
 
 const decodeJwtPayload = (token: string) => {
   try {
@@ -120,7 +124,6 @@ interface ProfileCompletionPayload {
   fullName: string;
   phoneNumber: string;
   email?: string;
-  profileImageUrl?: string;
 }
 
 const extractErrorMessage = (error: unknown, fallback: string) => {
@@ -156,6 +159,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [showDeliveryPreferenceModal, setShowDeliveryPreferenceModal] = useState(false);
   const [showPincodeCheckerModal, setShowPincodeCheckerModal] = useState(false);
+  const [deliveryPincodePreview, setDeliveryPincodePreview] = useState<string | null>(null);
+  const [showGuestDeliveryPreferenceModal, setShowGuestDeliveryPreferenceModal] = useState(false);
+  const [showGuestPincodeCheckerModal, setShowGuestPincodeCheckerModal] = useState(false);
+  const [guestDeliveryPincodePreview, setGuestDeliveryPincodePreview] = useState<string | null>(null);
   const [showProfileCompletionModal, setShowProfileCompletionModal] = useState(false);
   const [pendingDeliveryPreferencePrompt, setPendingDeliveryPreferencePrompt] = useState(false);
   const [deliveryPreferenceError, setDeliveryPreferenceError] = useState("");
@@ -163,8 +170,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const { startProcessing, stopProcessing } = useProcessing();
   const isAdminSession = user?.role === "ROLE_ADMIN";
   const isCustomerOnboardingBlocked = Boolean(
-    user?.role === "ROLE_CUSTOMER" &&
-      (showProfileCompletionModal || showDeliveryPreferenceModal || showPincodeCheckerModal),
+    (user?.role === "ROLE_CUSTOMER" &&
+      (showProfileCompletionModal || showDeliveryPreferenceModal || showPincodeCheckerModal)) ||
+      showGuestDeliveryPreferenceModal ||
+      showGuestPincodeCheckerModal ||
+      Boolean(guestDeliveryPincodePreview),
   );
 
   useEffect(() => {
@@ -207,6 +217,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setApiAuthToken(storedToken);
       setShowProfileCompletionModal(requireProfile && !hasSkippedProfileCompletionThisSession(parsedUser));
       setShowPincodeCheckerModal(false);
+      setDeliveryPincodePreview(null);
+      setShowGuestDeliveryPreferenceModal(false);
+      setShowGuestPincodeCheckerModal(false);
+      setGuestDeliveryPincodePreview(null);
       setShowDeliveryPreferenceModal(
         shouldShowDeliveryPrompt(parsedUser, requireProfile) && !isAdminArea,
       );
@@ -258,6 +272,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       shouldPromptDeliveryPreference && !shouldDelayDeliveryPreference,
     );
     setShowPincodeCheckerModal(false);
+    setDeliveryPincodePreview(null);
+    setShowGuestDeliveryPreferenceModal(false);
+    setShowGuestPincodeCheckerModal(false);
+    setGuestDeliveryPincodePreview(null);
     setPendingDeliveryPreferencePrompt(shouldDelayDeliveryPreference);
     setDeliveryPreferenceError("");
     setApiAuthToken(nextToken);
@@ -281,9 +299,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setShowDeliveryPreferenceModal(true);
     setShowPincodeCheckerModal(false);
+    setDeliveryPincodePreview(null);
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
   }, [isAdminSession, pendingDeliveryPreferencePrompt, user]);
+
+  useEffect(() => {
+    if (loading || isAdminSession || user || window.location.pathname.startsWith("/admin")) {
+      setShowGuestDeliveryPreferenceModal(false);
+      setShowGuestPincodeCheckerModal(false);
+      setGuestDeliveryPincodePreview(null);
+      return;
+    }
+
+    if (window.sessionStorage.getItem(GUEST_DELIVERY_PROMPT_SESSION_KEY) === "true") {
+      setShowGuestDeliveryPreferenceModal(false);
+      return;
+    }
+
+    setShowGuestDeliveryPreferenceModal(true);
+  }, [isAdminSession, loading, user]);
 
   useEffect(() => {
     if (!isAdminSession) {
@@ -292,9 +327,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setShowDeliveryPreferenceModal(false);
     setShowPincodeCheckerModal(false);
+    setDeliveryPincodePreview(null);
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
   }, [isAdminSession]);
+
+  useEffect(() => {
+    if (!deliveryPincodePreview) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setDeliveryPincodePreview(null);
+    }, 1200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [deliveryPincodePreview]);
+
+  useEffect(() => {
+    if (!guestDeliveryPincodePreview) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      window.sessionStorage.setItem(GUEST_DELIVERY_PROMPT_SESSION_KEY, "true");
+      setGuestDeliveryPincodePreview(null);
+      setShowGuestDeliveryPreferenceModal(false);
+      setShowGuestPincodeCheckerModal(false);
+    }, 1200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [guestDeliveryPincodePreview]);
 
   useEffect(() => {
     if (!isCustomerOnboardingBlocked) {
@@ -331,61 +394,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const msg91WidgetLogin = async (accessToken: string) => {
-    const processingId = startProcessing({
-      title: "Signing you in",
-      message: "Verifying your mobile number and preparing your session...",
-    });
+  const requestPhoneOtp = async (phoneNumber: string) => {
     try {
-      const response = await msg91WidgetLoginRequest({ accessToken });
-      persistAuth(response.user, response.token, {
-        promptDeliveryPreference: true,
-        requireProfileCompletion: response.requiresProfileCompletion,
-      });
-
-      return {};
-    } catch (error) {
-      return {
-        error: extractErrorMessage(error, "Unable to verify your mobile number right now."),
-      };
-    } finally {
-      stopProcessing(processingId);
-    }
-  };
-
-  const requestLoginOtp = async (phoneNumber: string) => {
-    const processingId = startProcessing({
-      title: "Sending OTP",
-      message: "Preparing your secure login code...",
-    });
-    try {
-      const response = await requestLoginOtpRequest({ phoneNumber });
-      return {
-        data: {
-          phoneNumber: response.phoneNumber,
-        },
-      };
+      const response = await requestPhoneOtpRequest({ phoneNumber });
+      return { data: response };
     } catch (error) {
       return {
         error: extractErrorMessage(error, "Unable to send OTP right now."),
       };
-    } finally {
-      stopProcessing(processingId);
     }
   };
 
-  const verifyLoginOtp = async (phoneNumber: string, otp: string) => {
+  const verifyPhoneOtp = async (phoneNumber: string, otp: string) => {
     const processingId = startProcessing({
-      title: "Signing you in",
-      message: "Verifying your OTP and preparing your account...",
+      title: "Verifying OTP",
+      message: "Checking your code and opening your account...",
     });
     try {
-      const response = await verifyLoginOtpRequest({ phoneNumber, otp });
+      const response = await verifyPhoneOtpRequest({ phoneNumber, otp });
       persistAuth(response.user, response.token, {
         promptDeliveryPreference: true,
         requireProfileCompletion: response.requiresProfileCompletion,
       });
-
       return {};
     } catch (error) {
       return {
@@ -425,6 +455,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setShowProfileCompletionModal(false);
       setShowDeliveryPreferenceModal(shouldShowDeliveryPrompt(response.user, response.requiresProfileCompletion));
       setShowPincodeCheckerModal(false);
+      setDeliveryPincodePreview(null);
       return {};
     } catch (error) {
       return {
@@ -468,25 +499,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       persistAuth(response.user, response.token);
       setShowDeliveryPreferenceModal(false);
       setPendingDeliveryPreferencePrompt(false);
+      setShowPincodeCheckerModal(false);
       if (mode === "HOME_DELIVERY") {
-        window.sessionStorage.removeItem(PINCODE_CHECKER_LOGIN_KEY);
-        setShowPincodeCheckerModal(true);
+        const selectedAddress = readSelectedAddress(user);
+        const postalCode = selectedAddress?.postalCode?.trim();
+        if (/^\d{6}$/.test(postalCode || "")) {
+          window.sessionStorage.removeItem(PINCODE_CHECKER_LOGIN_KEY);
+          setDeliveryPincodePreview(postalCode || null);
+          setShowPincodeCheckerModal(false);
+        } else {
+          setDeliveryPincodePreview(null);
+          setShowPincodeCheckerModal(true);
+        }
       } else {
         setShowPincodeCheckerModal(false);
+        setDeliveryPincodePreview(null);
       }
       return {};
     } catch (error) {
-      if (isAuthorizationError(error)) {
-        const message = "Your session expired. Please log in again to choose delivery.";
-        setDeliveryPreferenceError(message);
-        window.setTimeout(() => {
-          persistAuth(null, null);
-          setShowDeliveryPreferenceModal(false);
-          setShowPincodeCheckerModal(false);
-          setPendingDeliveryPreferencePrompt(false);
-        }, 900);
-        return { error: message };
-      }
+        if (isAuthorizationError(error)) {
+          const message = "Your session expired. Please log in again to choose delivery.";
+          setDeliveryPreferenceError(message);
+          window.setTimeout(() => {
+            persistAuth(null, null);
+            setShowDeliveryPreferenceModal(false);
+            setShowPincodeCheckerModal(false);
+            setDeliveryPincodePreview(null);
+            setPendingDeliveryPreferencePrompt(false);
+          }, 900);
+          return { error: message };
+        }
 
       const message = extractErrorMessage(error, "Unable to save delivery preference right now.");
       setDeliveryPreferenceError(message);
@@ -503,15 +545,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (user?.role === "ROLE_CUSTOMER") {
       window.sessionStorage.removeItem(getDeliveryPromptCompletedSessionKey(user));
     }
-    window.sessionStorage.setItem(GUEST_SITE_ENTRY_PROMPT_KEY, "true");
+    window.sessionStorage.setItem(GUEST_DELIVERY_PROMPT_SESSION_KEY, "true");
     window.sessionStorage.removeItem(PINCODE_CHECKER_LOGIN_KEY);
     persistAuth(null, null);
     setShowDeliveryPreferenceModal(false);
     setShowPincodeCheckerModal(false);
+    setDeliveryPincodePreview(null);
     setShowProfileCompletionModal(false);
     setPendingDeliveryPreferencePrompt(false);
     setDeliveryPreferenceError("");
+    setShowGuestDeliveryPreferenceModal(false);
+    setShowGuestPincodeCheckerModal(false);
+    setGuestDeliveryPincodePreview(null);
   }, [persistAuth, user]);
+
+  useEffect(() => {
+    const handleAuthCleared = () => {
+      logout();
+    };
+
+    window.addEventListener(AUTH_CLEARED_EVENT, handleAuthCleared);
+    return () => window.removeEventListener(AUTH_CLEARED_EVENT, handleAuthCleared);
+  }, [logout]);
+
+  const completeGuestDeliveryPrompt = useCallback(() => {
+    window.sessionStorage.setItem(GUEST_DELIVERY_PROMPT_SESSION_KEY, "true");
+    setShowGuestDeliveryPreferenceModal(false);
+    setShowGuestPincodeCheckerModal(false);
+    setGuestDeliveryPincodePreview(null);
+  }, []);
+
+  const chooseGuestDeliveryMode = useCallback((mode: DeliveryMode) => {
+    setStoredGuestDeliveryMode(mode);
+
+    if (mode === "HOME_DELIVERY") {
+      const selectedAddress = readSelectedAddress(null);
+      const postalCode = selectedAddress?.postalCode?.trim();
+      if (/^\d{6}$/.test(postalCode || "")) {
+        setGuestDeliveryPincodePreview(postalCode);
+        return;
+      }
+
+      setShowGuestPincodeCheckerModal(true);
+      return;
+    }
+
+    completeGuestDeliveryPrompt();
+  }, [completeGuestDeliveryPrompt]);
 
   return (
     <AuthContext.Provider
@@ -522,9 +602,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAdmin: user?.role === "ROLE_ADMIN",
         loading,
         googleLogin,
-        msg91WidgetLogin,
-        requestLoginOtp,
-        verifyLoginOtp,
+        requestPhoneOtp,
+        verifyPhoneOtp,
         adminLogin,
         completeProfile,
         skipProfileCompletion,
@@ -538,6 +617,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       >
         {children}
       </div>
+      {showGuestDeliveryPreferenceModal && !showProfileCompletionModal && !isAdminSession && !user ? (
+        <div className="delivery-preference-modal" role="dialog" aria-modal="true">
+          <div className="delivery-preference-modal__card">
+            <span className="eyebrow">Delivery preference</span>
+            <h2>How should we handle your orders?</h2>
+            <p>
+              Choose your default fulfilment option so shipping charges and order
+              management stay accurate.
+            </p>
+            {guestDeliveryPincodePreview ? (
+              <div className="delivery-preference-modal__preview" role="status" aria-live="polite">
+                <strong>{guestDeliveryPincodePreview}</strong>
+                <span>Saving your home delivery preference...</span>
+                <span className="button-loading">
+                  <span className="button-loading__spinner" aria-hidden="true" />
+                </span>
+              </div>
+            ) : (
+              <div className="delivery-preference-modal__actions">
+                <button
+                  type="button"
+                  className="delivery-preference-modal__button"
+                  onClick={() => chooseGuestDeliveryMode("STORE_PICKUP")}
+                >
+                  Store pickup
+                </button>
+                <button
+                  type="button"
+                  className="delivery-preference-modal__button delivery-preference-modal__button--primary"
+                  onClick={() => chooseGuestDeliveryMode("HOME_DELIVERY")}
+                >
+                  Home delivery
+                </button>
+              </div>
+            )}
+            <button
+              type="button"
+              className="delivery-preference-modal__skip"
+              onClick={completeGuestDeliveryPrompt}
+            >
+              Skip
+            </button>
+          </div>
+        </div>
+      ) : null}
       {showProfileCompletionModal && user?.role === "ROLE_CUSTOMER" ? (
         <ProfileCompletionModal onSubmit={completeProfile} onSkip={skipProfileCompletion} />
       ) : null}
@@ -555,27 +679,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 type="button"
                 className="delivery-preference-modal__button"
                 disabled={Boolean(savingDeliveryPreference)}
+                aria-busy={savingDeliveryPreference === "STORE_PICKUP"}
                 onClick={() => void updateDeliveryPreference("STORE_PICKUP")}
               >
                 {savingDeliveryPreference === "STORE_PICKUP" ? (
-                  <span className="button-loading button-loading--dark">
+                  <span className="button-loading">
                     <span className="button-loading__spinner" aria-hidden="true" />
-                    Opening...
+                    Applying...
                   </span>
                 ) : (
-                  "Pick up at store"
+                  "Store pickup"
                 )}
               </button>
               <button
                 type="button"
                 className="delivery-preference-modal__button delivery-preference-modal__button--primary"
                 disabled={Boolean(savingDeliveryPreference)}
+                aria-busy={savingDeliveryPreference === "HOME_DELIVERY"}
                 onClick={() => void updateDeliveryPreference("HOME_DELIVERY")}
               >
                 {savingDeliveryPreference === "HOME_DELIVERY" ? (
                   <span className="button-loading">
                     <span className="button-loading__spinner" aria-hidden="true" />
-                    Opening...
+                    Applying...
                   </span>
                 ) : (
                   "Home delivery"
@@ -585,6 +711,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             {deliveryPreferenceError ? (
               <p className="form-error">{deliveryPreferenceError}</p>
             ) : null}
+            <button
+              type="button"
+              className="delivery-preference-modal__skip"
+              disabled={Boolean(savingDeliveryPreference)}
+              onClick={() => {
+                markDeliveryPromptCompletedThisSession(user);
+                setShowDeliveryPreferenceModal(false);
+                setPendingDeliveryPreferencePrompt(false);
+                setDeliveryPreferenceError("");
+              }}
+            >
+              Skip
+            </button>
           </div>
         </div>
       ) : null}
@@ -596,7 +735,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           open
           storageKey={PINCODE_CHECKER_LOGIN_KEY}
           onClose={() => setShowPincodeCheckerModal(false)}
+          showFooterActions={false}
         />
+      ) : null}
+      {showGuestPincodeCheckerModal && !showProfileCompletionModal && !user ? (
+        <PincodeServiceChecker
+          open
+          onClose={completeGuestDeliveryPrompt}
+          showFooterActions={false}
+        />
+      ) : null}
+      {deliveryPincodePreview ? (
+        <div className="delivery-preference-modal" role="dialog" aria-modal="true" aria-live="polite">
+          <div className="delivery-preference-modal__card">
+            <span className="eyebrow">Delivery check</span>
+            <h2>Using your default address pincode</h2>
+            <p>
+              {deliveryPincodePreview} is saved with your address.
+            </p>
+          </div>
+        </div>
       ) : null}
     </AuthContext.Provider>
   );
@@ -610,26 +768,8 @@ const ProfileCompletionModal: React.FC<{
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || "");
   const [email, setEmail] = useState(user?.email || "");
-  const [profileImageUrl, setProfileImageUrl] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
-
-  const handleProfileImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-    setError("");
-    setUploadingImage(true);
-    try {
-      setProfileImageUrl(await optimizeImageFile(file));
-    } catch {
-      setError("Unable to process selected profile photo.");
-    } finally {
-      setUploadingImage(false);
-    }
-  };
 
   const submitProfile = async (skipOptional = false) => {
     setError("");
@@ -643,7 +783,6 @@ const ProfileCompletionModal: React.FC<{
       fullName: fullName.trim(),
       phoneNumber: phoneNumber.trim(),
       email: skipOptional ? undefined : email.trim() || undefined,
-      profileImageUrl: skipOptional ? undefined : profileImageUrl.trim() || undefined,
     });
     setSaving(false);
     if (result.error) {
@@ -663,55 +802,53 @@ const ProfileCompletionModal: React.FC<{
         <h2>Complete your profile</h2>
         <p>These details will be used automatically for orders and support requests.</p>
         <form className="form-grid" onSubmit={handleSubmit}>
-          <label>
-            Full name
-          <input
-              value={fullName}
-              onChange={(event) => setFullName(restrictLettersOnly(event.target.value))}
-              placeholder="Enter your full name"
-              autoFocus
-            />
-          </label>
-          <label>
-            Mobile number
-          <input
-              value={phoneNumber}
-              onChange={(event) => setPhoneNumber(restrictDigitsOnly(event.target.value))}
-              placeholder="Enter mobile number"
-            />
-          </label>
-          <label>
-            Email optional
+            <label>
+              Full name
             <input
+                value={fullName}
+                onChange={(event) => setFullName(restrictLettersOnly(event.target.value))}
+                onPaste={(event) => {
+                  event.preventDefault();
+                  setFullName(restrictLettersOnly(event.clipboardData.getData("text")));
+                }}
+                placeholder="Enter your full name"
+                autoFocus
+                inputMode="text"
+                pattern={"[A-Za-z\\s.'\\-]+"}
+                required
+              />
+            </label>
+            <label>
+              Mobile number
+            <input
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(restrictDigitsOnly(event.target.value))}
+                onPaste={(event) => {
+                  event.preventDefault();
+                  setPhoneNumber(restrictDigitsOnly(event.clipboardData.getData("text")));
+                }}
+                placeholder="Enter mobile number"
+                inputMode="numeric"
+                pattern={"\\d{10}"}
+                maxLength={10}
+                required
+              />
+            </label>
+            <label>
+              Email optional
+              <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.com"
             />
           </label>
-          <label>
-            Profile photo optional
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleProfileImageChange}
-              disabled={saving || uploadingImage}
-            />
-          </label>
-          {profileImageUrl ? (
-            <div className="profile-photo-preview form-grid__wide">
-              <img src={profileImageUrl} alt="Selected profile" />
-              <button type="button" className="link-button" onClick={() => setProfileImageUrl("")}>
-                Remove photo
-              </button>
-            </div>
-          ) : null}
           {error ? <p className="form-error">{error}</p> : null}
           <div className="delivery-preference-modal__actions">
             <button
               type="button"
               className="delivery-preference-modal__button delivery-preference-modal__button--icon"
-              disabled={saving || uploadingImage}
+              disabled={saving}
               onClick={onSkip}
             >
               <span>Skip for now</span>
@@ -722,9 +859,10 @@ const ProfileCompletionModal: React.FC<{
             <button
               type="submit"
               className="delivery-preference-modal__button delivery-preference-modal__button--primary"
-              disabled={saving || uploadingImage}
+              disabled={saving}
+              aria-busy={saving}
             >
-              {saving ? "Saving..." : uploadingImage ? "Preparing photo..." : "Continue"}
+              {saving ? "Saving..." : "Continue"}
             </button>
           </div>
         </form>

@@ -3,11 +3,11 @@ package com.voltmart.ecommerce.controller;
 import com.voltmart.ecommerce.dto.auth.AuthRequest;
 import com.voltmart.ecommerce.dto.auth.AuthResponse;
 import com.voltmart.ecommerce.dto.auth.DeliveryPreferenceRequest;
+import com.voltmart.ecommerce.dto.auth.GoogleClientIdResponse;
 import com.voltmart.ecommerce.dto.auth.GoogleAuthRequest;
-import com.voltmart.ecommerce.dto.auth.Msg91WidgetVerifyRequest;
-import com.voltmart.ecommerce.dto.auth.OtpRequest;
-import com.voltmart.ecommerce.dto.auth.OtpRequestResponse;
-import com.voltmart.ecommerce.dto.auth.OtpVerifyRequest;
+import com.voltmart.ecommerce.dto.auth.PhoneOtpRequest;
+import com.voltmart.ecommerce.dto.auth.PhoneOtpRequestResponse;
+import com.voltmart.ecommerce.dto.auth.PhoneOtpVerifyRequest;
 import com.voltmart.ecommerce.dto.auth.ProfileCompletionRequest;
 import com.voltmart.ecommerce.service.AuthService;
 import jakarta.validation.Valid;
@@ -31,19 +31,19 @@ public class AuthController {
         return authService.googleLogin(request);
     }
 
-    @PostMapping("/otp/widget/verify")
-    public AuthResponse msg91WidgetLogin(@Valid @RequestBody Msg91WidgetVerifyRequest request) {
-        return authService.msg91WidgetLogin(request);
+    @PostMapping("/otp/request")
+    public PhoneOtpRequestResponse requestPhoneOtp(@Valid @RequestBody PhoneOtpRequest request) {
+        return authService.requestPhoneOtp(request);
     }
 
-    @PostMapping({"/otp/request", "/send-otp"})
-    public OtpRequestResponse requestOtp(@Valid @RequestBody OtpRequest request) {
-        return authService.requestOtp(request);
+    @PostMapping("/otp/verify")
+    public AuthResponse verifyPhoneOtp(@Valid @RequestBody PhoneOtpVerifyRequest request) {
+        return authService.verifyPhoneOtp(request);
     }
 
-    @PostMapping({"/otp/verify", "/verify-otp"})
-    public AuthResponse verifyOtp(@Valid @RequestBody OtpVerifyRequest request) {
-        return authService.verifyOtp(request);
+    @GetMapping("/google/client-id")
+    public GoogleClientIdResponse googleClientId() {
+        return authService.getGoogleClientId();
     }
 
     @PatchMapping("/profile")

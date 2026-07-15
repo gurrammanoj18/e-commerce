@@ -76,6 +76,14 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 add column if not exists replacement_available boolean not null default true
                 """);
         jdbcTemplate.execute("""
+                alter table if exists product
+                drop column if exists rating
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists product
+                drop column if exists review_count
+                """);
+        jdbcTemplate.execute("""
                 alter table if exists product_images
                 alter column image_url type text
                 """);
@@ -84,9 +92,43 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 add column if not exists delivery_mode varchar(50)
                 """);
         jdbcTemplate.execute("""
+                alter table if exists orders
+                alter column order_number type varchar(64)
+                using order_number::text
+                """);
+        jdbcTemplate.execute("""
+                update orders
+                set order_number = 'ORD' || lpad(id::text, 5, '0')
+                where order_number is null
+                   or order_number !~ '^ORD[0-9]+$'
+                """);
+        jdbcTemplate.execute("""
                 update orders
                 set status = 'CONFIRMED'
                 where status = 'PENDING'
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists orders
+                drop constraint if exists orders_status_check
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists orders
+                add constraint orders_status_check
+                check (status in ('CONFIRMED', 'PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'))
+                """);
+        jdbcTemplate.execute("""
+                update inventory
+                set stock_quantity = 0
+                where stock_quantity < 0
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists inventory
+                drop constraint if exists inventory_stock_quantity_check
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists inventory
+                add constraint inventory_stock_quantity_check
+                check (stock_quantity >= 0)
                 """);
         jdbcTemplate.execute("""
                 update orders
@@ -110,6 +152,14 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 """);
         jdbcTemplate.execute("""
                 alter table if exists orders
+                add column if not exists address_source varchar(50)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists orders
+                add column if not exists address_map_url varchar(1000)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists orders
                 add column if not exists priority_order boolean not null default false
                 """);
         jdbcTemplate.execute("""
@@ -117,51 +167,80 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 add column if not exists priority_notes varchar(1000)
                 """);
         jdbcTemplate.execute("""
-                alter table if exists orders
-                add column if not exists applied_coupon_code varchar(100)
+                alter table if exists user_address
+                add column if not exists address_source varchar(50)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists user_address
+                add column if not exists address_map_url varchar(1000)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists user_address
+                add column if not exists house_number varchar(100)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists user_address
+                add column if not exists building_name varchar(255)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists user_address
+                add column if not exists street varchar(255)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists user_address
+                add column if not exists area varchar(255)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists user_address
+                add column if not exists village_town_city varchar(255)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists user_address
+                add column if not exists country varchar(255)
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists user_address
+                drop column if exists formatted_address
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists user_address
+                drop column if exists district
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists user_address
+                drop column if exists state_name
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists user_address
+                drop column if exists latitude
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists user_address
+                drop column if exists longitude
                 """);
         jdbcTemplate.execute("""
                 alter table if exists orders
-                add column if not exists applied_discount_amount numeric(12,2) default 0
+                drop column if exists applied_coupon_code
                 """);
         jdbcTemplate.execute("""
                 alter table if exists orders
-                add column if not exists wallet_credit_amount numeric(12,2)
+                drop column if exists applied_discount_amount
                 """);
         jdbcTemplate.execute("""
                 alter table if exists orders
-                add column if not exists wallet_credit_eligible_at timestamp
+                drop column if exists wallet_credit_amount
                 """);
         jdbcTemplate.execute("""
                 alter table if exists orders
-                add column if not exists wallet_credit_processed boolean not null default false
+                drop column if exists wallet_credit_eligible_at
                 """);
         jdbcTemplate.execute("""
                 alter table if exists orders
-                add column if not exists wallet_debit_amount numeric(12,2) default 0
-                """);
-        jdbcTemplate.execute("""
-                update orders
-                set wallet_debit_amount = 0
-                where wallet_debit_amount is null
+                drop column if exists wallet_credit_processed
                 """);
         jdbcTemplate.execute("""
                 alter table if exists orders
-                alter column wallet_debit_amount set not null
-                """);
-        jdbcTemplate.execute("""
-                update orders
-                set applied_discount_amount = 0
-                where applied_discount_amount is null
-                """);
-        jdbcTemplate.execute("""
-                alter table if exists orders
-                alter column applied_discount_amount set not null
-                """);
-        jdbcTemplate.execute("""
-                update orders
-                set wallet_credit_processed = false
-                where wallet_credit_processed is null
+                drop column if exists wallet_debit_amount
                 """);
         jdbcTemplate.execute("""
                 alter table if exists product
@@ -213,10 +292,15 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                     phone_number varchar(20) not null,
                     otp_hash varchar(255) not null,
                     expires_at timestamp not null,
-                    consumed boolean not null default false,
-                    attempt_count integer not null default 0,
-                    created_at timestamp not null
+                    verified_at timestamp,
+                    failed_attempts integer not null default 0,
+                    created_at timestamp not null,
+                    updated_at timestamp not null
                 )
+                """);
+        jdbcTemplate.execute("""
+                create index if not exists idx_login_otp_phone_created_at
+                on login_otp(phone_number, created_at desc)
                 """);
         jdbcTemplate.execute("""
                 create table if not exists user_address (
@@ -226,6 +310,12 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                     recipient_name varchar(255) not null,
                     phone varchar(50) not null,
                     street_address varchar(1000) not null,
+                    house_number varchar(100),
+                    building_name varchar(255),
+                    street varchar(255),
+                    area varchar(255),
+                    village_town_city varchar(255),
+                    country varchar(255),
                     city varchar(255) not null,
                     postal_code varchar(100) not null,
                     default_address boolean not null default false,
@@ -354,7 +444,6 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 create table if not exists homepage_section_content (
                     id bigserial primary key,
                     section_key varchar(255) not null unique,
-                    tagline varchar(120) not null,
                     heading varchar(120) not null
                 )
                 """);
@@ -364,11 +453,15 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                 """);
         jdbcTemplate.execute("""
                 alter table if exists homepage_section_content
-                add column if not exists tagline varchar(120)
+                add column if not exists heading varchar(120)
                 """);
         jdbcTemplate.execute("""
                 alter table if exists homepage_section_content
-                add column if not exists heading varchar(120)
+                drop column if exists tagline
+                """);
+        jdbcTemplate.execute("""
+                delete from homepage_section_content
+                where section_key = 'seasonal-picks'
                 """);
         jdbcTemplate.execute("""
                 create table if not exists wallet_coupon (
@@ -484,10 +577,93 @@ public class DatabaseSchemaUpdater implements CommandLineRunner {
                     phone_number varchar(50) not null,
                     address varchar(1000) not null,
                     postal_code varchar(100) not null,
+                    preferred_date varchar(100) not null,
+                    preferred_time_slot varchar(100) not null,
                     description varchar(2000) not null,
                     problem_images text,
                     created_at timestamp not null
                 )
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists service_request
+                add column if not exists status varchar(40) not null default 'REQUESTED'
+                """);
+        jdbcTemplate.execute("""
+                update service_request
+                set status = coalesce(nullif(trim(status), ''), 'REQUESTED')
+                where status is null or trim(status) = ''
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists service_request
+                alter column status set default 'REQUESTED'
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists service_request
+                alter column status set not null
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists service_request
+                add column if not exists preferred_date varchar(100)
+                """);
+        jdbcTemplate.execute("""
+                update service_request
+                set preferred_date = coalesce(preferred_date, 'Not specified')
+                where preferred_date is null
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists service_request
+                alter column preferred_date set not null
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists service_request
+                add column if not exists preferred_time_slot varchar(100)
+                """);
+        jdbcTemplate.execute("""
+                update service_request
+                set preferred_time_slot = coalesce(preferred_time_slot, 'Any time')
+                where preferred_time_slot is null
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists service_request
+                alter column preferred_time_slot set not null
+                """);
+        jdbcTemplate.execute("""
+                create table if not exists service_booking_settings (
+                    id bigserial primary key,
+                    enable_service_booking boolean not null default true,
+                    created_at timestamp not null,
+                    updated_at timestamp not null
+                )
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists service_booking_settings
+                add column if not exists enable_service_booking boolean not null default true
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists service_booking_settings
+                add column if not exists created_at timestamp
+                """);
+        jdbcTemplate.execute("""
+                update service_booking_settings
+                set created_at = coalesce(created_at, now())
+                where created_at is null
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists service_booking_settings
+                alter column created_at set not null
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists service_booking_settings
+                add column if not exists updated_at timestamp
+                """);
+        jdbcTemplate.execute("""
+                update service_booking_settings
+                set updated_at = coalesce(updated_at, now())
+                where updated_at is null
+                """);
+        jdbcTemplate.execute("""
+                alter table if exists service_booking_settings
+                alter column updated_at set not null
                 """);
         jdbcTemplate.execute("""
                 create table if not exists serviceable_pincode (

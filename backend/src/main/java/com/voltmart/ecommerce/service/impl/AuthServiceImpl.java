@@ -3,12 +3,13 @@ package com.voltmart.ecommerce.service.impl;
 import com.voltmart.ecommerce.dto.auth.AuthRequest;
 import com.voltmart.ecommerce.dto.auth.AuthResponse;
 import com.voltmart.ecommerce.config.AppProperties;
+import com.voltmart.ecommerce.dto.auth.GoogleClientIdResponse;
 import com.voltmart.ecommerce.dto.auth.GoogleAuthRequest;
-import com.voltmart.ecommerce.dto.auth.Msg91WidgetVerifyRequest;
-import com.voltmart.ecommerce.dto.auth.OtpRequest;
-import com.voltmart.ecommerce.dto.auth.OtpRequestResponse;
-import com.voltmart.ecommerce.dto.auth.OtpVerifyRequest;
+import com.voltmart.ecommerce.dto.auth.PhoneOtpRequest;
+import com.voltmart.ecommerce.dto.auth.PhoneOtpRequestResponse;
+import com.voltmart.ecommerce.dto.auth.PhoneOtpVerifyRequest;
 import com.voltmart.ecommerce.entity.Cart;
+import com.voltmart.ecommerce.entity.LoginOtpChallenge;
 import com.voltmart.ecommerce.entity.User;
 import com.voltmart.ecommerce.entity.Wishlist;
 import com.voltmart.ecommerce.dto.auth.DeliveryPreferenceRequest;
@@ -17,15 +18,17 @@ import com.voltmart.ecommerce.entity.enums.Role;
 import com.voltmart.ecommerce.exception.BadRequestException;
 import com.voltmart.ecommerce.mapper.EntityMapper;
 import com.voltmart.ecommerce.repository.CartRepository;
+import com.voltmart.ecommerce.repository.LoginOtpChallengeRepository;
 import com.voltmart.ecommerce.repository.UserRepository;
 import com.voltmart.ecommerce.repository.WishlistRepository;
 import com.voltmart.ecommerce.security.JwtService;
 import com.voltmart.ecommerce.service.AuthService;
 import com.voltmart.ecommerce.service.CurrentUserService;
-import com.voltmart.ecommerce.service.Msg91OtpService;
+import com.voltmart.ecommerce.service.SmsOtpGateway;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,22 +37,27 @@ import org.springframework.web.client.RestClientResponseException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.security.SecureRandom;
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
     private static final int OTP_EXPIRY_SECONDS = 300;
+    private static final int OTP_MAX_FAILED_ATTEMPTS = 5;
 
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
     private final WishlistRepository wishlistRepository;
+    private final LoginOtpChallengeRepository loginOtpChallengeRepository;
+    private final SmsOtpGateway smsOtpGateway;
     private final JwtService jwtService;
     private final EntityMapper entityMapper;
     private final AppProperties appProperties;
     private final AuthenticationManager authenticationManager;
     private final CurrentUserService currentUserService;
-    private final Msg91OtpService msg91OtpService;
+    private final PasswordEncoder passwordEncoder;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     @Override
     public AuthResponse adminLogin(AuthRequest request) {
@@ -130,36 +138,65 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthResponse msg91WidgetLogin(Msg91WidgetVerifyRequest request) {
-        String phoneNumber = msg91OtpService.verifyWidgetAccessToken(request.accessToken());
-        return issueLoginForPhoneNumber(normalizePhoneNumber(phoneNumber));
+    public PhoneOtpRequestResponse requestPhoneOtp(PhoneOtpRequest request) {
+        String phoneNumber = normalizePhoneNumber(request.phoneNumber());
+        if (userRepository.findByPhoneNumber(phoneNumber).map(User::getRole).orElse(Role.ROLE_CUSTOMER) == Role.ROLE_ADMIN) {
+            throw new BadRequestException("Use admin login for administrator access.");
+        }
+
+        String otp = String.format("%06d", secureRandom.nextInt(1_000_000));
+        String message = appProperties.getSmsOtp().getMessageTemplate()
+                .replace("{otp}", otp)
+                .replace("{minutes}", String.valueOf(Math.max(1, OTP_EXPIRY_SECONDS / 60)));
+
+        LocalDateTime now = LocalDateTime.now();
+        loginOtpChallengeRepository.deleteByPhoneNumberAndVerifiedAtIsNull(phoneNumber);
+        loginOtpChallengeRepository.deleteByPhoneNumberAndVerifiedAtIsNullAndExpiresAtBefore(phoneNumber, now);
+
+        loginOtpChallengeRepository.save(LoginOtpChallenge.builder()
+                .phoneNumber(phoneNumber)
+                .otpHash(passwordEncoder.encode(otp))
+                .expiresAt(now.plusSeconds(OTP_EXPIRY_SECONDS))
+                .failedAttempts(0)
+                .createdAt(now)
+                .updatedAt(now)
+                .build());
+
+        smsOtpGateway.sendOtp(phoneNumber, message);
+        return new PhoneOtpRequestResponse(phoneNumber, OTP_EXPIRY_SECONDS, true);
     }
 
     @Override
     @Transactional
-    public OtpRequestResponse requestOtp(OtpRequest request) {
-        String phoneNumber = normalizePhoneNumber(request.resolvedPhoneNumber());
-        if (!appProperties.getMsg91().isEnabled()) {
-            throw new BadRequestException("Mobile OTP login is not configured.");
-        }
-        msg91OtpService.sendOtp(phoneNumber);
-        return new OtpRequestResponse(
-                phoneNumber,
-                "OTP sent successfully.",
-                OTP_EXPIRY_SECONDS,
-                null
-        );
-    }
+    public AuthResponse verifyPhoneOtp(PhoneOtpVerifyRequest request) {
+        String phoneNumber = normalizePhoneNumber(request.phoneNumber());
+        LoginOtpChallenge challenge = loginOtpChallengeRepository
+                .findTopByPhoneNumberAndVerifiedAtIsNullOrderByCreatedAtDesc(phoneNumber)
+                .orElseThrow(() -> new BadRequestException("OTP expired. Please request a new one."));
 
-    @Override
-    @Transactional
-    public AuthResponse verifyOtp(OtpVerifyRequest request) {
-        String phoneNumber = normalizePhoneNumber(request.resolvedPhoneNumber());
-        if (!appProperties.getMsg91().isEnabled()) {
-            throw new BadRequestException("Mobile OTP login is not configured.");
+        LocalDateTime now = LocalDateTime.now();
+        if (challenge.getExpiresAt().isBefore(now)) {
+            throw new BadRequestException("OTP expired. Please request a new one.");
         }
-        msg91OtpService.verifyOtp(phoneNumber, request.otp());
+        if (challenge.getFailedAttempts() != null && challenge.getFailedAttempts() >= OTP_MAX_FAILED_ATTEMPTS) {
+            throw new BadRequestException("Too many invalid attempts. Please request a new OTP.");
+        }
+        if (!passwordEncoder.matches(request.otp(), challenge.getOtpHash())) {
+            challenge.setFailedAttempts((challenge.getFailedAttempts() == null ? 0 : challenge.getFailedAttempts()) + 1);
+            challenge.setUpdatedAt(now);
+            loginOtpChallengeRepository.save(challenge);
+            throw new BadRequestException("Invalid OTP.");
+        }
+
+        challenge.setVerifiedAt(now);
+        challenge.setUpdatedAt(now);
+        loginOtpChallengeRepository.save(challenge);
         return issueLoginForPhoneNumber(phoneNumber);
+    }
+
+    @Override
+    public GoogleClientIdResponse getGoogleClientId() {
+        return new GoogleClientIdResponse(appProperties.getGoogle().getClientId());
     }
 
     @Override
@@ -172,7 +209,7 @@ public class AuthServiceImpl implements AuthService {
         if (!StringUtils.hasText(email)) {
             email = user.getEmail();
         }
-        String phoneNumber = request.phoneNumber().trim();
+        String phoneNumber = normalizePhoneNumber(request.phoneNumber());
         userRepository.findByPhoneNumber(phoneNumber)
                 .filter(existingUser -> !existingUser.getId().equals(user.getId()))
                 .ifPresent(existingUser -> {
@@ -233,11 +270,8 @@ public class AuthServiceImpl implements AuthService {
 
     private String normalizePhoneNumber(String value) {
         String digitsOnly = value == null ? "" : value.replaceAll("\\D", "");
-        String countryCode = appProperties.getMsg91().getCountryCode();
-        String normalizedCountryCode = StringUtils.hasText(countryCode) ? countryCode.replaceAll("\\D", "") : "91";
-
-        if (digitsOnly.startsWith(normalizedCountryCode) && digitsOnly.length() > 10) {
-            digitsOnly = digitsOnly.substring(normalizedCountryCode.length());
+        if (digitsOnly.startsWith("91") && digitsOnly.length() > 10) {
+            digitsOnly = digitsOnly.substring(2);
         }
 
         if (!digitsOnly.matches("^[6-9][0-9]{9}$")) {

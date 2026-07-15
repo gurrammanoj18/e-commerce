@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: voltmart-backend
+  profiles:
+    default: postgres
 
   mail:
     host: ${SPRING_MAIL_HOST:smtp.gmail.com}
@@ -51,23 +53,40 @@ app:
 
   google:
     client-id: ${APP_GOOGLE_CLIENT_ID:536121505527-9vfs7pm13jjrvsb9np95nubbpji6b01l.apps.googleusercontent.com}
+    maps-api-key: ${APP_GOOGLE_MAPS_API_KEY:}
+
+  sms-otp:
+    enabled: ${APP_SMS_OTP_ENABLED:false}
+    provider: ${APP_SMS_OTP_PROVIDER:JIO_TRUECONNECT}
+    request-url: ${APP_SMS_OTP_REQUEST_URL:}
+    auth-header-name: ${APP_SMS_OTP_AUTH_HEADER_NAME:Authorization}
+    auth-header-value: ${APP_SMS_OTP_AUTH_HEADER_VALUE:}
+    sender-id: ${APP_SMS_OTP_SENDER_ID:}
+    template-id: ${APP_SMS_OTP_TEMPLATE_ID:}
+    message-template: ${APP_SMS_OTP_MESSAGE_TEMPLATE:Your Eldoo OTP is {otp}. It is valid for {minutes} minutes.}
+    request-body-template: ${APP_SMS_OTP_REQUEST_BODY_TEMPLATE:{"mobile":"{phoneNumber}","message":"{message}","senderId":"{senderId}","templateId":"{templateId}"}}
 
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,https://voltmart-frontend.onrender.com}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://175.101.46.98,https://eldoo.in,https://www.eldoo.in}
 
   store:
-    frontend-url: ${APP_STORE_FRONTEND_URL:http://localhost:3000}
+    frontend-url: ${APP_STORE_FRONTEND_URL:http://175.101.46.98}
 
   seed:
     admin-email: ${APP_SEED_ADMIN_EMAIL:}
     admin-password: ${APP_SEED_ADMIN_PASSWORD:}
+    demo-catalog-enabled: ${APP_SEED_DEMO_CATALOG_ENABLED:false}
 
   whatsapp:
     support-number: ${APP_WHATSAPP_SUPPORT_NUMBER:919398546891}
     enabled: ${APP_WHATSAPP_ENABLED:false}
     api-version: ${APP_WHATSAPP_API_VERSION:v25.0}
+    business-account-id: ${APP_WHATSAPP_BUSINESS_ACCOUNT_ID:}
     phone-number-id: ${APP_WHATSAPP_PHONE_NUMBER_ID:}
     access-token: ${APP_WHATSAPP_ACCESS_TOKEN:}
+    status-template-name: ${APP_WHATSAPP_STATUS_TEMPLATE_NAME:custom_order_v2}
+    status-template-language: ${APP_WHATSAPP_STATUS_TEMPLATE_LANGUAGE:en_IN}
+    template-image-url: ${APP_WHATSAPP_TEMPLATE_IMAGE_URL:https://eldoo.in/whatsapp-logo.png}
 
   email:
     enabled: ${APP_EMAIL_ENABLED:false}
@@ -76,14 +95,6 @@ app:
     from-name: ${APP_EMAIL_FROM_NAME:Eldoo}
     api-key: ${APP_EMAIL_API_KEY:}
     api-url: ${APP_EMAIL_API_URL:https://api.brevo.com/v3/smtp/email}
-
-  msg91:
-    enabled: ${APP_MSG91_ENABLED:false}
-    auth-key: ${APP_MSG91_AUTH_KEY:}
-    template-id: ${APP_MSG91_TEMPLATE_ID:}
-    sender-id: ${APP_MSG91_SENDER_ID:}
-    country-code: ${APP_MSG91_COUNTRY_CODE:91}
-    base-url: ${APP_MSG91_BASE_URL:https://control.msg91.com}
 
   cache:
     redis-enabled: ${APP_CACHE_REDIS_ENABLED:false}
